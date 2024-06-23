@@ -8,6 +8,6 @@ repositories {
 }
 
 dependencies {
-	implementation("io.komune.fixers.gradle:dependencies:0.19.0.beta.1")
+	implementation("io.komune.fixers.gradle:dependencies:0.20.0-SNAPSHOT")
 }
 
