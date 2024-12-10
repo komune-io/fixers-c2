@@ -16,6 +16,10 @@ interface BatchPropertiesDTO {
     /**
      * The size of the batch.
      */
+    val timeout: Int
+    /**
+     * The size of the batch.
+     */
     val size: Int
 
     /**
@@ -27,6 +31,7 @@ interface BatchPropertiesDTO {
 @JsExport
 @Serializable
 class SsmBatchProperties(
+    override val timeout: Int = 2000,
     override val size: Int = BATCH_DEFAULT_SIZE,
     override val concurrency: Int = BATCH_DEFAULT_CONCURRENCY
 ) : BatchPropertiesDTO

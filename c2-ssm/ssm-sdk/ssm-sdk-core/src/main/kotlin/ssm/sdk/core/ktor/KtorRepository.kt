@@ -2,6 +2,7 @@ package ssm.sdk.core.ktor
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.HttpRequestBuilder
@@ -28,6 +29,8 @@ import ssm.sdk.dsl.InvokeType
 
 class KtorRepository(
 	private val baseUrl: String,
+	private val timeout: Long,
+
 	private val authCredentials: AuthCredentials?,
 ) {
 	private val logger = LoggerFactory.getLogger(javaClass)
@@ -46,6 +49,9 @@ class KtorRepository(
 		}
 		install(ContentNegotiation) {
 			jackson()
+		}
+		install(HttpTimeout) {
+			requestTimeoutMillis = timeout
 		}
 	}
 
