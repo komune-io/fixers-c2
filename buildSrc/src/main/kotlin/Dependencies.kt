@@ -62,6 +62,9 @@ object Dependencies {
 		"com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2"
 	)
 
+	fun f2Http(scope: Scope) = scope.add(
+		"io.komune.f2:f2-spring-boot-starter-function-http:${Versions.f2}"
+	)
 	fun f2Auth(scope: Scope) = scope.add(
 		"io.komune.f2:f2-spring-boot-starter-auth-tenant:${Versions.f2}"
 	)

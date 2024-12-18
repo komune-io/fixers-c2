@@ -156,7 +156,7 @@ class SsmRequester(
 			invokeArgs
 		}
 
-		return coopRepository.invoke(
+		return coopRepository.invokeF2(
 			args
 		).handleResponse {
 			JsonUtils.mapper.readValue<List<InvokeReturn>>(it)

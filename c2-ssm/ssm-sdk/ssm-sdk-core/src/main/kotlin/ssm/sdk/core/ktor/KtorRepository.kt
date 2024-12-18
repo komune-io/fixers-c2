@@ -144,6 +144,25 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
+	suspend fun invokeF2(
+		invokeArgs: List<InvokeCommandArgs>
+	): String {
+		val body = invokeArgs.map { invokeArg ->
+			mapOf(
+				CMD_PROPS to invokeArg.cmd.value,
+				FCN_PROPS to invokeArg.fcn,
+				ARGS_PROPS to invokeArg.args,
+				CHANNEL_ID_PROPS to invokeArg.chaincodeUri?.channelId,
+				CHAINCODE_ID_PROPS to invokeArg.chaincodeUri?.chaincodeId,
+			)
+		}
+		return client.post("$baseUrl/invokeF2") {
+			addAuth()
+			contentType(ContentType.Application.Json)
+			setBody(body)
+		}.bodyAsText()
+	}
+
 	private fun HttpRequestBuilder.addAuth() {
 		when (authCredentials) {
 			is BearerTokenAuthCredentials -> header("Authorization", "Bearer ${authCredentials.getBearerToken()}")
