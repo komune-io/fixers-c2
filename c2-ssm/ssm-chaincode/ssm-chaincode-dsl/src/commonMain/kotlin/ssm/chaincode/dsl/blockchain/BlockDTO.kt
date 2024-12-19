@@ -4,7 +4,7 @@ import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
 
-typealias BlockId = String
+typealias BlockId = Int
 
 @JsExport
 @JsName("BlockDTO")

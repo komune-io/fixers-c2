@@ -12,7 +12,7 @@ class ChannelChaincode(
 	companion object
 }
 
-class ChannelChaincodePair(
+data class ChannelChaincodePair(
     val channelId: ChannelId,
     val chainCodeId: ChainCodeId
 ) {

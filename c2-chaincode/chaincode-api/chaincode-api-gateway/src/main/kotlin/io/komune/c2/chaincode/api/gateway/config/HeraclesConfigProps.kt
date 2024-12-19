@@ -1,5 +1,8 @@
 package io.komune.c2.chaincode.api.gateway.config
 
+import f2.dsl.fnc.operators.BATCH_DEFAULT_CONCURRENCY
+import f2.dsl.fnc.operators.BATCH_DEFAULT_SIZE
+import f2.dsl.fnc.operators.Batch
 import io.komune.c2.chaincode.api.fabric.exception.InvokeException
 import io.komune.c2.chaincode.api.fabric.model.Endorser
 import org.slf4j.LoggerFactory
@@ -10,8 +13,9 @@ class HeraclesConfigProps(
 	var defaultCcid: String,
 	var ccid: String,
 	var user: UserConfig? = null,
-	var config: FileConfig? = null ,
-	var endorsers: String
+	var config: FileConfig? = null,
+	var endorsers: String,
+	var batch: BatchConfig? = null
 ) {
 	companion object {
 		const val CCID_SEPARATOR = "/"
@@ -56,6 +60,8 @@ class HeraclesConfigProps(
 		return actualChannelChaincodePair
 	}
 
+	fun getBatch() = batch?.let { Batch(it.size, it.concurrency) } ?: Batch()
+
 	class UserConfig {
 		lateinit var name: String
 		lateinit var password: String
@@ -66,4 +72,10 @@ class HeraclesConfigProps(
 		lateinit var file: String
 		lateinit var crypto: String
 	}
+
+}
+
+open class BatchConfig {
+	var size: Int = BATCH_DEFAULT_SIZE
+	var concurrency: Int = BATCH_DEFAULT_CONCURRENCY
 }

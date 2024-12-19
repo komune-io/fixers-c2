@@ -4,10 +4,15 @@ import io.komune.c2.chaincode.api.fabric.config.FabricConfig;
 import io.komune.c2.chaincode.api.fabric.config.OrganisationConfig;
 import org.hyperledger.fabric.sdk.HFClient;
 import org.hyperledger.fabric.sdk.User;
+import org.hyperledger.fabric.sdk.helper.Config;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FabricClientFactory {
+
+    private Logger logger = LoggerFactory.getLogger(FabricClientFactory.class);
 
     private String cryptoConfigBase;
     private FabricConfig fabricConfig;
@@ -36,6 +41,11 @@ public class FabricClientFactory {
     }
 
     private HFClient getHfClient() throws Exception {
+        int clientThreadExecutorCorePoolSize = Config.getConfig().getClientThreadExecutorCorePoolSize();
+        logger.info("/////////////////////////////////");
+        logger.info("/////////////////////////////////");
+        logger.info(""+clientThreadExecutorCorePoolSize);
+        logger.info("/////////////////////////////////");
         CryptoSuite cryptoSuite = CryptoSuite.Factory.getCryptoSuite();
         HFClient client = HFClient.createNewInstance();
         client.setCryptoSuite(cryptoSuite);

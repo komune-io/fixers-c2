@@ -65,8 +65,14 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return ssmRequester.logger(chaincodeUri, sessionName, query, object : TypeReference<List<SsmSessionStateLog>>() {})
 	}
 
+
 	override suspend fun listSession(chaincodeUri: ChaincodeUri): List<String> {
 		val query = SessionQuery()
+		return ssmRequester.list(chaincodeUri, query, String::class.java)
+	}
+
+	override suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<String> {
+		val query = TransactionQuery()
 		return ssmRequester.list(chaincodeUri, query, String::class.java)
 	}
 
@@ -75,9 +81,14 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return ssmRequester.query(chaincodeUri, txId, query, Transaction::class.java)
 	}
 
+	override suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<Int>  {
+		val query = BlockQuery()
+		return ssmRequester.list(chaincodeUri, query, Int::class.java)
+	}
+
 	override suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block? {
 		val query = BlockQuery()
-		return ssmRequester.query(chaincodeUri, blockId, query, Block::class.java)
+		return ssmRequester.query(chaincodeUri, blockId.toString(), query, Block::class.java)
 	}
 
 	override suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent> {
@@ -134,7 +145,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 	override suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block> {
 		val query = BlockQuery()
 		return queries.map {
-			SsmApiQuery(it.chaincodeUri, it.blockId, query)
+			SsmApiQuery(it.chaincodeUri, it.blockId.toString(), query)
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<Block>>() {})
 		}

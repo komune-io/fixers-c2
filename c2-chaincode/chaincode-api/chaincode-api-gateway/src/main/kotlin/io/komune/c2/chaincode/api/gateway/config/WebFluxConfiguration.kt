@@ -34,10 +34,4 @@ class WebFluxConfiguration : WebFluxConfigurer {
         configurer.defaultCodecs().maxInMemorySize(BYTE_COUNT) // Set to 10 MB
     }
 
-    @Bean
-    fun debugCodecProperties(codecProperties: CodecProperties): CommandLineRunner {
-        return CommandLineRunner { args: Array<String?>? ->
-            println("Max In-Memory Size: " + codecProperties.maxInMemorySize)
-        }
-    }
 }

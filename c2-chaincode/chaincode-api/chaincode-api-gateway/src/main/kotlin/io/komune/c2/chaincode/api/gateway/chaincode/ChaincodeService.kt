@@ -6,6 +6,7 @@ import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainService
 import io.komune.c2.chaincode.api.gateway.chaincode.model.Cmd
 import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeParams
 import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeReturn
+import io.komune.c2.chaincode.api.gateway.chaincode.model.toInvokeArgs
 import io.komune.c2.chaincode.api.gateway.config.ChainCodeId
 import io.komune.c2.chaincode.api.gateway.config.ChannelId
 import io.komune.c2.chaincode.api.gateway.config.FabricClientBuilder
@@ -26,7 +27,7 @@ class ChaincodeService(
 
 	fun execute(args: InvokeParams): CompletableFuture<String> {
 		val chainCodePair = coopConfigProps.getChannelChaincodePair(args.channelid, args.chaincodeid)
-		val invokeArgs = InvokeArgs(args.fcn, args.args.iterator())
+		val invokeArgs = args.toInvokeArgs()
 		return when (args.cmd) {
 			Cmd.invoke -> doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
 				.thenApply { it.toJson() }

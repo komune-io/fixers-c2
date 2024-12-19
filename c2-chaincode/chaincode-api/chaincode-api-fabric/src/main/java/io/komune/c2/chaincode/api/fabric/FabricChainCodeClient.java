@@ -25,7 +25,6 @@ public class FabricChainCodeClient {
     public static FabricChainCodeClient fromConfigFile(String filename, String cryptoConfigBase) throws IOException {
         FabricConfig fabricConfig = FabricConfig.loadFromFile(filename);
         FabricChannelFactory channelFactory = FabricChannelFactory.factory(fabricConfig, cryptoConfigBase);
-
         return new FabricChainCodeClient(channelFactory);
     }
 
@@ -37,15 +36,16 @@ public class FabricChainCodeClient {
     }
 
     public CompletableFuture<BlockEvent.TransactionEvent> invoke(List<Endorser> endorsers, HFClient client, String channelName, String chainId, InvokeArgs invokeArgs) throws Exception {
+        logger.info("Invoke chaincode["+chainId+"] on channel["+channelName+"] with function["+invokeArgs.getFunction()+"]");
         Channel channel = channelFactory.getChannel(endorsers, client, channelName);
         ChaincodeID chainCodeId = ChaincodeID.newBuilder().setName(chainId).build();
         return invokeBlockChain(client, channel, chainCodeId, invokeArgs);
     }
 
     public String query(List<Endorser> endorsers, HFClient client, String channelName, String chainId, InvokeArgs invokeArgs) throws Exception {
+        logger.info("query chaincode["+chainId+"] on channel["+channelName+"] with function["+invokeArgs.getFunction()+"]");
         Channel channel = channelFactory.getChannel(endorsers, client, channelName);
         ChaincodeID chainCodeId = ChaincodeID.newBuilder().setName(chainId).build();
-        logger.info("channelName["+channelName+"], chainId["+chainId+"]");
         return queryBlockChain(client, channel, chainCodeId, invokeArgs);
     }
 

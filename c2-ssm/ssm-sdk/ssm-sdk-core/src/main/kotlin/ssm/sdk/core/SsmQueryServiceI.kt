@@ -20,10 +20,16 @@ interface SsmQueryServiceI {
 	suspend fun getAgent(chaincodeUri: ChaincodeUri, agentName: AgentName): Agent?
 	suspend fun listSsm(chaincodeUri: ChaincodeUri): List<SsmName>
 	suspend fun getSsm(chaincodeUri: ChaincodeUri, name: SsmName): Ssm?
+
+	suspend fun listSession(chaincodeUri: ChaincodeUri): List<SessionName>
 	suspend fun getSession(chaincodeUri: ChaincodeUri,sessionName: SessionName): SsmSessionState?
+
 	suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog>
-	suspend fun listSession(chaincodeUri: ChaincodeUri): List<String>
+
+	suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<TransactionId>
 	suspend fun getTransaction(chaincodeUri: ChaincodeUri, txId: TransactionId): Transaction?
+
+	suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<BlockId>
 	suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block?
 
 	suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent>

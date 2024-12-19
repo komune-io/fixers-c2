@@ -77,6 +77,23 @@ class CoopApiTest : WebBaseTest() {
 	}
 
 	@Test
+	fun shouldSUCCESSMessage_WhenInvokeWithPostList() {
+		val uri = baseUrl().path("invokeF2").build().toUri()
+		val params = listOf(
+			InvokeParams(cmd = Cmd.invoke, fcn = "invoke", args = arrayOf("a", "b", "1")),
+		)
+		val headers = HttpHeaders()
+		headers.contentType = MediaType.APPLICATION_JSON
+
+		val request = HttpEntity(params, headers)
+		val res = this.restTemplate.postForEntity(uri, request, String::class.java)
+		assertThat(res.statusCode.value()).isEqualTo(200)
+//        assertThat(res.body).isNotNull
+//        assertThat(res.body!!.status).isEqualTo("SUCCESS")
+//        assertThat(res.body!!.transactionId).isNotEmpty
+	}
+
+	@Test
 	fun `should fail when requesting invalid channelId`() {
 		val channelId = "INVALID_CHANNEL_ID"
 		val chainCodeId = "ex02"

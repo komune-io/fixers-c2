@@ -10,6 +10,7 @@ dependencies {
 
 	Dependencies.springWebFlux(::implementation)
 	Dependencies.f2Auth(::implementation)
+	Dependencies.f2Http(::implementation)
 	Dependencies.jackson(::implementation)
 
 	Dependencies.springTest(::testImplementation)

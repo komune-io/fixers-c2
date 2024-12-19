@@ -7,6 +7,14 @@ import java.util.List;
 
 public class InvokeException extends Exception {
 
+    public InvokeException(String error) {
+        super(error);
+    }
+
+    public InvokeException(String error, Exception e) {
+        super(error, e);
+    }
+
     public InvokeException(List<String> errors) {
         super(Joiner.on(";").join(Sets.newHashSet(errors)));
     }
