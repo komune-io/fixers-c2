@@ -72,6 +72,8 @@ include(
 )
 
 include(
+	"c2-chaincode:chaincode-dsl",
+	"c2-chaincode:chaincode-api:chaincode-api-config",
 	"c2-chaincode:chaincode-api:chaincode-api-fabric",
 	"c2-chaincode:chaincode-api:chaincode-api-gateway",
 )

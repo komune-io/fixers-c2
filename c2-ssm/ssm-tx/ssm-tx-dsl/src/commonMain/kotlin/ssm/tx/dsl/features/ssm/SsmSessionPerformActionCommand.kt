@@ -1,10 +1,10 @@
 package ssm.tx.dsl.features.ssm
 
 import f2.dsl.fnc.F2Function
-import ssm.chaincode.dsl.blockchain.TransactionId
+import io.komune.c2.chaincode.dsl.ChaincodeUriDTO
+import io.komune.c2.chaincode.dsl.TransactionId
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SsmContext
-import ssm.chaincode.dsl.model.uri.ChaincodeUriDTO
 import ssm.tx.dsl.features.SsmCommandDTO
 import ssm.tx.dsl.features.SsmCommandResultDTO
 
@@ -23,18 +23,18 @@ typealias SsmTxSessionPerformActionFunction = F2Function<SsmSessionPerformAction
  * @title Perform Transition: Parameters
  */
 class SsmSessionPerformActionCommand(
-	override val chaincodeUri: ChaincodeUriDTO,
-	/**
+    override val chaincodeUri: ChaincodeUriDTO,
+    /**
 	 * The name of the signer
 	 */
 	val signerName: AgentName,
-	/**
+    /**
 	 * Transition to perform
 	 * @example [ssm.chaincode.dsl.model.SsmTransition.action]
 	 */
 	val action: String,
 
-	/**
+    /**
 	 * Information about the transition
 	 */
 	val context: SsmContext,

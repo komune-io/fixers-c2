@@ -1,5 +1,3 @@
-import io.komune.gradle.dependencies.FixersVersions
-
 plugins {
 	id("io.komune.fixers.gradle.kotlin.jvm")
 	id("io.komune.fixers.gradle.publish")
@@ -10,9 +8,8 @@ plugins {
 dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-f2"))
 
-	api("io.komune.f2:f2-spring-boot-starter-function:${Versions.f2}")
-
-	kapt("org.springframework.boot:spring-boot-configuration-processor:${FixersVersions.Spring.boot}")
+	Dependencies.f2Function(::api)
+	Dependencies.springBootConfigurationProcessor(::kapt)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
 }

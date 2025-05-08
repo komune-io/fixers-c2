@@ -1,9 +1,10 @@
 package ssm.sdk.core
 
-import ssm.chaincode.dsl.blockchain.Block
-import ssm.chaincode.dsl.blockchain.BlockId
-import ssm.chaincode.dsl.blockchain.Transaction
-import ssm.chaincode.dsl.blockchain.TransactionId
+import io.komune.c2.chaincode.dsl.Block
+import io.komune.c2.chaincode.dsl.BlockId
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.Transaction
+import io.komune.c2.chaincode.dsl.TransactionId
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SessionName
@@ -11,7 +12,6 @@ import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmName
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 interface SsmQueryServiceI {
 	suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName>
@@ -20,10 +20,16 @@ interface SsmQueryServiceI {
 	suspend fun getAgent(chaincodeUri: ChaincodeUri, agentName: AgentName): Agent?
 	suspend fun listSsm(chaincodeUri: ChaincodeUri): List<SsmName>
 	suspend fun getSsm(chaincodeUri: ChaincodeUri, name: SsmName): Ssm?
-	suspend fun getSession(chaincodeUri: ChaincodeUri,sessionName: SessionName): SsmSessionState?
+
+	suspend fun listSession(chaincodeUri: ChaincodeUri): List<SessionName>
+	suspend fun getSession(chaincodeUri: ChaincodeUri, sessionName: SessionName): SsmSessionState?
+
 	suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog>
-	suspend fun listSession(chaincodeUri: ChaincodeUri): List<String>
+
+	suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<TransactionId>
 	suspend fun getTransaction(chaincodeUri: ChaincodeUri, txId: TransactionId): Transaction?
+
+	suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<BlockId>
 	suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block?
 
 	suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent>

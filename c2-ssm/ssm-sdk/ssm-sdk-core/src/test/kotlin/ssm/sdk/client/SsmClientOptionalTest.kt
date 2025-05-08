@@ -1,10 +1,10 @@
 package ssm.sdk.client
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 class SsmClientOptionalTest {
 

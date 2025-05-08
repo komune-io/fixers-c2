@@ -35,6 +35,7 @@ jobs:
       contents: read
       packages: write
     with:
+      java-version: '21'
       with-docker-registry-login: 'true'
       make-file: 'make_docker.mk'
       on-tag: 'publish promote'

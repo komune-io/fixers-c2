@@ -1,5 +1,7 @@
 package ssm.sdk.core.ktor
 
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -19,28 +21,23 @@ import io.ktor.serialization.jackson.jackson
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.from
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
-import ssm.sdk.dsl.InvokeCommandArgs
-import ssm.sdk.dsl.InvokeType
 
 
 class KtorRepository(
 	private val baseUrl: String,
 	private val timeout: Long,
-
 	private val authCredentials: AuthCredentials?,
 ) {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"
-		const val CMD_PROPS = "cmd"
-		const val CHANNEL_ID_PROPS = "channelid"
-		const val CHAINCODE_ID_PROPS = "chaincodeid"
-		const val FCN_PROPS = "fcn"
-		const val ARGS_PROPS = "args"
+		val CMD_PROPS = InvokeRequest::cmd.name
+		val CHANNEL_ID_PROPS = InvokeRequest::channelid.name
+		val CHAINCODE_ID_PROPS = InvokeRequest::chaincodeid.name
+		val FCN_PROPS = InvokeRequest::fcn.name
+		val ARGS_PROPS = InvokeRequest::args.name
 	}
 
 	val client = HttpClient(CIO) {
@@ -94,29 +91,31 @@ class KtorRepository(
 	}
 
 	suspend fun invoke(
-		cmd: InvokeType,
+		cmd: InvokeRequestType,
 		fcn: String,
 		args: List<String>,
 		channelId: ChannelId?,
 		chaincodeId: ChaincodeId?,
 	): String {
-		return invoke(InvokeCommandArgs(
-			chaincodeUri= ChaincodeUri.from(channelId = channelId, chaincodeId = chaincodeId),
+		return invoke(InvokeRequest(
+			channelid = channelId,
+			chaincodeid = chaincodeId,
 			cmd = cmd,
-			args = args,
+			args = args.toTypedArray(),
 			fcn = fcn
 		))
 	}
 
 	suspend fun invoke(
-		invokeArgs: InvokeCommandArgs
+		invokeArgs: InvokeRequest
 	): String {
+		//TODO CLEAN THAT With json convertions
 		val body = mapOf(
-			CMD_PROPS to invokeArgs.cmd.value,
+			CMD_PROPS to invokeArgs.cmd.name,
 			FCN_PROPS to invokeArgs.fcn,
 			ARGS_PROPS to invokeArgs.args,
-			CHANNEL_ID_PROPS to invokeArgs.chaincodeUri?.channelId,
-			CHAINCODE_ID_PROPS to invokeArgs.chaincodeUri?.chaincodeId,
+			CHANNEL_ID_PROPS to invokeArgs.channelid,
+			CHAINCODE_ID_PROPS to invokeArgs.chaincodeid,
 		)
 		return client.post(baseUrl) {
 			addAuth()
@@ -126,18 +125,37 @@ class KtorRepository(
 	}
 
 	suspend fun invoke(
-		invokeArgs: List<InvokeCommandArgs>
+		invokeArgs: List<InvokeRequest>
 	): String {
 		val body = invokeArgs.map { invokeArg ->
 			mapOf(
-				CMD_PROPS to invokeArg.cmd.value,
+				CMD_PROPS to invokeArg.cmd.name,
 				FCN_PROPS to invokeArg.fcn,
 				ARGS_PROPS to invokeArg.args,
-				CHANNEL_ID_PROPS to invokeArg.chaincodeUri?.channelId,
-				CHAINCODE_ID_PROPS to invokeArg.chaincodeUri?.chaincodeId,
+				CHANNEL_ID_PROPS to invokeArg.channelid,
+				CHAINCODE_ID_PROPS to invokeArg.chaincodeid,
 			)
 		}
 		return client.post("$baseUrl/invoke") {
+			addAuth()
+			contentType(ContentType.Application.Json)
+			setBody(body)
+		}.bodyAsText()
+	}
+
+	suspend fun invokeF2(
+		invokeArgs: List<InvokeRequest>
+	): String {
+		val body = invokeArgs.map { invokeArg ->
+			mapOf(
+				CMD_PROPS to invokeArg.cmd.name,
+				FCN_PROPS to invokeArg.fcn,
+				ARGS_PROPS to invokeArg.args,
+				CHANNEL_ID_PROPS to invokeArg.channelid,
+				CHAINCODE_ID_PROPS to invokeArg.chaincodeid,
+			)
+		}
+		return client.post("$baseUrl/invokeF2") {
 			addAuth()
 			contentType(ContentType.Application.Json)
 			setBody(body)

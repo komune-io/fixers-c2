@@ -1,10 +1,10 @@
 package ssm.data.dsl.model
 
+import io.komune.c2.chaincode.dsl.Transaction
+import io.komune.c2.chaincode.dsl.TransactionDTO
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
-import ssm.chaincode.dsl.blockchain.Transaction
-import ssm.chaincode.dsl.blockchain.TransactionDTO
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.uri.SsmUri
 
@@ -12,7 +12,7 @@ import ssm.chaincode.dsl.model.uri.SsmUri
 @JsName("DataSsmSessionDTO")
 interface DataSsmSessionDTO {
 	/**
-	 * uri of the the ssm
+	 * uri of the ssm
 	 * @example "ssm:peerId?:channelId:chaincodeId"
 	 */
 	val ssmUri: SsmUri
@@ -49,10 +49,10 @@ interface DataSsmSessionDTO {
 @JsExport
 @JsName("DataSsmSession")
 class DataSsmSession(
-	override val sessionName: SessionName,
-	override val state: DataSsmSessionState,
-	override val channel: DataChannel,
-	override val transaction: Transaction?,
-	override val ssmUri: SsmUri,
-	override val transactions: List<TransactionDTO>,
+    override val sessionName: SessionName,
+    override val state: DataSsmSessionState,
+    override val channel: DataChannel,
+    override val transaction: Transaction?,
+    override val ssmUri: SsmUri,
+    override val transactions: List<TransactionDTO>,
 ) : DataSsmSessionDTO

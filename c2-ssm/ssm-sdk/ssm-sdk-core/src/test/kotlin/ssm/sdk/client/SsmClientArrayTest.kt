@@ -1,5 +1,9 @@
 package ssm.sdk.client
 
+import io.komune.c2.chaincode.dsl.Block
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.Transaction
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -11,22 +15,18 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import ssm.chaincode.dsl.blockchain.Block
-import ssm.chaincode.dsl.blockchain.Transaction
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmTransition
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
 import ssm.sdk.core.command.SsmCreateCommand
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.core.command.UserRegisterCommand
-import ssm.sdk.dsl.InvokeReturn
 import ssm.sdk.sign.SsmCmdSignerSha256RSASigner
 import ssm.sdk.sign.extention.addPrivateMessage
 import ssm.sdk.sign.extention.getPrivateMessage
@@ -43,10 +43,10 @@ class SsmClientArrayTest {
         private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
         private const val NETWORK = "bclan-it/"
         const val ADMIN_NAME = "ssm-admin"
-        val USER1_NAME = "bob-$uuid"
-        val USER2_NAME = "sam-$uuid"
-        const val USER1_FILENAME = NETWORK + "bob"
-        const val USER2_FILENAME = NETWORK + "sam"
+        private val USER1_NAME = "bob-$uuid"
+        private val USER2_NAME = "sam-$uuid"
+        private const val USER1_FILENAME = NETWORK + "bob"
+        private const val USER2_FILENAME = NETWORK + "sam"
 
         private lateinit var query: SsmQueryService
         private lateinit var tx: SsmTxService
@@ -59,7 +59,7 @@ class SsmClientArrayTest {
         private var signerUser1: Signer = SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME)
         private var signerUser2: Signer = SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
 
-        val signer = SsmCmdSignerSha256RSASigner(
+        private val signer = SsmCmdSignerSha256RSASigner(
             SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME),
             SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME),
             SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
@@ -114,8 +114,7 @@ class SsmClientArrayTest {
     @Order(10)
     @Test
     fun adminUser() = runBlocking<Unit> {
-        val agentRet = query.getAdmin(chaincodeUri, ADMIN_NAME)
-        val agentFormClient = agentRet
+        val agentFormClient = query.getAdmin(chaincodeUri, ADMIN_NAME)
         Assertions.assertThat(agentFormClient).isEqualTo(agentAdmin)
     }
 
@@ -210,18 +209,17 @@ class SsmClientArrayTest {
     @Order(90)
     @Test
     fun session() = runTest {
-        val ses = query.getSession(
+        val sessionRequested = query.getSession(
             chaincodeUri,
             sessionName
         )
-        val sesReq = ses
-        Assertions.assertThat(sesReq?.current).isEqualTo(0)
-        Assertions.assertThat(sesReq?.iteration).isEqualTo(0)
-        Assertions.assertThat(sesReq?.origin).isNull()
-        Assertions.assertThat(sesReq?.ssm).isEqualTo(ssmName)
-        Assertions.assertThat(sesReq?.roles).isEqualTo(session.roles)
-        Assertions.assertThat(sesReq?.session).isEqualTo(session.session)
-        Assertions.assertThat(sesReq?.public).isEqualTo(session.public)
+        Assertions.assertThat(sessionRequested?.current).isEqualTo(0)
+        Assertions.assertThat(sessionRequested?.iteration).isEqualTo(0)
+        Assertions.assertThat(sessionRequested?.origin).isNull()
+        Assertions.assertThat(sessionRequested?.ssm).isEqualTo(ssmName)
+        Assertions.assertThat(sessionRequested?.roles).isEqualTo(session.roles)
+        Assertions.assertThat(sessionRequested?.session).isEqualTo(session.session)
+        Assertions.assertThat(sessionRequested?.public).isEqualTo(session.public)
     }
 
     @Test
@@ -242,7 +240,7 @@ class SsmClientArrayTest {
     @Test
     fun sessionAfterSell() = runTest {
         val sell = SsmTransition(0, 1, "Seller", "Sell")
-        val sesReq = query.getSession(
+        val sessionRequested = query.getSession(
             chaincodeUri,
             sessionName
         )
@@ -250,7 +248,7 @@ class SsmClientArrayTest {
             ssmName,
             sessionName, session.roles, "100 dollars 1978 Camaro", privateMessage, sell, 1, 1
         )
-        Assertions.assertThat(sesReq).isEqualTo(stateExpected)
+        Assertions.assertThat(sessionRequested).isEqualTo(stateExpected)
     }
 
     @Order(110)
@@ -270,7 +268,7 @@ class SsmClientArrayTest {
         assertThatTransactionExists(transactionEvent.first())
     }
 
-    suspend fun assertThatTransactionExists(trans: InvokeReturn) {
+    private suspend fun assertThatTransactionExists(trans: InvokeReturn) {
         Assertions.assertThat(trans).isNotNull
         Assertions.assertThat(trans.status).isEqualTo("SUCCESS")
         val transaction: Transaction? = query.getTransaction(chaincodeUri, trans.transactionId)
@@ -284,27 +282,26 @@ class SsmClientArrayTest {
     @Test
     fun sessionAfterBuy() = runTest {
         val buy = SsmTransition(1, 2, "Buyer", "Buy")
-        val sesReq = query.getSession(
+        val state = query.getSession(
             chaincodeUri,
             sessionName
         )
-        val state = sesReq
-        val stateExcpected = SsmSessionState(
+        val stateExpected = SsmSessionState(
             ssmName,
             sessionName, session.roles, "Deal !", emptyMap(), buy, 2, 2
         )
-        Assertions.assertThat(state).isEqualTo(stateExcpected)
+        Assertions.assertThat(state).isEqualTo(stateExpected)
     }
 
     @Test
     @Order(135)
     @Throws(Exception::class)
     fun logSession() = runTest {
-        val sesReq = query.log(
+        val sessionRequested = query.log(
             chaincodeUri,
             sessionName
         )
-        Assertions.assertThat(sesReq.size).isEqualTo(3)
+        Assertions.assertThat(sessionRequested.size).isEqualTo(3)
     }
 
     @Test

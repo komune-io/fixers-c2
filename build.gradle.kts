@@ -109,6 +109,9 @@ fixers {
 	d2 {
 		outputDirectory = file("storybook/stories/d2/")
 	}
+//	jdk {
+//		version = 21
+//	}
 	bundle {
 		id = "c2"
 		name = "Chaincode Api and signed state machine"

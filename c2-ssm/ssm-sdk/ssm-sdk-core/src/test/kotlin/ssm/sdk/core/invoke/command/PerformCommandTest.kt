@@ -1,9 +1,9 @@
 package ssm.sdk.core.invoke.command
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.model.SsmContext
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.dsl.buildArgs
 import ssm.sdk.sign.SsmCmdSignerSha256RSASigner
 import ssm.sdk.sign.crypto.KeyPairReader.loadKeyPair

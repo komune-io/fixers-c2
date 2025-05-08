@@ -1,8 +1,8 @@
 package ssm.sdk.core.command
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SsmContext
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 data class SsmPerformCommand(
     override val chaincodeUri: ChaincodeUri,

@@ -3,13 +3,13 @@ package ssm.couchdb.dsl.query
 import f2.dsl.cqrs.Event
 import f2.dsl.cqrs.Query
 import f2.dsl.fnc.F2Function
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.ChaincodeUriDTO
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentDTO
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.ChaincodeUriDTO
 
 /**
  * @title Fetch all admins

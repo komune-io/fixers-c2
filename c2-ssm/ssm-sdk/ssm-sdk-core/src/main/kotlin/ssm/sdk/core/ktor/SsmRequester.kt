@@ -3,15 +3,15 @@ package ssm.sdk.core.ktor
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.invoke.InvokeError
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import org.slf4j.LoggerFactory
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.invoke.builder.HasGet
 import ssm.sdk.core.invoke.builder.HasList
-import ssm.sdk.dsl.InvokeCommandArgs
-import ssm.sdk.dsl.InvokeError
 import ssm.sdk.dsl.InvokeException
-import ssm.sdk.dsl.InvokeReturn
-import ssm.sdk.dsl.InvokeType
 import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.dsl.buildArgs
 import ssm.sdk.dsl.buildCommandArgs
@@ -26,19 +26,19 @@ class SsmRequester(
 	private val logger = LoggerFactory.getLogger(SsmRequester::class.java)
 
 	suspend fun <T> logger(
-		chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: TypeReference<List<T>>
+        chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: TypeReference<List<T>>
 	): List<T> {
 		val args = query.queryArgs(value)
 		logger.info(
 			"Query[Log] the blockchain in chaincode[{}] with fcn[{}] with args:{}",
 			chaincodeUri.uri,
-			args.fcn,
-			args.args
+			args.function,
+			args.values
 		)
 		val request = coopRepository.query(
-			cmd = InvokeType.QUERY.value,
-			fcn = args.fcn,
-			args = args.args,
+			cmd = InvokeRequestType.query.name,
+			fcn = args.function,
+			args = args.values,
 			channelId = chaincodeUri.channelId,
 			chaincodeId = chaincodeUri.chaincodeId,
 		)
@@ -50,17 +50,17 @@ class SsmRequester(
 	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
 		val args = query.queryArgs(value)
 		val request = coopRepository.query(
-			cmd = InvokeType.QUERY.value,
-			fcn = args.fcn,
-			args = args.args,
+			cmd = InvokeRequestType.query.name,
+			fcn = args.function,
+			args = args.values,
 			channelId = chaincodeUri.channelId,
 			chaincodeId = chaincodeUri.chaincodeId,
 		)
 		logger.info(
 			"Query the blockchain in chaincode[{}] with fcn[{}] with args:{}",
 			chaincodeUri.uri,
-			args.fcn,
-			args.args
+			args.function,
+			args.values
 		)
 		return request.let {
 			jsonConverter.toCompletableObject(clazz, it)
@@ -80,11 +80,12 @@ class SsmRequester(
 		queries.logger("Query", total, { it.chaincodeUri })
 		val args = queries.mapIndexed { index, query ->
 			val args = query.query.queryArgs(query.value)
-			val invokeArgs = InvokeCommandArgs(
-				cmd = InvokeType.QUERY,
-				chaincodeUri = query.chaincodeUri,
-				fcn = args.fcn,
-				args = args.args
+			val invokeArgs = InvokeRequest(
+				cmd = InvokeRequestType.query,
+				channelid = query.chaincodeUri.channelId,
+				chaincodeid = query.chaincodeUri.chaincodeId,
+				fcn = args.function,
+				args = args.values.toTypedArray()
 			)
 			logger.debug(
 				"Invoke[${index+1}/$total] the blockchain in channel[{}:{}] with command[{}] with args:{}",
@@ -105,14 +106,14 @@ class SsmRequester(
 	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
 		val args = query.listArgs()
 		val request = coopRepository.query(
-			cmd = InvokeType.QUERY.value,
-			fcn = args.fcn,
-			args = args.args,
+			cmd = InvokeRequestType.query.name,
+			fcn = args.function,
+			args = args.values,
 			channelId = chaincodeUri.channelId,
 			chaincodeId = chaincodeUri.chaincodeId,
 		)
 		logger.info(
-			"Query the blockchain in chaincode[${chaincodeUri.uri}] with fcn[${args.fcn}] with args:${args.args}",
+			"Query the blockchain in chaincode[${chaincodeUri.uri}] with fcn[${args.function}] with args:${args.values}",
 		)
 		return request.handleResponse { response ->
 			jsonConverter.toCompletableObjects(clazz, response)
@@ -125,13 +126,13 @@ class SsmRequester(
 		logger.info(
 			"Invoke[single] the blockchain in channel[{}]  with command[{}] with args:{}",
 			cmdSigned.chaincodeUri.chaincodeId,
-			invokeArgs.fcn,
+			invokeArgs.function,
 			invokeArgs
 		)
 		return coopRepository.invoke(
-			cmd = InvokeType.INVOKE,
-			fcn = invokeArgs.fcn,
-			args = invokeArgs.args,
+			cmd = InvokeRequestType.invoke,
+			fcn = invokeArgs.function,
+			args = invokeArgs.values,
 			channelId = cmdSigned.chaincodeUri.channelId,
 			chaincodeId = cmdSigned.chaincodeUri.chaincodeId,
 		).handleResponse {
@@ -145,7 +146,7 @@ class SsmRequester(
 		cmds.logger("Invoke", total, { it.chaincodeUri })
 
 		val args = cmds.mapIndexed { index, cmd ->
-			val invokeArgs = cmd.buildCommandArgs(InvokeType.INVOKE)
+			val invokeArgs = cmd.buildCommandArgs(InvokeRequestType.invoke)
 			logger.debug(
 				"Invoke[${index+1}/$total] the blockchain in channel[{}:{}] with command[{}] with args:{}",
 				cmd.chaincodeUri.channelId,
@@ -156,7 +157,7 @@ class SsmRequester(
 			invokeArgs
 		}
 
-		return coopRepository.invoke(
+		return coopRepository.invokeF2(
 			args
 		).handleResponse {
 			JsonUtils.mapper.readValue<List<InvokeReturn>>(it)
@@ -174,7 +175,7 @@ class SsmRequester(
 }
 
 data class SsmApiQuery(
-	val chaincodeUri: ChaincodeUri,
-	val value: String,
-	val query: HasGet,
+    val chaincodeUri: ChaincodeUri,
+    val value: String,
+    val query: HasGet,
 )
