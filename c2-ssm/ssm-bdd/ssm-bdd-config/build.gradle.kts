@@ -1,5 +1,5 @@
-import io.komune.gradle.dependencies.FixersDependencies
-import io.komune.gradle.dependencies.FixersVersions
+import io.komune.fixers.gradle.dependencies.FixersDependencies
+import io.komune.fixers.gradle.dependencies.FixersVersions
 
 plugins {
 	id("io.komune.fixers.gradle.kotlin.jvm")
