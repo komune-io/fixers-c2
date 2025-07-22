@@ -37,7 +37,7 @@ jobs:
     with:
       with-docker-registry-login: 'true'
       make-file: 'make_docker.mk'
-      on-tag: 'publish promote'
+      on-tag: 'stage_promote'
       force-publish: 'true'
     secrets:
       PKG_GITHUB_USERNAME: ${{ github.actor }}
@@ -55,7 +55,7 @@ jobs:
       pages: write
       id-token: write
     with:
-      on-tag: 'publish_promote'
+      on-tag: 'stage_promote'
       make-file: 'make_docs.mk'
       with-chromatic: false
       storybook-dir: storybook
