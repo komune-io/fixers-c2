@@ -61,8 +61,6 @@ jobs:
     secrets:
       NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-      PKG_GITHUB_USERNAME: ${{ github.actor }}
-      PKG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       DOCKER_STAGE_USERNAME: ${{ github.actor }}
       DOCKER_STAGE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
       DOCKER_PROMOTE_USERNAME: ${{ secrets.DOCKER_IO_USERNAME }}
