@@ -4,23 +4,24 @@ VERSION = $(shell cat VERSION)
 
 ## New
 lint:
-	@make -f libs.mk lint
-	@make -f docker.mk lint
+	@make -f make_libs.mk lint
+	@make -f make_docker.mk lint
 
 build:
-	@make -f libs.mk build
-	@make -f docker.mk build
+	@make -f make_libs.mk build
+	@make -f make_docker.mk build
 
 test-pre:
-	@make -f libs.mk test-pre
+	@make -f make_libs.mk test-pre
 
 test:
-	@make -f libs.mk test
-	@make -f docker.mk test
+	@make -f make_libs.mk test
+	@make -f make_docker.mk test
 
-publish:
-	@make -f libs.mk publish
-	@make -f docker.mk publish
+stage:
+	@make -f make_libs.mk stage
+	@make -f make_docker.mk stage
+
 
 promote:
 	@make -f libs.mk promote

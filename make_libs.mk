@@ -28,13 +28,15 @@ test-pre:
 
 test:
 	./gradlew test
+
 test-post:
 	@make dev down
 
-publish:
-	VERSION=$(VERSION) PKG_MAVEN_REPO=github ./gradlew publish -Dorg.gradle.parallel=true --info
+stage:
+	VERSION=$(VERSION) ./gradlew stage
+
 promote:
-	VERSION=$(VERSION) PKG_MAVEN_REPO=sonatype_oss ./gradlew publish
+	VERSION=$(VERSION) ./gradlew promote
 
 .PHONY: version
 version:

@@ -1,8 +1,8 @@
-import io.komune.gradle.dependencies.FixersDependencies
-import io.komune.gradle.dependencies.FixersPluginVersions
-import io.komune.gradle.dependencies.FixersVersions
-import io.komune.gradle.dependencies.Scope
-import io.komune.gradle.dependencies.add
+import io.komune.fixers.gradle.dependencies.FixersDependencies
+import io.komune.fixers.gradle.dependencies.FixersPluginVersions
+import io.komune.fixers.gradle.dependencies.FixersVersions
+import io.komune.fixers.gradle.dependencies.Scope
+import io.komune.fixers.gradle.dependencies.add
 import java.net.URI
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 
@@ -40,7 +40,7 @@ object Versions {
 
 fun RepositoryHandler.defaultRepo() {
 	mavenCentral()
-	maven { url = URI("https://s01.oss.sonatype.org/content/repositories/snapshots") }
+	maven { url = URI("https://central.sonatype.com/repository/maven-snapshots") }
 	maven { url = URI("https://repo.spring.io/milestone") }
 	mavenLocal()
 }
@@ -77,6 +77,8 @@ object Dependencies {
 		"org.junit.jupiter:junit-jupiter-api:${Versions.junit}",
 		"org.assertj:assertj-core:${Versions.assertj}"
 	)
+
+	fun cucumber(scope: Scope) = FixersDependencies.Jvm.Test.cucumber(scope)
 
 	fun fabricSdk(scope: Scope) = scope.add(
 		"org.hyperledger.fabric-sdk-java:fabric-sdk-java:${Versions.fabric}"
