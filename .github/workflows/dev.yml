@@ -33,10 +33,11 @@ jobs:
       contents: read
       packages: write
     with:
-      with-docker-registry-login: 'true'
+      with-stage-docker-registry-login: 'true'
+      with-promote-docker-registry-login: 'true'
       make-file: 'make_docker.mk'
       on-tag: 'stage_promote'
-      force-publish: 'true'
+      force-stage: 'true'
     secrets:
       PKG_GITHUB_USERNAME: ${{ github.actor }}
       PKG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
