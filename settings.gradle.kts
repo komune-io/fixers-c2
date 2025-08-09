@@ -1,11 +1,10 @@
-
-
 pluginManagement {
 	repositories {
 		gradlePluginPortal()
 		mavenCentral()
-		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
-		mavenLocal()
+		if(System.getenv("MAVEN_LOCAL_USE") == "true") {
+			mavenLocal()
+		}
 	}
 }
 
