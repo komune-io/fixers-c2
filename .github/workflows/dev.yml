@@ -54,9 +54,10 @@ jobs:
       pages: write
       id-token: write
     with:
-      on-tag: 'stage_promote'
+      on-tag: 'stage promote'
       make-file: 'make_docs.mk'
       with-chromatic: false
+      base-dir: "storybook"
       storybook-dir: storybook
       storybook-static-dir: storybook-static
     secrets:
