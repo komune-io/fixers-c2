@@ -38,13 +38,6 @@ object Versions {
 	const val assertj = FixersVersions.Test.assertj
 }
 
-fun RepositoryHandler.defaultRepo() {
-	mavenCentral()
-	maven { url = URI("https://central.sonatype.com/repository/maven-snapshots") }
-	maven { url = URI("https://repo.spring.io/milestone") }
-	mavenLocal()
-}
-
 object Dependencies {
 	fun slf4j(scope: Scope) = FixersDependencies.Jvm.Logging.slf4j(scope)
 
@@ -89,5 +82,14 @@ object Dependencies {
 		"io.projectreactor:reactor-test:${Versions.reactor}",
 		"org.assertj:assertj-core:${Versions.assertj}"
 	)
-
 }
+
+
+fun RepositoryHandler.defaultRepo() {
+    mavenCentral()
+    maven { url = URI("https://central.sonatype.com/repository/maven-snapshots") }
+    if(System.getenv("MAVEN_LOCAL_USE") == "true") {
+        mavenLocal()
+    }
+}
+
