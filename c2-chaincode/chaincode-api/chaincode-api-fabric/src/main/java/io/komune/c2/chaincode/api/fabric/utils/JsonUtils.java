@@ -18,12 +18,10 @@ public class JsonUtils {
     }
 
     public static String toJson(Object obj) throws JsonProcessingException {
-        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         return mapper.writeValueAsString(obj);
     }
 
     public static <T> T toObject(URL value, Class<T> clazz) throws IOException {
-        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         return mapper.readValue(value, clazz);
     }
 
