@@ -1,8 +1,8 @@
 package ssm.sdk.core.ktor
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.fasterxml.jackson.module.kotlin.readValue
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.exc.MismatchedInputException
+import tools.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.invoke.builder.HasGet

@@ -1,6 +1,6 @@
 package ssm.sdk.json
 
-import com.fasterxml.jackson.core.type.TypeReference
+import tools.jackson.core.type.TypeReference
 
 class JSONConverterObjectMapper : JSONConverter {
 

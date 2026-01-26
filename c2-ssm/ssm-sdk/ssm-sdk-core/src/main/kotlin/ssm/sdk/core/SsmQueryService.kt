@@ -1,6 +1,6 @@
 package ssm.sdk.core
 
-import com.fasterxml.jackson.core.type.TypeReference
+import tools.jackson.core.type.TypeReference
 import ssm.chaincode.dsl.blockchain.Block
 import ssm.chaincode.dsl.blockchain.BlockId
 import ssm.chaincode.dsl.blockchain.Transaction

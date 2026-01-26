@@ -8,7 +8,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-core"))
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${Versions.jacksonKotlin}")
-
+	Dependencies.jackson(::implementation)
 	Dependencies.cucumber(::api)
 }

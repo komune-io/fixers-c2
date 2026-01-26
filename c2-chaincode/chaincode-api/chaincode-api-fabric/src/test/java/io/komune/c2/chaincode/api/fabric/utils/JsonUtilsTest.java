@@ -1,6 +1,5 @@
 package io.komune.c2.chaincode.api.fabric.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -14,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class JsonUtilsTest {
 
     @Test
-    public void toJson_withSimpleObject_shouldReturnJsonString() throws JsonProcessingException {
+    public void toJson_withSimpleObject_shouldReturnJsonString() {
         TestObject obj = new TestObject("test", 42);
 
         String json = JsonUtils.toJson(obj);
@@ -23,14 +22,14 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void toJson_withNull_shouldReturnNullString() throws JsonProcessingException {
+    public void toJson_withNull_shouldReturnNullString() {
         String json = JsonUtils.toJson(null);
 
         assertThat(json).isEqualTo("null");
     }
 
     @Test
-    public void toJson_withNestedObject_shouldReturnJsonString() throws JsonProcessingException {
+    public void toJson_withNestedObject_shouldReturnJsonString() {
         TestObjectWithNested obj = new TestObjectWithNested("parent", new TestObject("child", 10));
 
         String json = JsonUtils.toJson(obj);
@@ -39,7 +38,7 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void toJson_withList_shouldReturnJsonArray() throws JsonProcessingException {
+    public void toJson_withList_shouldReturnJsonArray() {
         List<String> list = List.of("a", "b", "c");
 
         String json = JsonUtils.toJson(list);
@@ -48,7 +47,7 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void toJson_withMap_shouldReturnJsonObject() throws JsonProcessingException {
+    public void toJson_withMap_shouldReturnJsonObject() {
         Map<String, Integer> map = Map.of("key1", 1, "key2", 2);
 
         String json = JsonUtils.toJson(map);
@@ -70,11 +69,11 @@ public class JsonUtilsTest {
     @Test
     public void toObject_withNullUrl_shouldThrowException() {
         assertThatThrownBy(() -> JsonUtils.toObject(null, TestObject.class))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void toJson_withPrivateFieldsNoAccessors_shouldSerializeFields() throws JsonProcessingException {
+    public void toJson_withPrivateFieldsNoAccessors_shouldSerializeFields() {
         PrivateFieldsOnlyObject obj = new PrivateFieldsOnlyObject();
         obj.setFieldsViaReflectionStyle("secretName", 999, true);
 
@@ -97,7 +96,7 @@ public class JsonUtilsTest {
     }
 
     @Test
-    public void toJson_withInheritedPrivateFields_shouldSerializeAllFields() throws JsonProcessingException {
+    public void toJson_withInheritedPrivateFields_shouldSerializeAllFields() {
         ChildObject child = new ChildObject();
         child.setParentField("parentValue");
         child.setChildField("childValue");

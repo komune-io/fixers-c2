@@ -19,12 +19,7 @@ object Versions {
 
 	val f2 = PluginVersions.fixers
 
-	const val slf4j = FixersVersions.Logging.slf4j
-	const val jackson = FixersVersions.Json.jackson
-	const val jacksonKotlin = FixersVersions.Json.jacksonKotlin
-
 	const val springBoot = FixersVersions.Spring.boot
-	const val springSecurity = FixersVersions.Spring.security
 	const val reactor = FixersVersions.Spring.reactor
 
 	const val ktor = FixersVersions.Kotlin.ktor
@@ -51,9 +46,7 @@ object Dependencies {
 		"io.ktor:ktor-serialization-jackson:${Versions.ktor}"
 	)
 
-	fun jackson(scope: Scope) = scope.add(
-		"com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2"
-	)
+	fun jackson(scope: Scope) = FixersDependencies.Jvm.Json.jackson(scope)
 
 	fun f2Auth(scope: Scope) = scope.add(
 		"io.komune.f2:f2-spring-boot-starter-auth-tenant:${Versions.f2}"
