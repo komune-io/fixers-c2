@@ -9,7 +9,7 @@ repositories {
 		mavenLocal()
 	}
 }
-
+val fixersVersion = file("../VERSION").readText().trim()
 dependencies {
-	implementation("io.komune.fixers.gradle:dependencies:1.0.0-SNAPSHOT-local")
+	implementation("io.komune.fixers.gradle:dependencies:$fixersVersion")
 }
