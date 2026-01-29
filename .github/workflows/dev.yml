@@ -21,7 +21,7 @@ jobs:
       packages: write
     needs: docker
     with:
-      make-file: 'infra/script/make_libs.mk'
+      make-file: 'infra/make/libs.mk'
       on-tag: 'promote'
     secrets:
       GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
@@ -40,7 +40,7 @@ jobs:
     with:
       with-stage-docker-registry-login: 'true'
       with-promote-docker-registry-login: 'true'
-      make-file: 'infra/script/make_docker.mk'
+      make-file: 'infra/make/docker.mk'
       on-tag: 'stage_promote'
       force-stage: 'true'
     secrets:
@@ -60,7 +60,7 @@ jobs:
       id-token: write
     with:
       on-tag: 'stage promote'
-      make-file: 'infra/script/make_docs.mk'
+      make-file: 'infra/make/docs.mk'
       with-chromatic: false
       base-dir: "storybook"
       storybook-dir: storybook
