@@ -1,3 +1,5 @@
+@file:Suppress("MaxLineLength")
+
 package ssm.sdk.core.invoke.command
 
 import ssm.chaincode.dsl.model.Ssm

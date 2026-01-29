@@ -4,12 +4,12 @@ import ssm.couchdb.client.CouchdbSsmClient
 import ssm.couchdb.client.builder.SsmCouchDbBasicAuth
 
 object DataTest {
-	val dbSsmName = "sandbox_ssm"
-	val ssmName = "ssm"
+	const val dbSsmName = "sandbox_ssm"
+	const val ssmName = "ssm"
 
-	private val username = "couchdb"
-	private val password = "couchdb"
-	private val serviceUrl = "http://localhost:5984"
+	private const val username = "couchdb"
+	private const val password = "couchdb"
+	private const val serviceUrl = "http://localhost:5984"
 
 	var ssmCouchDbClient: CouchdbSsmClient = CouchdbSsmClient.builder()
 		.withUrl(serviceUrl)

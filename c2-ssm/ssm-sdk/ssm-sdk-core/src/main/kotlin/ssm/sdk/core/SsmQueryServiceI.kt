@@ -13,6 +13,7 @@ import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
+@Suppress("TooManyFunctions")
 interface SsmQueryServiceI {
 	suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName>
 	suspend fun getAdmin(chaincodeUri: ChaincodeUri, username: AgentName): Agent?

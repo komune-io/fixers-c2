@@ -9,7 +9,7 @@ plugins {
 	id("com.moowork.node") version "1.2.0"
 
 	id("io.komune.fixers.gradle.config") version PluginVersions.fixers
-//	id("io.komune.fixers.gradle.check") version PluginVersions.fixers
+	id("io.komune.fixers.gradle.check") version PluginVersions.fixers
 	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
 }
 

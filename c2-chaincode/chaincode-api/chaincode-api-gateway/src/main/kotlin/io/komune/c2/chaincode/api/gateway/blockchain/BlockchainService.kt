@@ -71,6 +71,7 @@ class BlockchainService(
 			.let(JsonUtils::toJson)
 	}
 
+	@Suppress("TooGenericExceptionCaught")
 	private fun queryTransactionIdsOfBlock(channelId: ChannelId, blockNumber: Long): List<String> {
 		try {
 			val block = queryBlockByNumber(channelId, blockNumber)
@@ -78,7 +79,7 @@ class BlockchainService(
 				.map(BlockInfo.EnvelopeInfo::getTransactionID)
 				.filter(String::isNotBlank)
 		} catch (e: Exception) {
-			throw IllegalArgumentException("Error while fetching block [$blockNumber] of channel [$channelId]")
+			throw IllegalArgumentException("Error while fetching block [$blockNumber] of channel [$channelId]", e)
 		}
 	}
 

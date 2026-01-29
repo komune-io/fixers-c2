@@ -22,6 +22,7 @@ import ssm.sdk.core.invoke.command.StartCmd
 import ssm.sdk.dsl.InvokeReturn
 import ssm.sdk.dsl.SsmCmd
 
+@Suppress("TooManyFunctions")
 class SsmTxService(
     private val ssmService: SsmService,
     private val batch: SsmBatchProperties,

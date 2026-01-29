@@ -24,6 +24,7 @@ import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.json.JsonUtils
 
+@Suppress("TooManyFunctions")
 class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI {
 	override suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName> {
 		val query = AdminQuery()

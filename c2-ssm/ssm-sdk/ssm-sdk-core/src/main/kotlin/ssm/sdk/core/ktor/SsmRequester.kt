@@ -163,6 +163,7 @@ class SsmRequester(
 		}
 	}
 
+	@Suppress("TooGenericExceptionCaught", "SwallowedException")
 	private fun <R> String.handleResponse(transform: (String)-> R): R = try {
 		transform(this)
 	} catch (e: MismatchedInputException) {

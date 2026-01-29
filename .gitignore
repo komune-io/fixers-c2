@@ -1,3 +1,8 @@
+### Kotlin ###
+.kotlin
+kotlin-js-store
+
+### Gralde ###
 .gradle
 **/build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -18,13 +23,5 @@
 *.ipr
 **/out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-
-### web ###
-\node_modules
+### Storybook ###
+storybook/node_modules
