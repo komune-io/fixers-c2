@@ -2,11 +2,6 @@
 
 This SDK is a Kotlin library used to interact with a [Blockchain-SSM](https://github.com/civis-blockchain/blockchain-ssm) chaincode hosted with Hyperledger Fabric.
 
-It contains three submodules, each with a different level of abstraction.  
-
-<img src="https://docs.smartb.city/s3/docs/ssm/diagrams/architecture.png" alt="drawing" width="300"/>
-<br /><br />
-
 # Infra
 
 ## SSM-Chaincode
