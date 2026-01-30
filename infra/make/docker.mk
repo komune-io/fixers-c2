@@ -15,8 +15,8 @@ build: docker-chaincode-api-gateway-build
 	make build -C c2-sandbox -e VERSION=$(VERSION)
 
 stage: docker-chaincode-api-gateway-stage
-	make push -e DOCKER_REPOSITORY=ghcr.io/komune-io/ -C c2-chaincode -e VERSION=$(VERSION)
-	make push -e DOCKER_REPOSITORY=ghcr.io/komune-io/ -C c2-sandbox -e VERSION=$(VERSION)
+	make stage -e DOCKER_REPOSITORY=ghcr.io/komune-io/ -C c2-chaincode -e VERSION=$(VERSION)
+	make stage -e DOCKER_REPOSITORY=ghcr.io/komune-io/ -C c2-sandbox -e VERSION=$(VERSION)
 
 promote: docker-chaincode-api-gateway-promote
 	make promote -e DOCKER_REPOSITORY=docker.io/komune/ -C c2-chaincode -e VERSION=$(VERSION)
