@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   coop-rest-java:
     container_name: coop-rest-bclan-${DOCKER_NETWORK}

@@ -2,7 +2,7 @@ VERSION = $(shell cat ../VERSION)
 include ../.env_version
 export
 
-.PHONY: lint build test publish promote
+.PHONY: lint build test publish stage promote
 
 lint:
 	make lint -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-ca
@@ -18,7 +18,14 @@ build:
 	make build -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-peer
 	make build -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-ssm-gateway
 
-push:
+stage:
+	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-ca
+	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-cli
+	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-orderer
+	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-peer
+	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-ssm-gateway
+
+promote:
 	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-ca
 	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-cli
 	make push -e VERSION=${VERSION} -e DOCKER_REPOSITORY=${DOCKER_REPOSITORY} -C c2-sandbox-orderer

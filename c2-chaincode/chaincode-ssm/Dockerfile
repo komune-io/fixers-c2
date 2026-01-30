@@ -1,8 +1,8 @@
 ARG VERSION
-ARG VERSION_ALPINE
-ARG VERSION_FABRIC
+ARG VERSION_ALPINE=3.19
+ARG VERSION_FABRIC=2.5.7
 
-FROM alpine:${VERSION_ALPINE} as FETCHER
+FROM alpine:${VERSION_ALPINE} AS fetcher
 
 WORKDIR /git
 
@@ -14,13 +14,13 @@ RUN wget --no-check-certificate --progress=dot -O clone.zip https://github.com/a
     unzip clone.zip && \
     mv blockchain-ssm-* blockchain-ssm
 
-FROM hyperledger/fabric-tools:${VERSION_FABRIC} as BUILDER
+FROM hyperledger/fabric-tools:${VERSION_FABRIC} AS builder
 
 ARG VERSION
 
 WORKDIR /go/src/chaincode-ssm
 
-COPY --from=FETCHER /git/blockchain-ssm/chaincode /go/src/chaincode-ssm/chaincode
+COPY --from=fetcher /git/blockchain-ssm/chaincode /go/src/chaincode-ssm/chaincode
 
 RUN go mod init github.com/komune-io/c2/c2-chaincode/chaincode-ssm &&\
     go get github.com/golang/protobuf@v1.5.3 &&\
@@ -37,11 +37,11 @@ ARG VERSION
 
 WORKDIR /opt/chaincode/ssm
 
-LABEL org.opencontainers.image.source https://github.com/komune-io/connect-ssm
+LABEL org.opencontainers.image.source="https://github.com/komune-io/connect-ssm"
 
 RUN echo "CHAINCODE=ssm" > env_ssm \
     && echo VERSION=$VERSION >> env_ssm
 
-COPY --from=FETCHER /git/blockchain-ssm/sdk/cli/util ./bin
-COPY --from=FETCHER /git/blockchain-ssm/chaincode ./chaincode
-COPY --from=BUILDER /go/src/chaincode-ssm/ssm-$VERSION.pak ./
+COPY --from=fetcher /git/blockchain-ssm/sdk/cli/util ./bin
+COPY --from=fetcher /git/blockchain-ssm/chaincode ./chaincode
+COPY --from=builder /go/src/chaincode-ssm/ssm-$VERSION.pak ./

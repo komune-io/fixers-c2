@@ -9,7 +9,7 @@ build:
 	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test
 
 test-pre:
-	@make dev pull
+	@#make dev pull
 	@make dev up
 	@echo "///////////////////////2"
 	@make dev c2-sandbox-ssm logs
