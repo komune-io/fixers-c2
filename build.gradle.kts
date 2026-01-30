@@ -6,11 +6,10 @@ plugins {
 	id("org.graalvm.buildtools.native") version PluginVersions.graalvm apply false
 
 	id("dev.petuska.npm.publish") version PluginVersions.npmPublish apply false
-	id("com.moowork.node") version "1.2.0"
 
 	id("io.komune.fixers.gradle.config") version PluginVersions.fixers
 	id("io.komune.fixers.gradle.check") version PluginVersions.fixers
-	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
+//	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
 }
 
 allprojects {
@@ -90,30 +89,6 @@ val aggregateTestResults by tasks.registering {
 		}
 	}
 }
-
-
-//tasks {
-//
-//	create<com.moowork.gradle.node.yarn.YarnTask>("installYarn") {
-//		dependsOn("build")
-//		args = listOf("install")
-//	}
-//
-//	create<com.moowork.gradle.node.yarn.YarnTask>("storybook") {
-//		dependsOn("yarn_install")
-//		args = listOf("storybook")
-//	}
-//}
-
-//subprojects {
-//	pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
-//		tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinJsCompile::class.java).configureEach {
-//			compilerOptions {
-//				target.set("es2015")
-//			}
-//		}
-//	}
-//}
 
 fixers {
 //	d2 {
