@@ -115,7 +115,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
 		}.map { item ->
-			item?.let { JsonUtils.mapper.readValue(it, SsmSessionState::class.java) }
+			item?.let { JsonUtils.toObject(it, SsmSessionState::class.java) }
 		}
 
 	}
@@ -127,7 +127,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
 		}.map { item ->
-			item?.let { JsonUtils.mapper.readValue(it, Transaction::class.java) }
+			item?.let { JsonUtils.toObject(it, Transaction::class.java) }
 		}
 
 	}
@@ -149,7 +149,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String>>() {})
 		}.map { item ->
-			item.let { JsonUtils.mapper.readValue(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
+			item.let { JsonUtils.toObject(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
 		}
 
 	}

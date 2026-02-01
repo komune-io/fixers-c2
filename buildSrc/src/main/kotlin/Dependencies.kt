@@ -72,8 +72,14 @@ object Dependencies {
 
 	fun springTest(scope: Scope) = scope.add(
 		"org.springframework.boot:spring-boot-starter-test:${Versions.springBoot}",
+		"org.springframework.boot:spring-boot-restclient:${Versions.springBoot}",
+		"org.springframework.boot:spring-boot-resttestclient:${Versions.springBoot}",
 		"io.projectreactor:reactor-test:${Versions.reactor}",
 		"org.assertj:assertj-core:${Versions.assertj}"
+	)
+
+	fun bouncyCastle(scope: Scope) = scope.add(
+		"org.bouncycastle:bcprov-jdk15on:${Versions.bouncycastleVersion}"
 	)
 }
 

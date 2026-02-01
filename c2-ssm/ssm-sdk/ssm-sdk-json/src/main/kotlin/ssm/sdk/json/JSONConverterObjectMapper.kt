@@ -6,6 +6,9 @@ class JSONConverterObjectMapper : JSONConverter {
 
 
 	override fun <T> toCompletableObjects(clazz: Class<T>, value: String): List<T> {
+		if (value.isBlank()) {
+			return emptyList()
+		}
 		val type: TypeReference<List<T>> = object : TypeReference<List<T>>() {}
 		return JsonUtils.toObject(value, type)
 	}

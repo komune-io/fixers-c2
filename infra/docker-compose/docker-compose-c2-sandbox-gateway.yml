@@ -3,7 +3,9 @@ services:
     container_name: coop-rest-bclan-${DOCKER_NETWORK}
     image: ${DOCKER_REPOSITORY}c2-sandbox-ssm-gateway:${VERSION_C2}
     environment:
-      - i2_jwt-issuer-uri=
+      # Increase direct buffer memory for Netty (Paketo default 10M is too low)
+      # This appends to JAVA_TOOL_OPTIONS; JVM uses last value for duplicate flags
+      - JAVA_TOOL_OPTIONS=-XX:MaxDirectMemorySize=256m
     ports:
       - "9090:9090"
     networks:
