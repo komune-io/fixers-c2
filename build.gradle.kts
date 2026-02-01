@@ -6,11 +6,10 @@ plugins {
 	id("org.graalvm.buildtools.native") version PluginVersions.graalvm apply false
 
 	id("dev.petuska.npm.publish") version PluginVersions.npmPublish apply false
-	id("com.moowork.node") version "1.2.0"
 
 	id("io.komune.fixers.gradle.config") version PluginVersions.fixers
 	id("io.komune.fixers.gradle.check") version PluginVersions.fixers
-	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
+//	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
 }
 
 allprojects {
@@ -91,24 +90,10 @@ val aggregateTestResults by tasks.registering {
 	}
 }
 
-
-tasks {
-
-	create<com.moowork.gradle.node.yarn.YarnTask>("installYarn") {
-		dependsOn("build")
-		args = listOf("install")
-	}
-
-	create<com.moowork.gradle.node.yarn.YarnTask>("storybook") {
-		dependsOn("yarn_install")
-		args = listOf("storybook")
-	}
-}
-
 fixers {
-	d2 {
-		outputDirectory = file("storybook/stories/d2/")
-	}
+//	d2 {
+//		outputDirectory = file("storybook/stories/d2/")
+//	}
 	bundle {
 		id = "c2"
 		name = "Chaincode Api and signed state machine"

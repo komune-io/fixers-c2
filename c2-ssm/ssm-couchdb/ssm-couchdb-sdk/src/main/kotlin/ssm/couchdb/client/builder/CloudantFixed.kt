@@ -15,7 +15,7 @@ import com.ibm.cloud.sdk.core.util.Validator
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmName
 
-@Suppress("LongMethod", "ComplexMethod")
+@Suppress("LongMethod", "ComplexMethod", "CyclomaticComplexMethod")
 class CloudantFixed(
 	serviceName: String,
 	authenticator: Authenticator

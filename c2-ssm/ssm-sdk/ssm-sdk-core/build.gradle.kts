@@ -14,6 +14,7 @@ dependencies {
 //	api("io.ktor:ktor-client-content-negotiation:2.0.0")
 
 	Dependencies.ktor(::implementation)
+	Dependencies.jackson(::implementation)
 
 	testImplementation(project(":c2-ssm:ssm-sdk:ssm-sdk-bdd"))
 }

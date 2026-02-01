@@ -5,6 +5,5 @@ plugins {
 
 dependencies {
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-dsl"))
-	implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncycastleVersion}")
-
+	Dependencies.bouncyCastle(::implementation)
 }

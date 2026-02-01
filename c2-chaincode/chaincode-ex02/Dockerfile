@@ -1,8 +1,8 @@
 ARG VERSION
-ARG VERSION_ALPINE
-ARG VERSION_FABRIC
+ARG VERSION_ALPINE=3.19
+ARG VERSION_FABRIC=2.5.7
 
-FROM hyperledger/fabric-tools:${VERSION_FABRIC} as BUILDER
+FROM hyperledger/fabric-tools:${VERSION_FABRIC} AS builder
 
 ARG VERSION
 
@@ -25,11 +25,11 @@ ARG VERSION
 
 WORKDIR /opt/chaincode/ex02
 
-LABEL org.opencontainers.image.source https://github.com/komune-io/connect-ssm
+LABEL org.opencontainers.image.source="https://github.com/komune-io/connect-ssm"
 
 RUN echo "CHAINCODE=ex02" > env_ex02 \
     && echo VERSION=${VERSION} >> env_ex02
 
 COPY ./chaincode ./chaincode
 
-COPY --from=BUILDER /go/src/chaincode-ex02/ex02-${VERSION}.pak ./
+COPY --from=builder /go/src/chaincode-ex02/ex02-${VERSION}.pak ./

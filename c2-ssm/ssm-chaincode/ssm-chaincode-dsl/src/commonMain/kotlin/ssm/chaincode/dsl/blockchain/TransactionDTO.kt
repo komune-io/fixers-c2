@@ -20,8 +20,8 @@ interface TransactionDTO {
 	val blockId: BlockId
 
 	/**
-	 * Execution date of the transaction
-	 * @example 1627984925000
+	 * Execution date of the transaction as epoch milliseconds
+	 * @example 1738410430231
 	 */
 	val timestamp: Long
 
@@ -43,20 +43,22 @@ interface TransactionDTO {
 	val creator: IdentitiesInfoDTO
 
 	/**
-	 * TODO
-	 * @example "TODO"
+	 * Random value used to prevent replay attacks.
+	 * Each transaction includes a unique nonce to ensure it cannot be submitted twice.
+	 * @example "j/gVtg9VQ+8tvui/GTyxlILV8HIakce3"
 	 */
 	val nonce: ByteArray
 
 	/**
-	 * TODO
-	 * @example "TODO"
+	 * Type of the transaction envelope.
+	 * @example [EnvelopeType.TRANSACTION_ENVELOPE]
 	 */
 	val type: EnvelopeType
 
 	/**
-	 * TODO
-	 * @example "TODO"
+	 * Validation status code returned by the peer.
+	 * 0 indicates a valid transaction, other values indicate validation errors.
+	 * @example 0
 	 */
 	val validationCode: Byte
 }

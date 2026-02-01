@@ -1,11 +1,7 @@
-version: '3.8'
-
 services:
   coop-rest-java:
     container_name: coop-rest-bclan-${DOCKER_NETWORK}
     image: ${DOCKER_REPOSITORY}c2-sandbox-ssm-gateway:${VERSION_C2}
-    environment:
-      - i2_jwt-issuer-uri=
     ports:
       - "9090:9090"
     networks:

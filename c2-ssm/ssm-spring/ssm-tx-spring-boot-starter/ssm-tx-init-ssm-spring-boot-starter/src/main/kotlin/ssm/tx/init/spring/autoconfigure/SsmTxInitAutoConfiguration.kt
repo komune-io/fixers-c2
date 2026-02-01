@@ -8,7 +8,6 @@ import ssm.chaincode.f2.features.command.SsmTxCreateFunctionImpl
 import ssm.chaincode.f2.features.command.SsmTxInitFunctionImpl
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
-import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
 
 @Configuration(proxyBeanMethods = false)
@@ -20,7 +19,6 @@ class SsmTxInitAutoConfiguration {
 	fun ssmTxInitFunction(
 		ssmTxService: SsmTxService,
 		ssmQueryService: SsmQueryService,
-		properties: SsmTxProperties
 	): SsmTxInitFunction {
 		return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
 	}

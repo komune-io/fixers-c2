@@ -55,6 +55,7 @@ class SsmTxInitFunctionImpl(
 		}
 	}
 
+	@Suppress("TooGenericExceptionCaught")
 	private suspend fun createSsm(chaincodeUri: ChaincodeUri, ssm: Ssm, signerName: AgentName): InvokeReturn {
 		try {
 			return txService.sendCreate(chaincodeUri, ssm, signerName)
@@ -63,6 +64,7 @@ class SsmTxInitFunctionImpl(
 		}
 	}
 
+	@Suppress("TooGenericExceptionCaught")
 	private suspend fun createUser(chaincodeUri: ChaincodeUri, agent: Agent, signerName: AgentName): InvokeReturn? {
 		try {
 			return txService.sendRegisterUser(chaincodeUri, agent, signerName)

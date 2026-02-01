@@ -33,7 +33,6 @@ include(
 
 include(
 	"c2-ssm:ssm-data:ssm-data-bdd",
-	"c2-ssm:ssm-data:ssm-data-client",
 	"c2-ssm:ssm-data:ssm-data-dsl",
 	"c2-ssm:ssm-data:ssm-data-f2",
 	"c2-ssm:ssm-data:ssm-data-sync",

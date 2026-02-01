@@ -17,6 +17,7 @@ class CouchdbDatabaseGetQueryFunctionImpl(
 
 	private fun DatabaseInformation.asDatabase() = Database(this.dbName)
 
+	@Suppress("TooGenericExceptionCaught")
 	override suspend fun invoke(
 		msgs: Flow<CouchdbDatabaseGetQueryDTO>
 	): Flow<CouchdbDatabaseGetQueryResultDTO> = msgs.map { payload ->

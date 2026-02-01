@@ -20,6 +20,7 @@ class CouchDbDatabaseGetChangesQueryFunctionImpl(
 
 	private val logger = LoggerFactory.getLogger(CouchDbDatabaseGetChangesQueryFunctionImpl::class.java)
 
+	@Suppress("TooGenericExceptionCaught")
 	override suspend fun invoke(msgs: Flow<CouchdbDatabaseGetChangesQueryDTO>)
 	: Flow<CouchdbDatabaseGetChangesQueryResultDTO> = msgs.map { payload ->
 		try {

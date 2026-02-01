@@ -1,6 +1,6 @@
 package ssm.sdk.core
 
-import com.fasterxml.jackson.core.type.TypeReference
+import tools.jackson.core.type.TypeReference
 import ssm.chaincode.dsl.blockchain.Block
 import ssm.chaincode.dsl.blockchain.BlockId
 import ssm.chaincode.dsl.blockchain.Transaction
@@ -24,6 +24,7 @@ import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.json.JsonUtils
 
+@Suppress("TooManyFunctions")
 class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI {
 	override suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName> {
 		val query = AdminQuery()
@@ -114,7 +115,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
 		}.map { item ->
-			item?.let { JsonUtils.mapper.readValue(it, SsmSessionState::class.java) }
+			item?.let { JsonUtils.toObject(it, SsmSessionState::class.java) }
 		}
 
 	}
@@ -126,7 +127,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
 		}.map { item ->
-			item?.let { JsonUtils.mapper.readValue(it, Transaction::class.java) }
+			item?.let { JsonUtils.toObject(it, Transaction::class.java) }
 		}
 
 	}
@@ -148,7 +149,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<String>>() {})
 		}.map { item ->
-			item.let { JsonUtils.mapper.readValue(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
+			item.let { JsonUtils.toObject(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
 		}
 
 	}

@@ -12,7 +12,10 @@ build:
 	make build -C chaincode-ex02
 	make build -C chaincode-ssm
 
-push:
+stage:
 	make push -C chaincode-ex02
 	make push -C chaincode-ssm
 
+promote:
+	make push -C chaincode-ex02
+	make push -C chaincode-ssm
