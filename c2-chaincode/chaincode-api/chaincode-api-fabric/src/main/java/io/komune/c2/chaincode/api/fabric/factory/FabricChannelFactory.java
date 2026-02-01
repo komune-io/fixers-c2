@@ -33,15 +33,13 @@ public class FabricChannelFactory {
         if(client.getChannel(channelName) != null) {
             return client.getChannel(channelName);
         }
+
         OrdererConfig ordererConfig = fabricConfig.getNetwork().getOrderer();
 
         Orderer orderer = client.newOrderer(ordererConfig.getServerHostname(), ordererConfig.getUrl(), ordererConfig.getPeerTlsProperties(cryptoConfigBase));
-
         Channel channel = client.newChannel(channelName);
         addPeers(endorsers, channel, client);
-        return channel
-                .addOrderer(orderer)
-                .initialize();
+        return channel.addOrderer(orderer).initialize();
     }
 
     private void addPeers(List<Endorser> endorsers, Channel channel, HFClient client) throws InvalidArgumentException, IOException {

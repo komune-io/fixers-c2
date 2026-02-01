@@ -45,7 +45,6 @@ public class FabricChainCodeClient {
     public String query(List<Endorser> endorsers, HFClient client, String channelName, String chainId, InvokeArgs invokeArgs) throws Exception {
         Channel channel = channelFactory.getChannel(endorsers, client, channelName);
         ChaincodeID chainCodeId = ChaincodeID.newBuilder().setName(chainId).build();
-        logger.info("channelName["+channelName+"], chainId["+chainId+"]");
         return queryBlockChain(client, channel, chainCodeId, invokeArgs);
     }
 

@@ -13,9 +13,9 @@ class FabricClientProvider(
 	private var client: MutableMap<ChannelId, HFClient> = mutableMapOf()
 
 	fun get(channelId: ChannelId): HFClient {
-		return client.getOrPut(channelId, {
+		return client.getOrPut(channelId) {
 			build(channelId)
-		})
+		}
 	}
 
 	private fun build(channelId: ChannelId): HFClient {
@@ -26,8 +26,6 @@ class FabricClientProvider(
 			.enroll(config.user.name, config.user.password, config.user.org)
 		return clientFactory.getHfClient(user)
 	}
-
 }
 
 class ChannelConfigNotFoundException(channelId: ChannelId) : Exception(channelId)
-
