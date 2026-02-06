@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class FabricChainCodeClient {
 
-    private Logger logger = LoggerFactory.getLogger(FabricChainCodeClient.class);
+    private final Logger logger = LoggerFactory.getLogger(FabricChainCodeClient.class);
 
     public static FabricChainCodeClient fromConfigFile(String filename, String cryptoConfigBase) throws IOException {
         FabricConfig fabricConfig = FabricConfig.loadFromFile(filename);
@@ -56,14 +56,12 @@ public class FabricChainCodeClient {
 
             if(errors.size() >= responses.size()) {
                 StringJoiner joiner = new StringJoiner(",");
-                errors.forEach(error -> joiner.add(error));
-                logger.info("Transaction["+invokeArgs.getFunction()+"] errors: " + joiner.toString());
+                errors.forEach(joiner::add);
+                logger.info("Transaction[{}] errors: {}", invokeArgs.getFunction(), joiner);
                 throw new InvokeException(errors);
             }
             return channel.sendTransaction(responses);
-        } catch (ProposalException e) {
-            throw new InvokeException(e);
-        } catch (InvalidArgumentException e) {
+        } catch (ProposalException | InvalidArgumentException e) {
             throw new InvokeException(e);
         }
     }
@@ -76,7 +74,7 @@ public class FabricChainCodeClient {
         return qpr;
     }
 
-    private List<String> checkProposals(Collection<ProposalResponse> responses) throws InvokeException {
+    private List<String> checkProposals(Collection<ProposalResponse> responses) {
         List<String> errors = new ArrayList<>();
         for(ProposalResponse res : responses) {
             if(res.isInvalid()){

@@ -10,7 +10,7 @@ import io.komune.c2.chaincode.api.fabric.factory.FabricClientFactory
 class FabricClientBuilder(val coopConfig: HeraclesConfigProps) {
 
 	fun getChannelConfig(channelId: ChannelId): ChannelChaincode {
-		return coopConfig.getChannelChaincodes().get(channelId)
+		return coopConfig.getChannelChaincodes()[channelId]
 			?: throw ChannelConfigNotFoundException(channelId)
 	}
 

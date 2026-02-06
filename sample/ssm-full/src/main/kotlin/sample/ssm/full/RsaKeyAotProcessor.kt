@@ -10,7 +10,7 @@ class RsaKeyAotProcessor : BeanFactoryInitializationAotProcessor {
 
     override fun processAheadOfTime(bf: ConfigurableListableBeanFactory): BeanFactoryInitializationAotContribution {
         return  BeanFactoryInitializationAotContribution {
-            ctx: GenerationContext, code: BeanFactoryInitializationCode? ->
+            ctx: GenerationContext, _: BeanFactoryInitializationCode? ->
             val hints = ctx.runtimeHints
             hints.resources().registerPattern("user/adam")
             hints.resources().registerPattern("user/adam.pub")

@@ -21,6 +21,11 @@ import ssm.sdk.sign.model.SignerUser
 
 abstract class SsmCommandStep {
 
+	companion object {
+		private const val DEFAULT_ADMIN_NAME = "ssm-admin"
+		private const val DEFAULT_ADMIN_KEY = "local/admin/ssm-admin"
+	}
+
 	lateinit var bag: SsmCucumberBag
 	lateinit var config: SsmChaincodeProperties
 
@@ -59,7 +64,7 @@ abstract class SsmCommandStep {
 			val contextUser = userName.contextualize(bag)
 			bag.userSigners[contextUser] = SignerUser.generate(contextUser)
 			runBlocking {
-				registerUser(bag.userSigners[contextUser]!!.asAgent())
+				registerUser(bag.userSigners.getValue(contextUser).asAgent())
 			}
 		}
 
@@ -67,7 +72,7 @@ abstract class SsmCommandStep {
 			val contextSsm = ssmName.contextualize(bag)
 			bag.ssms[contextSsm] = SsmJsonReader().readSsm(ssmConfigFile, contextSsm)
 			runBlocking {
-				createSsm(bag.ssms[contextSsm]!!)
+				createSsm(bag.ssms.getValue(contextSsm))
 			}
 		}
 
@@ -78,7 +83,7 @@ abstract class SsmCommandStep {
 				name = contextSsm
 			)
 			runBlocking {
-				createSsm(bag.ssms[contextSsm]!!)
+				createSsm(bag.ssms.getValue(contextSsm))
 			}
 		}
 
@@ -101,7 +106,7 @@ abstract class SsmCommandStep {
 				if(!bag.userSigners.containsKey(contextUser)){
 					bag.userSigners[contextUser] = createUser(contextUser)
 				}
-				val user = bag.userSigners[contextUser]!!.asAgent()
+				val user = bag.userSigners.getValue(contextUser).asAgent()
 				registerUser(user)
 			}
 		}
@@ -110,7 +115,7 @@ abstract class SsmCommandStep {
 			bag.ssms[contextSsm] = SsmJsonReader().readSsm(ssmConfigFile, contextSsm)
 			runBlocking {
 
-				createSsm(bag.ssms[contextSsm]!!)
+				createSsm(bag.ssms.getValue(contextSsm))
 			}
 		}
 		When("I create a ssm {string} with transitions") { ssmName: SsmName, table: DataTable ->
@@ -120,7 +125,7 @@ abstract class SsmCommandStep {
 				name = contextSsm
 			)
 			runBlocking {
-				createSsm(bag.ssms[contextSsm]!!)
+				createSsm(bag.ssms.getValue(contextSsm))
 			}
 		}
 		When("I start a session {string} for {string}") { sessionName: SessionName, ssmName: SsmName, table: DataTable ->
@@ -141,7 +146,7 @@ abstract class SsmCommandStep {
 			runBlocking {
 				table.asPerformAction().forEach { perform ->
 					val contextUser = perform.userName
-					val signer = bag.userSigners[contextUser]!!
+					val signer = bag.userSigners.getValue(contextUser)
 					val context = SsmContext(
 						session = perform.sessionName,
 						public = perform.public,
@@ -205,13 +210,13 @@ abstract class SsmCommandStep {
 	private fun loadSignerAdmin(adminName: AgentName? = null, filename: String? = null): SignerAdmin {
 		return when {
 			adminName != null -> {
-				SignerAdmin.loadFromFile("ssm-admin", filename)
+				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, filename)
 			}
 			System.getProperty("profile") == "local" -> {
-				SignerAdmin.loadFromFile("ssm-admin", "local/admin/ssm-admin")
+				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_KEY)
 			}
 			else -> {
-				SignerAdmin.loadFromFile("ssm-admin", "local/admin/ssm-admin")
+				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_KEY)
 			}
 		}
 	}
