@@ -1,11 +1,14 @@
 package io.komune.c2.chaincode.api.fabric;
 
+import java.util.UUID;
 import org.hyperledger.fabric.sdk.User;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
 
-import static io.komune.c2.chaincode.api.fabric.FabricChainCodeClientTest.*;
+import static io.komune.c2.chaincode.api.fabric.FabricChainCodeClientTest.CLIENT_CONFIG;
+import static io.komune.c2.chaincode.api.fabric.FabricChainCodeClientTest.CRYPTO_CONFIG;
+import static io.komune.c2.chaincode.api.fabric.FabricChainCodeClientTest.USER_NAME;
+import static io.komune.c2.chaincode.api.fabric.FabricChainCodeClientTest.USER_PASSWORD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FabricUserClientTest {

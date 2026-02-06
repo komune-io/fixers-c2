@@ -5,18 +5,23 @@ import io.komune.c2.chaincode.api.fabric.exception.InvokeException;
 import io.komune.c2.chaincode.api.fabric.factory.FabricChannelFactory;
 import io.komune.c2.chaincode.api.fabric.model.Endorser;
 import io.komune.c2.chaincode.api.fabric.model.InvokeArgs;
-import org.hyperledger.fabric.sdk.*;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.hyperledger.fabric.sdk.exception.ProposalException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import org.hyperledger.fabric.sdk.BlockEvent;
+import org.hyperledger.fabric.sdk.ChaincodeID;
+import org.hyperledger.fabric.sdk.Channel;
+import org.hyperledger.fabric.sdk.HFClient;
+import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
+import org.hyperledger.fabric.sdk.TransactionProposalRequest;
+import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
+import org.hyperledger.fabric.sdk.exception.ProposalException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FabricChainCodeClient {
 

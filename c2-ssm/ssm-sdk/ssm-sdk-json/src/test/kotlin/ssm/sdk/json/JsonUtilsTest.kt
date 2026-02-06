@@ -1,10 +1,10 @@
 package ssm.sdk.json
 
+import java.time.Instant
+import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import tools.jackson.core.type.TypeReference
-import java.time.Instant
-import java.time.LocalDateTime
 
 internal class JsonUtilsTest {
 

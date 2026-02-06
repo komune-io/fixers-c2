@@ -6,13 +6,13 @@ import io.komune.c2.chaincode.api.fabric.config.FabricConfig;
 import io.komune.c2.chaincode.api.fabric.factory.FabricClientFactory;
 import io.komune.c2.chaincode.api.fabric.model.Endorser;
 import io.komune.c2.chaincode.api.fabric.model.InvokeArgs;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.hyperledger.fabric.sdk.User;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -5,15 +5,14 @@ import io.komune.c2.chaincode.api.fabric.config.OrdererConfig;
 import io.komune.c2.chaincode.api.fabric.config.OrganisationConfig;
 import io.komune.c2.chaincode.api.fabric.config.PeerConfig;
 import io.komune.c2.chaincode.api.fabric.model.Endorser;
+import java.io.IOException;
+import java.util.List;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.HFClient;
 import org.hyperledger.fabric.sdk.Orderer;
 import org.hyperledger.fabric.sdk.Peer;
 import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric.sdk.exception.TransactionException;
-
-import java.io.IOException;
-import java.util.List;
 
 public class FabricChannelFactory {
 

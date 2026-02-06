@@ -3,12 +3,11 @@ package io.komune.c2.chaincode.api.fabric;
 import io.komune.c2.chaincode.api.fabric.config.FabricConfig;
 import io.komune.c2.chaincode.api.fabric.factory.FabricClientFactory;
 import io.komune.c2.chaincode.api.fabric.model.FabricUser;
+import java.io.IOException;
 import org.hyperledger.fabric.sdk.Enrollment;
 import org.hyperledger.fabric.sdk.User;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.hyperledger.fabric_ca.sdk.RegistrationRequest;
-
-import java.io.IOException;
 
 public class FabricUserClient {
 

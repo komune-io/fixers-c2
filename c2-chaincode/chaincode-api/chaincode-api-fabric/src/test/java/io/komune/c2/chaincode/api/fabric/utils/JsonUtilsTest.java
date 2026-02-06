@@ -1,11 +1,11 @@
 package io.komune.c2.chaincode.api.fabric.utils;
 
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

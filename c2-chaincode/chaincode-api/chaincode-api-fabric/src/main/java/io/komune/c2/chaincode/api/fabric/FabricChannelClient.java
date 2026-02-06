@@ -3,6 +3,8 @@ package io.komune.c2.chaincode.api.fabric;
 import io.komune.c2.chaincode.api.fabric.config.FabricConfig;
 import io.komune.c2.chaincode.api.fabric.factory.FabricChannelFactory;
 import io.komune.c2.chaincode.api.fabric.model.Endorser;
+import java.io.IOException;
+import java.util.List;
 import org.hyperledger.fabric.sdk.BlockInfo;
 import org.hyperledger.fabric.sdk.Channel;
 import org.hyperledger.fabric.sdk.HFClient;
@@ -10,9 +12,6 @@ import org.hyperledger.fabric.sdk.TransactionInfo;
 import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric.sdk.exception.ProposalException;
 import org.hyperledger.fabric.sdk.exception.TransactionException;
-
-import java.io.IOException;
-import java.util.List;
 
 public class FabricChannelClient {
 

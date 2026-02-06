@@ -1,6 +1,5 @@
 package ssm.sdk.core
 
-import tools.jackson.core.type.TypeReference
 import ssm.chaincode.dsl.blockchain.Block
 import ssm.chaincode.dsl.blockchain.BlockId
 import ssm.chaincode.dsl.blockchain.Transaction
@@ -23,6 +22,7 @@ import ssm.sdk.core.invoke.query.TransactionQuery
 import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.json.JsonUtils
+import tools.jackson.core.type.TypeReference
 
 @Suppress("TooManyFunctions")
 class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI {
