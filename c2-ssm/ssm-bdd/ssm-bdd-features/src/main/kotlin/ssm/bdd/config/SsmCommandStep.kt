@@ -208,17 +208,9 @@ abstract class SsmCommandStep {
 	protected abstract suspend fun registerUser(agent: Agent)
 
 	private fun loadSignerAdmin(adminName: AgentName? = null, filename: String? = null): SignerAdmin {
-		return when {
-			adminName != null -> {
-				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, filename)
-			}
-			System.getProperty("profile") == "local" -> {
-				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_KEY)
-			}
-			else -> {
-				SignerAdmin.loadFromFile(DEFAULT_ADMIN_NAME, DEFAULT_ADMIN_KEY)
-			}
-		}
+		val name = adminName ?: DEFAULT_ADMIN_NAME
+		val keyFile = filename ?: DEFAULT_ADMIN_KEY
+		return SignerAdmin.loadFromFile(name, keyFile)
 	}
 
 	protected abstract suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser

@@ -57,7 +57,7 @@ public class FabricChainCodeClient {
             if(errors.size() >= responses.size()) {
                 StringJoiner joiner = new StringJoiner(",");
                 errors.forEach(joiner::add);
-                logger.info("Transaction[{}] errors: {}", invokeArgs.getFunction(), joiner);
+                logger.error("Transaction[{}] errors: {}", invokeArgs.getFunction(), joiner);
                 throw new InvokeException(errors);
             }
             return channel.sendTransaction(responses);
