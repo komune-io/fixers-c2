@@ -1,10 +1,11 @@
 package ssm.sdk.json
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import tools.jackson.core.type.TypeReference
 import java.time.Instant
 import java.time.LocalDateTime
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import ssm.chaincode.dsl.model.Agent
+import tools.jackson.core.type.TypeReference
 
 internal class JsonUtilsTest {
 
@@ -77,6 +78,23 @@ internal class JsonUtilsTest {
 		val result: ItemWithValue = JsonUtils.toObject(json)
 		assertThat(result.name).isEqualTo("inferred")
 		assertThat(result.value).isEqualTo(42)
+	}
+
+	@Test
+	fun `deserialize Agent from JSON`() {
+		val json = """{"name":"Adam","pub":"AQID"}"""
+		val result = JsonUtils.toObject(json, Agent::class.java)
+		assertThat(result.name).isEqualTo("Adam")
+		assertThat(result.pub).isEqualTo(byteArrayOf(1, 2, 3))
+	}
+
+	@Test
+	fun `roundtrip Agent serialization`() {
+		val original = Agent("Adam", byteArrayOf(1, 2, 3))
+		val json = JsonUtils.toJson(original)
+		val result = JsonUtils.toObject(json, Agent::class.java)
+		assertThat(result.name).isEqualTo(original.name)
+		assertThat(result.pub).isEqualTo(original.pub)
 	}
 }
 

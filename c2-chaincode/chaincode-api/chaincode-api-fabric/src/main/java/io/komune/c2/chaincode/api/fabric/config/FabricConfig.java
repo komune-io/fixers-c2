@@ -3,7 +3,6 @@ package io.komune.c2.chaincode.api.fabric.config;
 
 import io.komune.c2.chaincode.api.fabric.utils.FileUtils;
 import io.komune.c2.chaincode.api.fabric.utils.JsonUtils;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;

@@ -1,11 +1,10 @@
 package io.komune.c2.chaincode.api.fabric.utils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import tools.jackson.databind.json.JsonMapper;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JsonUtils {
 

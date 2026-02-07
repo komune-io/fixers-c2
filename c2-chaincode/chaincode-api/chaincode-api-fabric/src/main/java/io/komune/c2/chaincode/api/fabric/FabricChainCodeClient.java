@@ -5,22 +5,27 @@ import io.komune.c2.chaincode.api.fabric.exception.InvokeException;
 import io.komune.c2.chaincode.api.fabric.factory.FabricChannelFactory;
 import io.komune.c2.chaincode.api.fabric.model.Endorser;
 import io.komune.c2.chaincode.api.fabric.model.InvokeArgs;
-import org.hyperledger.fabric.sdk.*;
-import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
-import org.hyperledger.fabric.sdk.exception.ProposalException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import org.hyperledger.fabric.sdk.BlockEvent;
+import org.hyperledger.fabric.sdk.ChaincodeID;
+import org.hyperledger.fabric.sdk.Channel;
+import org.hyperledger.fabric.sdk.HFClient;
+import org.hyperledger.fabric.sdk.ProposalResponse;
+import org.hyperledger.fabric.sdk.QueryByChaincodeRequest;
+import org.hyperledger.fabric.sdk.TransactionProposalRequest;
+import org.hyperledger.fabric.sdk.exception.InvalidArgumentException;
+import org.hyperledger.fabric.sdk.exception.ProposalException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FabricChainCodeClient {
 
-    private Logger logger = LoggerFactory.getLogger(FabricChainCodeClient.class);
+    private final Logger logger = LoggerFactory.getLogger(FabricChainCodeClient.class);
 
     public static FabricChainCodeClient fromConfigFile(String filename, String cryptoConfigBase) throws IOException {
         FabricConfig fabricConfig = FabricConfig.loadFromFile(filename);
@@ -56,14 +61,12 @@ public class FabricChainCodeClient {
 
             if(errors.size() >= responses.size()) {
                 StringJoiner joiner = new StringJoiner(",");
-                errors.forEach(error -> joiner.add(error));
-                logger.info("Transaction["+invokeArgs.getFunction()+"] errors: " + joiner.toString());
+                errors.forEach(joiner::add);
+                logger.error("Transaction[{}] errors: {}", invokeArgs.getFunction(), joiner);
                 throw new InvokeException(errors);
             }
             return channel.sendTransaction(responses);
-        } catch (ProposalException e) {
-            throw new InvokeException(e);
-        } catch (InvalidArgumentException e) {
+        } catch (ProposalException | InvalidArgumentException e) {
             throw new InvokeException(e);
         }
     }
@@ -76,7 +79,7 @@ public class FabricChainCodeClient {
         return qpr;
     }
 
-    private List<String> checkProposals(Collection<ProposalResponse> responses) throws InvokeException {
+    private List<String> checkProposals(Collection<ProposalResponse> responses) {
         List<String> errors = new ArrayList<>();
         for(ProposalResponse res : responses) {
             if(res.isInvalid()){

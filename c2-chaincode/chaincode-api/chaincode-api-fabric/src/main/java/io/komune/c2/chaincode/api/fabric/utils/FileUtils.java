@@ -1,7 +1,6 @@
 package io.komune.c2.chaincode.api.fabric.utils;
 
 import com.google.common.io.Resources;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 

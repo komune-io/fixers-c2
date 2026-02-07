@@ -8,6 +8,9 @@ import ssm.data.dsl.config.DataSsmConfig
 
 object SsmBddConfig {
 
+	private const val SEPARATOR_SLASH = "//////////////////////////////////////////////"
+	private const val SEPARATOR_STAR = "**********************************************"
+
 	object Commune {
 		object Chaincode {
 			const val url = "http://peer0.pr-commune.Komune.io"
@@ -33,28 +36,27 @@ object SsmBddConfig {
 			const val password = "couchdb"
 		}
 
-//		const val ssmAgent = "local/admin/ssm-admin"
 	}
 
 	fun String.orIfGitlab(value: String): String {
 		return if (System.getenv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-			println("//////////////////////////////////////////////")
-			println("//////////////////////////////////////////////")
-			println("//////////////////////////////////////////////")
+			println(SEPARATOR_SLASH)
+			println(SEPARATOR_SLASH)
+			println(SEPARATOR_SLASH)
 			value
 		} else {
-			println("**********************************************")
-			println("**********************************************")
-			println("**********************************************")
+			println(SEPARATOR_STAR)
+			println(SEPARATOR_STAR)
+			println(SEPARATOR_STAR)
 			this
 		}
 	}
 
 	fun String.orIfGitlabEnv(value: String): String {
 		return if (getEnv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-			println("//////////////////////////////////////////////")
-			println("//////////////////////////////////////////////")
-			println("//////////////////////////////////////////////")
+			println(SEPARATOR_SLASH)
+			println(SEPARATOR_SLASH)
+			println(SEPARATOR_SLASH)
 			getEnv(value)
 		} else {
 			this

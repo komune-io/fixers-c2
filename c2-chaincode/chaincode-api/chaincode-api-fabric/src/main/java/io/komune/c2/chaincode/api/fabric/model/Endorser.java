@@ -1,7 +1,6 @@
 package io.komune.c2.chaincode.api.fabric.model;
 
 import com.google.common.base.Splitter;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;

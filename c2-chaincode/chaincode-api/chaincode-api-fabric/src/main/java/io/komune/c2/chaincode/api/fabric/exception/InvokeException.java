@@ -2,7 +2,6 @@ package io.komune.c2.chaincode.api.fabric.exception;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-
 import java.util.List;
 
 public class InvokeException extends Exception {

@@ -1,11 +1,10 @@
 package io.komune.c2.chaincode.api.fabric.model;
 
 import com.google.common.collect.Sets;
-import org.hyperledger.fabric.sdk.Enrollment;
-import org.hyperledger.fabric.sdk.User;
-
 import java.util.Objects;
 import java.util.Set;
+import org.hyperledger.fabric.sdk.Enrollment;
+import org.hyperledger.fabric.sdk.User;
 
 public class FabricUser implements User {
 

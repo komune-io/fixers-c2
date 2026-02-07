@@ -27,7 +27,7 @@ class SsmCucumberBag(
 					uuid = UUID.randomUUID().toString()
 				}
 			}
-			return cucumbers[scenario.id]!!
+			return cucumbers.getValue(scenario.id)
 		}
 	}
 

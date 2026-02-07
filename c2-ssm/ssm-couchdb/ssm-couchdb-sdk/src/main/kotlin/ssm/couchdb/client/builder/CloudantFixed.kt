@@ -15,7 +15,7 @@ import com.ibm.cloud.sdk.core.util.Validator
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmName
 
-@Suppress("LongMethod", "ComplexMethod", "CyclomaticComplexMethod")
+@Suppress("LongMethod", "ComplexMethod", "CyclomaticComplexMethod", "CognitiveComplexity")
 class CloudantFixed(
 	serviceName: String,
 	authenticator: Authenticator
@@ -43,7 +43,6 @@ class CloudantFixed(
 
 		// SMART-B Use query last-event-id instead of header's one
 		if (postChangesOptions.lastEventId() != null) {
-//			builder.header("Last-Event-ID", postChangesOptions.lastEventId())
 			builder.query("last-event-id", postChangesOptions.lastEventId())
 		}
 		if (postChangesOptions.attEncodingInfo() != null) {
@@ -105,7 +104,6 @@ class CloudantFixed(
 			builder.query("session", session)
 		}
 
-//		builder.bodyJson(contentJson)
 		val responseConverter =
 			ResponseConverterUtils.getValue<ChangesResult>(object : TypeToken<ChangesResult?>() {}.type)
 		return createServiceCall(builder.build(), responseConverter)
