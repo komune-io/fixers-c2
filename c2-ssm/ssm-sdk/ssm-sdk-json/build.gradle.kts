@@ -5,4 +5,5 @@ plugins {
 
 dependencies {
 	Dependencies.jackson(::implementation)
+	testImplementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 }
