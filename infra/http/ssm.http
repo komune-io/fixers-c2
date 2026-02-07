@@ -1,0 +1,60 @@
+GET http://localhost:9090/?args=session&cmd=query&fcn=list
+
+###
+GET http://localhost:9090/?args=ssm&cmd=query&fcn=list
+
+
+###
+GET http://localhost:9090/?args=S2OrderBook-storing&cmd=query&fcn=ssm
+
+
+###
+GET http://localhost:9090/?args=session&cmd=query&fcn=list
+
+###
+GET http://localhost:9090/?args=2c973253-7661-41a8-b078-19c7dc3fa31a&cmd=query&fcn=session
+
+###
+GET http://localhost:9090/?args=Project&cmd=query&fcn=ssm
+
+
+###
+POST http://localhost:9090/invoke
+Content-Type: application/json
+
+[
+  {
+    "cmd" : "query",
+    "fcn" : "list",
+    "args" : ["session"],
+    "channelid" : "sandbox",
+    "chaincodeid" : "ssm"
+  }
+]
+###
+POST http://localhost:9090/invoke
+Content-Type: application/json
+
+[
+  {
+    "cmd" : "query",
+    "fcn" : "session",
+    "args" : ["000efa5c-0b89-481d-8133-0cc61fe0007d"],
+    "channelid" : "sandbox",
+    "chaincodeid" : "ssm"
+  }
+]
+
+###
+POST http://localhost:9090/invoke
+Content-Type: application/json
+
+[
+  {
+    "cmd" : "query",
+    "fcn" : "log",
+    "args" : ["000efa5c-0b89-481d-8133-0cc61fe0007d"],
+    "channelid" : "sandbox",
+    "chaincodeid" : "ssm"
+  }
+]
