@@ -10,9 +10,9 @@ dependencies {
 
 	api(project(":c2-ssm:ssm-spring:ssm-tx-spring-boot-starter:ssm-tx-config-spring-boot-starter"))
 
-	api("io.komune.f2:f2-spring-boot-starter-function:${Versions.f2}")
+	Dependencies.f2SpringFunction(::api)
 
-	kapt("org.springframework.boot:spring-boot-configuration-processor:${Versions.springBoot}")
+	Dependencies.springBootConfigProcessor(::kapt)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
 }

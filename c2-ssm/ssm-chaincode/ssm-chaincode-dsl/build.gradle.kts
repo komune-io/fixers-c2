@@ -6,6 +6,5 @@ plugins {
 }
 
 dependencies {
-	commonMainApi("io.komune.f2:f2-dsl-cqrs:${Versions.f2}")
-	commonMainApi("io.komune.f2:f2-dsl-function:${Versions.f2}")
+	Dependencies.f2Dsl(::commonMainApi)
 }

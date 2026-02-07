@@ -8,6 +8,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-json"))
 
-	api("com.ibm.cloud:cloudant:${Versions.cloudant}")
+	Dependencies.cloudant(::api)
 
 }
