@@ -48,14 +48,45 @@ object Dependencies {
 
 	fun jackson(scope: Scope) = FixersDependencies.Jvm.Json.jackson(scope)
 
+	fun f2Client(scope: Scope) = scope.add(
+		"io.komune.f2:f2-client-ktor:${Versions.f2}",
+		"io.komune.f2:f2-dsl-cqrs:${Versions.f2}",
+		"io.komune.f2:f2-dsl-function:${Versions.f2}"
+	)
+
+	fun f2Dsl(scope: Scope) = scope.add(
+		"io.komune.f2:f2-dsl-cqrs:${Versions.f2}",
+		"io.komune.f2:f2-dsl-function:${Versions.f2}"
+	)
+
+	fun f2SpringFunction(scope: Scope) = scope.add(
+		"io.komune.f2:f2-spring-boot-starter-function:${Versions.f2}"
+	)
+
+	fun f2SpringFunctionHttp(scope: Scope) = scope.add(
+		"io.komune.f2:f2-spring-boot-starter-function-http:${Versions.f2}"
+	)
+
 	fun f2Auth(scope: Scope) = scope.add(
 		"io.komune.f2:f2-spring-boot-starter-auth-tenant:${Versions.f2}"
+	)
+
+	fun cloudant(scope: Scope) = scope.add(
+		"com.ibm.cloud:cloudant:${Versions.cloudant}"
 	)
 
 	fun springWebFlux(scope: Scope) = scope.add(
 		"org.springframework.boot:spring-boot-starter-actuator:${Versions.springBoot}",
 		"org.springframework.boot:spring-boot-autoconfigure:${Versions.springBoot}",
 		"org.springframework.boot:spring-boot-starter-webflux:${Versions.springBoot}"
+	)
+
+	fun springBootConfigProcessor(scope: Scope) = scope.add(
+		"org.springframework.boot:spring-boot-configuration-processor:${Versions.springBoot}"
+	)
+
+	fun springBootStarterTest(scope: Scope) = scope.add(
+		"org.springframework.boot:spring-boot-starter-test:${Versions.springBoot}"
 	)
 
 	fun test(scope: Scope) = scope.add(

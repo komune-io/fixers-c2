@@ -1,2 +1,0 @@
-org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor=\
-sample.ssm.full.RsaKeyAotProcessor
