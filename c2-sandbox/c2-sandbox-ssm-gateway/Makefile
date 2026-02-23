@@ -23,7 +23,6 @@ build:
 	@docker build \
 	 	--platform=linux/amd64 \
 	 	--no-cache \
-    	--build-arg DOCKER_REPOSITORY=$$DOCKER_REPOSITORY \
     	--build-arg VERSION=$$VERSION \
     	--build-arg coop_channel=$$coop_channel \
     	--build-arg coop_ccid=$$coop_ccid \

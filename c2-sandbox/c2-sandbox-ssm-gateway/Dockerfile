@@ -1,7 +1,6 @@
 ARG VERSION=latest
-ARG DOCKER_REPOSITORY=
 
-FROM ${DOCKER_REPOSITORY}c2-chaincode-api-gateway:${VERSION}
+FROM c2-chaincode-api-gateway:${VERSION}
 
 ARG coop_channel
 ARG coop_ccid
