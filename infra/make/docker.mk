@@ -4,7 +4,10 @@ CHAINCODE_APP_NAME	   	 	:= c2-chaincode-api-gateway
 CHAINCODE_APP_IMG	    	:= ${CHAINCODE_APP_NAME}:${VERSION}
 CHAINCODE_APP_PACKAGE	   	:= :c2-chaincode:chaincode-api:chaincode-api-gateway:bootBuildImage
 
-.PHONY: lint build test stage promote
+.PHONY: clean lint build test stage promote
+
+clean:
+	docker rmi ${CHAINCODE_APP_IMG} 2>/dev/null || true
 
 lint:
 	make lint -C c2-chaincode -e VERSION=$(VERSION)

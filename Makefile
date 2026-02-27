@@ -1,8 +1,12 @@
 VERSION = $(shell cat VERSION)
 
-.PHONY: lint build test publish promote
+.PHONY: clean lint build test publish promote
 
 ## New
+clean:
+	@make -f infra/make/libs.mk clean
+	@make -f infra/make/docker.mk clean
+
 lint:
 	@make -f infra/make/libs.mk lint
 	@make -f infra/make/docker.mk lint
