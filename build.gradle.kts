@@ -9,6 +9,7 @@ plugins {
 
 	id("io.komune.fixers.gradle.config") version PluginVersions.fixers
 	id("io.komune.fixers.gradle.check") version PluginVersions.fixers
+	id("io.komune.fixers.gradle.publish") version PluginVersions.fixers
 //	id("io.komune.fixers.gradle.d2") version PluginVersions.d2
 }
 
