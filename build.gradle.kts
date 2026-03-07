@@ -22,6 +22,19 @@ allprojects {
 }
 
 subprojects {
+	pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+		dependencies {
+			"implementation"(platform("io.komune.f2:f2-bom:${Versions.f2}"))
+		}
+	}
+	pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+		dependencies {
+			"commonMainImplementation"(platform("io.komune.f2:f2-bom:${Versions.f2}"))
+		}
+	}
+}
+
+subprojects {
 	plugins.withType(dev.petuska.npm.publish.NpmPublishPlugin::class.java).whenPluginAdded {
 		the<dev.petuska.npm.publish.extension.NpmPublishExtension>().apply {
 			organization.set("komune")
