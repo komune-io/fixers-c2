@@ -1,6 +1,6 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.fixers.publish)
 }
 
 dependencies {
@@ -8,6 +8,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-json"))
 
-	Dependencies.cloudant(::api)
+	api(libs.cloudant)
 
 }

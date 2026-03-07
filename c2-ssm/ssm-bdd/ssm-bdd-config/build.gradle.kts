@@ -1,5 +1,5 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
+	alias(libs.plugins.fixers.kotlin.jvm)
 }
 
 dependencies {
@@ -7,6 +7,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-couchdb:ssm-couchdb-dsl"))
 	api(project(":c2-ssm:ssm-data:ssm-data-dsl"))
 
-	Dependencies.springBootStarterTest(::api)
-	Dependencies.cucumber(::api)
+	api(libs.spring.boot.starter.test)
+	api(libs.bundles.cucumber)
 }

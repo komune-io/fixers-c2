@@ -1,6 +1,6 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	kotlin("plugin.spring")
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.kotlin.spring)
 }
 
 dependencies {

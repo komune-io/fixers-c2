@@ -1,6 +1,6 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.mpp")
-	id("io.komune.fixers.gradle.publish")
+	alias(libs.plugins.fixers.kotlin.mpp)
+	alias(libs.plugins.fixers.publish)
 }
 
 dependencies {
