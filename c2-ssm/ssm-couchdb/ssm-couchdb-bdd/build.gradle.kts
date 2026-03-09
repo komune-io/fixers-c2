@@ -1,5 +1,5 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
+	alias(libs.plugins.fixers.kotlin.jvm)
 }
 
 dependencies {

@@ -1,8 +1,8 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
-	kotlin("plugin.spring")
-	kotlin("kapt")
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.fixers.publish)
+	alias(libs.plugins.kotlin.spring)
+	alias(libs.plugins.kotlin.kapt)
 }
 
 dependencies {
@@ -10,9 +10,9 @@ dependencies {
 
 	api(project(":c2-ssm:ssm-spring:ssm-tx-spring-boot-starter:ssm-tx-config-spring-boot-starter"))
 
-	Dependencies.f2SpringFunction(::api)
+	api(libs.f2.spring.starter.function)
 
-	Dependencies.springBootConfigProcessor(::kapt)
+	kapt(libs.spring.boot.configuration.processor)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
 }

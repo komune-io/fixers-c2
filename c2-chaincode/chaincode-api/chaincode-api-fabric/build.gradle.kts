@@ -1,12 +1,12 @@
 plugins {
-    id("io.komune.fixers.gradle.kotlin.jvm")
+    alias(libs.plugins.fixers.kotlin.jvm)
 }
 
 dependencies {
 
-    Dependencies.jackson(::implementation)
-    Dependencies.slf4j(::implementation)
-    Dependencies.fabricSdk(::api)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.slf4j.api)
+    api(libs.fabric.sdk.java)
 
-    Dependencies.test(::testImplementation)
+    testImplementation(libs.bundles.test)
 }

@@ -1,9 +1,9 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.fixers.publish)
 }
 
 dependencies {
-	Dependencies.jackson(::implementation)
+	implementation(libs.jackson.module.kotlin)
 	testImplementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 }

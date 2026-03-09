@@ -1,0 +1,94 @@
+[versions]
+fixers = "0.28.0-SNAPSHOT"
+kotlin = "2.3.0"
+spring-boot = "4.0.1"
+graalvm = "0.11.3"
+npm-publish = "3.5.3"
+fabric = "2.2.26"
+bouncycastle = "1.70"
+cloudant = "0.10.15"
+
+[libraries]
+# BOM
+f2-bom = { group = "io.komune.f2", name = "f2-bom", version.ref = "fixers" }
+
+# F2 (versions from BOM)
+f2-client-ktor = { group = "io.komune.f2", name = "f2-client-ktor" }
+f2-dsl-cqrs = { group = "io.komune.f2", name = "f2-dsl-cqrs" }
+f2-dsl-function = { group = "io.komune.f2", name = "f2-dsl-function" }
+f2-spring-starter-function = { group = "io.komune.f2", name = "f2-spring-boot-starter-function" }
+f2-spring-starter-function-http = { group = "io.komune.f2", name = "f2-spring-boot-starter-function-http" }
+f2-spring-starter-auth-tenant = { group = "io.komune.f2", name = "f2-spring-boot-starter-auth-tenant" }
+
+# Ktor (versions from BOM)
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json" }
+ktor-serialization-jackson = { group = "io.ktor", name = "ktor-serialization-jackson" }
+
+# Spring Boot (versions from BOM)
+spring-boot-autoconfigure = { group = "org.springframework.boot", name = "spring-boot-autoconfigure" }
+spring-boot-configuration-processor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor", version.ref = "spring-boot" }
+spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+spring-boot-starter-webflux = { group = "org.springframework.boot", name = "spring-boot-starter-webflux" }
+spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
+spring-boot-restclient = { group = "org.springframework.boot", name = "spring-boot-restclient" }
+spring-boot-resttestclient = { group = "org.springframework.boot", name = "spring-boot-resttestclient" }
+
+# Spring Framework (versions from BOM)
+spring-context = { group = "org.springframework", name = "spring-context" }
+spring-data-commons = { group = "org.springframework.data", name = "spring-data-commons" }
+
+# JSON (versions from BOM)
+jackson-module-kotlin = { group = "tools.jackson.module", name = "jackson-module-kotlin" }
+
+# Logging (versions from BOM)
+slf4j-api = { group = "org.slf4j", name = "slf4j-api" }
+
+# Test (versions from BOM)
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api" }
+junit-platform-suite = { group = "org.junit.platform", name = "junit-platform-suite" }
+assertj-core = { group = "org.assertj", name = "assertj-core" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test" }
+reactor-test = { group = "io.projectreactor", name = "reactor-test" }
+
+# Cucumber (versions from BOM)
+cucumber-java = { group = "io.cucumber", name = "cucumber-java" }
+cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
+cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
+
+# Jakarta (versions from BOM)
+jakarta-persistence-api = { group = "jakarta.persistence", name = "jakarta.persistence-api" }
+
+# Project-specific
+fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
+bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
+cloudant = { group = "com.ibm.cloud", name = "cloudant", version.ref = "cloudant" }
+
+[bundles]
+f2-client = ["f2-client-ktor", "f2-dsl-cqrs", "f2-dsl-function"]
+f2-dsl = ["f2-dsl-cqrs", "f2-dsl-function"]
+ktor = ["ktor-client-core", "ktor-client-content-negotiation", "ktor-client-logging", "ktor-client-cio", "ktor-serialization-kotlinx-json", "ktor-serialization-jackson"]
+spring-webflux = ["spring-boot-starter-actuator", "spring-boot-autoconfigure", "spring-boot-starter-webflux"]
+spring-data-commons = ["jakarta-persistence-api", "spring-context", "spring-data-commons"]
+test = ["junit-jupiter", "junit-jupiter-api", "junit-platform-suite", "assertj-core", "kotlinx-coroutines-test"]
+spring-test = ["spring-boot-starter-test", "spring-boot-restclient", "spring-boot-resttestclient", "reactor-test", "assertj-core"]
+cucumber = ["cucumber-java", "cucumber-java8", "cucumber-junit-platform-engine"]
+
+[plugins]
+fixers-config = { id = "io.komune.fixers.gradle.config", version.ref = "fixers" }
+fixers-check = { id = "io.komune.fixers.gradle.check", version.ref = "fixers" }
+fixers-publish = { id = "io.komune.fixers.gradle.publish", version.ref = "fixers" }
+fixers-kotlin-jvm = { id = "io.komune.fixers.gradle.kotlin.jvm", version.ref = "fixers" }
+fixers-kotlin-mpp = { id = "io.komune.fixers.gradle.kotlin.mpp", version.ref = "fixers" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version = "1.1.7" }
+graalvm = { id = "org.graalvm.buildtools.native", version.ref = "graalvm" }
+npm-publish = { id = "dev.petuska.npm.publish", version.ref = "npm-publish" }

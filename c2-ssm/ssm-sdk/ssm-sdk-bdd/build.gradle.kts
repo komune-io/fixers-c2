@@ -1,5 +1,5 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
+	alias(libs.plugins.fixers.kotlin.jvm)
 }
 
 dependencies {
@@ -8,6 +8,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-core"))
-	Dependencies.jackson(::implementation)
-	Dependencies.cucumber(::api)
+	implementation(libs.jackson.module.kotlin)
+	api(libs.bundles.cucumber)
 }

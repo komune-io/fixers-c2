@@ -1,18 +1,18 @@
 plugins {
-	id("io.spring.dependency-management")
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	kotlin("plugin.spring")
-	id("org.springframework.boot")
+	alias(libs.plugins.spring.dependency.management)
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.kotlin.spring)
+	alias(libs.plugins.spring.boot)
 }
 
 dependencies {
 	implementation(project(":c2-chaincode:chaincode-api:chaincode-api-fabric"))
 
-	Dependencies.springWebFlux(::implementation)
-	Dependencies.f2Auth(::implementation)
-	Dependencies.jackson(::implementation)
+	implementation(libs.bundles.spring.webflux)
+	implementation(libs.f2.spring.starter.auth.tenant)
+	implementation(libs.jackson.module.kotlin)
 
-	Dependencies.springTest(::testImplementation)
+	testImplementation(libs.bundles.spring.test)
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {

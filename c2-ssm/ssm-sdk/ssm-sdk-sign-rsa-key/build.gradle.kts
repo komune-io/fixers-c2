@@ -1,9 +1,9 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
+	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(libs.plugins.fixers.publish)
 }
 
 dependencies {
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
-	Dependencies.bouncyCastle(::implementation)
+	implementation(libs.bouncycastle)
 }
