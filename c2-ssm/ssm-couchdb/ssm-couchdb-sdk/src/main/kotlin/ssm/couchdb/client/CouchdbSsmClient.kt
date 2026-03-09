@@ -179,6 +179,6 @@ class CouchdbSsmClient(
 			.groupLevel(1)
 			.key(arrayOf(docType.name))
 			.build()
-		return (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Double?)?.toInt() ?: 0
+		return (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
 	}
 }
