@@ -49,59 +49,10 @@ subprojects {
 	}
 }
 
-val aggregatedTests = mutableMapOf<String,String>()
-val aggregatedTestResults = mutableMapOf(
-	"total" to 0L,
-	"passed" to 0L,
-	"failed" to 0L,
-	"skipped" to 0L
-)
 
 allprojects {
 	tasks.withType<Test> {
 		useJUnitPlatform()
-
-		addTestListener(object : TestListener {
-			override fun beforeSuite(suite: TestDescriptor) {}
-
-			override fun afterSuite(suite: TestDescriptor, result: TestResult) {
-				if (suite.parent == null) {
-					synchronized(aggregatedTestResults) {
-						aggregatedTestResults["total"] = aggregatedTestResults["total"]!! + result.testCount
-						aggregatedTestResults["passed"] = aggregatedTestResults["passed"]!! + result.successfulTestCount
-						aggregatedTestResults["failed"] = aggregatedTestResults["failed"]!! + result.failedTestCount
-						aggregatedTestResults["skipped"] = aggregatedTestResults["skipped"]!! + result.skippedTestCount
-					}
-				}
-			}
-
-			override fun beforeTest(testDescriptor: TestDescriptor) {}
-
-			override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {
-				aggregatedTests["${testDescriptor.className} ${testDescriptor.displayName} ${result.resultType.name}"] = result.resultType.name
-			}
-		})
-		finalizedBy(":aggregateTestResults")
-	}
-}
-
-val aggregateTestResults by tasks.registering {
-	group = "verification"
-	description = "Display aggregated test results for all submodules."
-
-	doLast {
-		println("""
-            ==================================================
-            Aggregated Test Results:
-            Total: ${aggregatedTestResults["total"]},
-            Passed: ${aggregatedTestResults["passed"]},
-            Failed: ${aggregatedTestResults["failed"]},
-            Skipped: ${aggregatedTestResults["skipped"]}
-            ==================================================
-        """.trimIndent())
-		aggregatedTests.forEach { (test, result) ->
-			println("$test: $result")
-		}
 	}
 }
 
