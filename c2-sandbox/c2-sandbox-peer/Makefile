@@ -29,5 +29,4 @@ build:
     	-t ${FABRIC_PEER_IMG} ..
 
 push:
-	@docker tag ${FABRIC_PEER_IMG} ${DOCKER_REPOSITORY}${FABRIC_PEER_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_PEER_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_PEER_IMG} ${DOCKER_REPOSITORY}${FABRIC_PEER_IMG}

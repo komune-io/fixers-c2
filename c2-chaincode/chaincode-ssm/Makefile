@@ -24,8 +24,7 @@ build:
 		-t ${SSM_CHAINCODE_IMG} .
 
 push:
-	@docker tag ${SSM_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
-	@docker push ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
+	@bash ../../infra/docker-push.sh ${SSM_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
 
 inspect:
 	@docker run -it ${SSM_CHAINCODE_IMG} sh

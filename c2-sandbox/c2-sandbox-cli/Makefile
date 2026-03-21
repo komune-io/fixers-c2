@@ -38,5 +38,4 @@ build:
     	-t ${FABRIC_CLI_IMG} ..
 
 push:
-	@docker tag ${FABRIC_CLI_IMG} ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_CLI_IMG} ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}

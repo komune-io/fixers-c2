@@ -24,8 +24,7 @@ build:
 		-t ${EX02_CHAINCODE_IMG} .
 
 push:
-	@docker tag ${EX02_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${EX02_CHAINCODE_IMG}
-	@docker push ${DOCKER_REPOSITORY}${EX02_CHAINCODE_IMG}
+	@bash ../../infra/docker-push.sh ${EX02_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${EX02_CHAINCODE_IMG}
 
 inspect:
 	@docker run -it ${EX02_CHAINCODE_IMG} sh

@@ -30,9 +30,7 @@ docker-chaincode-api-gateway-build:
 	VERSION=$(VERSION) ./gradlew build ${CHAINCODE_APP_PACKAGE} --imageName ${CHAINCODE_APP_IMG} -x test
 
 docker-chaincode-api-gateway-stage:
-	@docker tag ${CHAINCODE_APP_IMG} ghcr.io/komune-io/${CHAINCODE_APP_IMG}
-	@docker push ghcr.io/komune-io/${CHAINCODE_APP_IMG}
+	@bash infra/docker-push.sh ${CHAINCODE_APP_IMG} ghcr.io/komune-io/${CHAINCODE_APP_IMG}
 
 docker-chaincode-api-gateway-promote:
-	@docker tag ${CHAINCODE_APP_IMG} docker.io/komune/${CHAINCODE_APP_IMG}
-	@docker push docker.io/komune/${CHAINCODE_APP_IMG}
+	@bash infra/docker-push.sh ${CHAINCODE_APP_IMG} docker.io/komune/${CHAINCODE_APP_IMG}

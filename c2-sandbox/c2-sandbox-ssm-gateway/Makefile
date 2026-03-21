@@ -34,5 +34,4 @@ build:
     	-t ${FABRIC_SSM_REST_IMG} ..
 
 push:
-	@docker tag ${FABRIC_SSM_REST_IMG} ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_SSM_REST_IMG} ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}

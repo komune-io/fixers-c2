@@ -27,5 +27,4 @@ build:
     	-t ${FABRIC_ORDERER_IMG} ..
 
 push:
-	@docker tag ${FABRIC_ORDERER_IMG} ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_ORDERER_IMG} ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}
