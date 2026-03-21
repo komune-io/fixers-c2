@@ -17,7 +17,7 @@ lint:
 	docker run --rm -i hadolint/hadolint < Dockerfile
 
 build:
-	docker build \
+	docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		 --platform=linux/amd64 \
 		 --no-cache \
     	--build-arg VERSION_FABRIC=$$VERSION_FABRIC \

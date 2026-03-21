@@ -9,7 +9,7 @@ BACKOFF=5
 docker tag "$SOURCE_IMG" "$TARGET_IMG"
 
 for attempt in $(seq 1 "$MAX_RETRIES"); do
-    if docker push --force-compress "$TARGET_IMG" 2>&1; then
+    if docker push "$TARGET_IMG" 2>&1; then
         exit 0
     fi
     if [ "$attempt" -lt "$MAX_RETRIES" ]; then
