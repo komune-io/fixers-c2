@@ -18,8 +18,12 @@ class ApplicationContextBuilder {
 	}
 
 	private fun SpringApplicationBuilder.withConfig(config: Map<String, String>): SpringApplicationBuilder {
+		val allConfig = buildMap {
+			put("server.port", "0")
+			putAll(config)
+		}
 		return properties(
-			*config.map { pair ->
+			*allConfig.map { pair ->
 				"${pair.key}=${pair.value}"
 			}.toTypedArray()
 		)
