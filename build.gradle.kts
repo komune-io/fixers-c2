@@ -1,54 +1,20 @@
 plugins {
-	alias(libs.plugins.kotlin.kapt) apply false
-	alias(libs.plugins.kotlin.spring) apply false
-	alias(libs.plugins.kotlin.serialization) apply false
-	alias(libs.plugins.spring.boot) apply false
+	alias(catalogue.plugins.kotlin.kapt) apply false
+	alias(catalogue.plugins.kotlin.spring) apply false
+	alias(catalogue.plugins.kotlin.serialization) apply false
+	alias(catalogue.plugins.spring.boot) apply false
 	alias(libs.plugins.graalvm) apply false
 	alias(libs.plugins.npm.publish) apply false
-	alias(libs.plugins.fixers.config)
-	alias(libs.plugins.fixers.check)
-	alias(libs.plugins.fixers.publish)
-	alias(libs.plugins.fixers.kotlin.jvm) apply false
-	alias(libs.plugins.fixers.kotlin.mpp) apply false
-	alias(libs.plugins.spring.dependency.management) apply false
-}
 
-allprojects {
-	group = "io.komune.c2"
-	version = System.getenv("VERSION") ?: "experimental-SNAPSHOT"
-	repositories {
-		if (System.getenv("MAVEN_LOCAL_USE") == "true") {
-			mavenLocal()
-		}
-		mavenCentral()
-		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
-	}
-}
 
-subprojects {
-	pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
-		dependencies {
-			"api"(platform(libs.f2.bom))
-		}
-	}
-	pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
-		dependencies {
-			"commonMainApi"(platform(libs.f2.bom))
-		}
-	}
-	plugins.withType(dev.petuska.npm.publish.NpmPublishPlugin::class.java).whenPluginAdded {
-		the<dev.petuska.npm.publish.extension.NpmPublishExtension>().apply {
-			organization.set("komune")
-			registries {
-				register("npmjs") {
-					uri.set(uri("https://registry.npmjs.org"))
-					authToken.set(System.getenv("NPM_TOKEN"))
-				}
-			}
-		}
-	}
-}
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm) apply false
+	alias(catalogue.plugins.fixers.gradle.kotlin.mpp) apply false
 
+	alias(catalogue.plugins.f2.bom)
+	alias(catalogue.plugins.fixers.gradle.config)
+	alias(catalogue.plugins.fixers.gradle.check)
+	alias(catalogue.plugins.fixers.gradle.publish)
+}
 
 allprojects {
 	tasks.withType<Test> {
@@ -57,11 +23,9 @@ allprojects {
 }
 
 fixers {
-//	d2 {
-//		outputDirectory = file("storybook/stories/d2/")
-//	}
 	bundle {
 		id = "c2"
+		group = "io.komune.c2"
 		name = "Chaincode Api and signed state machine"
 		description = "Aggregate all ssm data source to optimize request"
 		url = "https://github.com/komune-io/fixers-c2"
@@ -69,5 +33,8 @@ fixers {
 	sonar {
 		organization = "komune-io"
 		projectKey = "komune-io_connect-c2"
+	}
+	repositories {
+		sonatypeSnapshots = true
 	}
 }

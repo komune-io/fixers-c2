@@ -1,11 +1,26 @@
 pluginManagement {
 	repositories {
-		if(System.getenv("MAVEN_LOCAL_USE") == "true") {
+		if(System.getenv("FIXERS_REPOSITORIES_MAVEN_LOCAL") == "true" || System.getenv("MAVEN_LOCAL_USE") == "true") {
 			mavenLocal()
 		}
 		gradlePluginPortal()
 		mavenCentral()
 		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+	}
+}
+
+dependencyResolutionManagement {
+	repositories {
+		if(System.getenv("FIXERS_REPOSITORIES_MAVEN_LOCAL") == "true" || System.getenv("MAVEN_LOCAL_USE") == "true") {
+			mavenLocal()
+		}
+		mavenCentral()
+		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+	}
+	versionCatalogs {
+		create("catalogue") {
+			from("io.komune.f2:f2-gradle-catalog:${extra["io.komune.fixers.version"]}")
+		}
 	}
 }
 
