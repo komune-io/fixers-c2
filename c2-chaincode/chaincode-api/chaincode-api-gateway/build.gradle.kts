@@ -1,8 +1,7 @@
 plugins {
-	alias(libs.plugins.spring.dependency.management)
-	alias(libs.plugins.fixers.kotlin.jvm)
-	alias(libs.plugins.kotlin.spring)
-	alias(libs.plugins.spring.boot)
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+	alias(catalogue.plugins.kotlin.spring)
+	alias(catalogue.plugins.spring.boot)
 }
 
 dependencies {

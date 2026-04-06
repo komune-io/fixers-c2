@@ -1,5 +1,5 @@
 plugins {
-	alias(libs.plugins.fixers.kotlin.jvm)
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
 }
 
 dependencies {

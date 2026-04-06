@@ -1,6 +1,6 @@
 plugins {
-	alias(libs.plugins.fixers.kotlin.mpp)
-	alias(libs.plugins.fixers.publish)
+	alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
+	alias(catalogue.plugins.fixers.gradle.publish)
 }
 
 dependencies {
