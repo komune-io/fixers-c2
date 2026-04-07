@@ -51,7 +51,15 @@ class SsmTxInitFunctionImpl(
 		return if (getFnc() != null) {
 			null
 		} else {
-			create(objToCreate)
+			try {
+				create(objToCreate)
+			} catch (e: Exception) {
+				if (getFnc() != null) {
+					null
+				} else {
+					throw e
+				}
+			}
 		}
 	}
 
