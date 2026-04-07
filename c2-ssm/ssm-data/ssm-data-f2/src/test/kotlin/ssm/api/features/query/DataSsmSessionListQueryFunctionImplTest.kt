@@ -38,19 +38,23 @@ internal class DataSsmSessionListQueryFunctionImplTest {
 	@Test
 	fun `test exception`() = runTest {
 		val uuid = UUID.randomUUID().toString().take(8)
-		createSsmWithSession(uuid)
+		val createdSsmName = createSsmWithSession(uuid)
 
 		val ssmListResult = dataSsmListQueryFunction.invoke(
 			DataSsmListQuery(listOf(chaincodeUri))
 		)
+		val createdSsmUri = ssmListResult.items
+			.first { it.ssm.name == createdSsmName }
+			.uri
 		val result = DataSsmSessionListQuery(
-			ssmUri = ssmListResult.items.first().uri,
+			ssmUri = createdSsmUri,
 		).invokeWith(function)
 		Assertions.assertThat(result.items).isNotEmpty()
 	}
 
-	private suspend fun createSsmWithSession(uuid: String) {
-		val admin = SignerAdmin.loadFromFile("ssm-admin", "local/admin/ssm-admin")
+	private suspend fun createSsmWithSession(uuid: String): String {
+		val (adminName, adminPath) = SsmBddConfig.Key.admin
+		val admin = SignerAdmin.loadFromFile(adminName, adminPath)
 		val factory = SsmServiceFactory.builder(
 			SsmSdkConfig(SsmBddConfig.Chaincode.url),
 			SsmBatchProperties()
@@ -77,5 +81,6 @@ internal class DataSsmSessionListQueryFunctionImplTest {
 			private = null
 		)
 		txService.sendStart(chaincodeUri, session, admin.name)
+		return ssmName
 	}
 }
