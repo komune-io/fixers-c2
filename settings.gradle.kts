@@ -86,6 +86,15 @@ include(
 )
 
 include(
+	"c2-ssm:ssm-s2:ssm-s2-dsl",
+)
+
+include(
+	"c2-ssm:ssm-spring:ssm-s2-storing-spring-boot-starter",
+	"c2-ssm:ssm-spring:ssm-s2-sourcing-spring-boot-starter",
+)
+
+include(
 	"c2-chaincode:chaincode-api:chaincode-api-fabric",
 	"c2-chaincode:chaincode-api:chaincode-api-gateway",
 )

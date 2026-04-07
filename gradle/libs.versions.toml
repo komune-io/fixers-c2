@@ -5,8 +5,16 @@ npm-publish = "3.5.3"
 fabric = "2.2.26"
 bouncycastle = "1.70"
 cloudant = "0.10.16"
+fixers = "0.30.0-SNAPSHOT"
 
 [libraries]
+# S2 modules
+s2-automate-dsl = { group = "io.komune.s2", name = "s2-automate-dsl", version.ref = "fixers" }
+s2-automate-core = { group = "io.komune.s2", name = "s2-automate-core", version.ref = "fixers" }
+s2-event-sourcing-dsl = { group = "io.komune.s2", name = "s2-event-sourcing-dsl", version.ref = "fixers" }
+s2-spring-core = { group = "io.komune.s2", name = "s2-spring-core", version.ref = "fixers" }
+s2-spring-boot-starter-storing = { group = "io.komune.s2", name = "s2-spring-boot-starter-storing", version.ref = "fixers" }
+s2-spring-boot-starter-sourcing = { group = "io.komune.s2", name = "s2-spring-boot-starter-sourcing", version.ref = "fixers" }
 # F2 (versions from BOM)
 f2-client-core = { group = "io.komune.f2", name = "f2-client-core" }
 f2-client-ktor = { group = "io.komune.f2", name = "f2-client-ktor" }
