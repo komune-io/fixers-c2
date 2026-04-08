@@ -56,13 +56,13 @@ AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
 			entityType = entityType(),
 			chaincodeUri = chaincodeUri,
 			agentSigner = signer,
-			permisive = permisive,
+			permissive = permissive,
 			batch = batchParams
 		).also {
 			ssmTxInitFunction.invoke(
 				SsmInitCommand(
 					signerName = signer.name,
-					ssm = automate.toSsm(permisive),
+					ssm = automate.toSsm(permissive),
 					agent = signer,
 					chaincodeUri = chaincodeUri
 				)
@@ -74,5 +74,5 @@ AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
 	abstract fun chaincodeUri(): ChaincodeUri
 	abstract fun signerAgent(): Agent
 
-	open var permisive = false
+	open var permissive = false
 }

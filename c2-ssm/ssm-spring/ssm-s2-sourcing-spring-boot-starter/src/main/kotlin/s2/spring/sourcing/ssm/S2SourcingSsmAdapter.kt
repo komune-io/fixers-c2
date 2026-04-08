@@ -71,7 +71,7 @@ EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 			ssmTxInitFunction.invoke(
 				SsmInitCommand(
 					signerName = signer.name,
-					ssm = automate.toSsm(permisive),
+					ssm = automate.toSsm(permissive),
 					agent = ee.agentSigner,
 					chaincodeUri = chaincodeUri
 				)
@@ -83,6 +83,6 @@ EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 
 	abstract fun chaincodeUri(): ChaincodeUri
 	abstract fun signerAgent(): Agent
-	open var permisive = false
+	open var permissive = false
 	open var versioning = false
 }

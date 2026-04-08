@@ -11,8 +11,6 @@ fixers = "0.30.0-SNAPSHOT"
 # S2 modules
 s2-automate-dsl = { group = "io.komune.s2", name = "s2-automate-dsl", version.ref = "fixers" }
 s2-automate-core = { group = "io.komune.s2", name = "s2-automate-core", version.ref = "fixers" }
-s2-event-sourcing-dsl = { group = "io.komune.s2", name = "s2-event-sourcing-dsl", version.ref = "fixers" }
-s2-spring-core = { group = "io.komune.s2", name = "s2-spring-core", version.ref = "fixers" }
 s2-spring-boot-starter-storing = { group = "io.komune.s2", name = "s2-spring-boot-starter-storing", version.ref = "fixers" }
 s2-spring-boot-starter-sourcing = { group = "io.komune.s2", name = "s2-spring-boot-starter-sourcing", version.ref = "fixers" }
 # F2 (versions from BOM)

@@ -44,7 +44,7 @@ class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
 	internal var agentSigner: Agent,
 	internal var objectMapper: ObjectMapper,
 	internal var batch: S2BatchProperties,
-	internal var permisive: Boolean = false
+	internal var permissive: Boolean = false
 ) : AutomatePersister<STATE, ID, ENTITY, EVENT, S2Automate> where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
