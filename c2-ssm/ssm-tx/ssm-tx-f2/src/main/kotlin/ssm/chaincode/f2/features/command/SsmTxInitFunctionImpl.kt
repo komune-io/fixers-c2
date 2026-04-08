@@ -43,6 +43,7 @@ class SsmTxInitFunctionImpl(
 			{ this.createUser(chaincodeUri, it, signerName)!! })
 	}
 
+	@Suppress("TooGenericExceptionCaught")
 	private suspend fun <T> createIfNotExist(
 		objToCreate: T,
 		getFnc: suspend () -> T?,
