@@ -18,8 +18,13 @@ dependencyResolutionManagement {
 		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
 	}
 	versionCatalogs {
+		val fixersVersion = file("gradle/libs.versions.toml")
+			.readLines()
+			.firstNotNullOfOrNull {
+				Regex("^fixers\\s*=\\s*\"([^\"]+)\"").find(it)?.groupValues?.get(1)
+			} ?: error("fixers version not found in gradle/libs.versions.toml")
 		create("catalogue") {
-			from("io.komune.f2:f2-gradle-catalog:${extra["io.komune.fixers.version"]}")
+			from("io.komune.f2:f2-gradle-catalog:$fixersVersion")
 		}
 	}
 }
