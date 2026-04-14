@@ -1,11 +1,8 @@
 [versions]
 fixers = "0.39.0-SNAPSHOT"
-graalvm = "0.11.3"
-npm-publish = "3.5.3"
 fabric = "2.2.26"
 bouncycastle = "1.70"
 cloudant = "0.10.16"
-fixers = "0.30.0-SNAPSHOT"
 
 [libraries]
 # S2 modules
@@ -19,7 +16,6 @@ f2-client-ktor = { group = "io.komune.f2", name = "f2-client-ktor" }
 f2-dsl-cqrs = { group = "io.komune.f2", name = "f2-dsl-cqrs" }
 f2-dsl-function = { group = "io.komune.f2", name = "f2-dsl-function" }
 f2-spring-starter-function = { group = "io.komune.f2", name = "f2-spring-boot-starter-function" }
-f2-spring-starter-function-http = { group = "io.komune.f2", name = "f2-spring-boot-starter-function-http" }
 f2-spring-starter-auth-tenant = { group = "io.komune.f2", name = "f2-spring-boot-starter-auth-tenant" }
 
 # Ktor (versions from BOM)
@@ -36,13 +32,8 @@ spring-boot-configuration-processor = { group = "org.springframework.boot", name
 spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
 spring-boot-starter-webflux = { group = "org.springframework.boot", name = "spring-boot-starter-webflux" }
 spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
-spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
 spring-boot-restclient = { group = "org.springframework.boot", name = "spring-boot-restclient" }
 spring-boot-resttestclient = { group = "org.springframework.boot", name = "spring-boot-resttestclient" }
-
-# Spring Framework (versions from BOM)
-spring-context = { group = "org.springframework", name = "spring-context" }
-spring-data-commons = { group = "org.springframework.data", name = "spring-data-commons" }
 
 # JSON (versions from BOM)
 jackson-module-kotlin = { group = "tools.jackson.module", name = "jackson-module-kotlin" }
@@ -63,9 +54,6 @@ cucumber-java = { group = "io.cucumber", name = "cucumber-java" }
 cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
 cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
 
-# Jakarta (versions from BOM)
-jakarta-persistence-api = { group = "jakarta.persistence", name = "jakarta.persistence-api" }
-
 # Project-specific
 fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
@@ -76,12 +64,6 @@ f2-client = ["f2-client-core", "f2-client-ktor", "f2-dsl-cqrs", "f2-dsl-function
 f2-dsl = ["f2-dsl-cqrs", "f2-dsl-function"]
 ktor = ["ktor-client-core", "ktor-client-content-negotiation", "ktor-client-logging", "ktor-client-cio", "ktor-serialization-kotlinx-json", "ktor-serialization-jackson"]
 spring-webflux = ["spring-boot-starter-actuator", "spring-boot-autoconfigure", "spring-boot-starter-webflux"]
-spring-data-commons = ["jakarta-persistence-api", "spring-context", "spring-data-commons"]
 test = ["junit-jupiter", "junit-jupiter-api", "junit-platform-suite", "assertj-core", "kotlinx-coroutines-test"]
 spring-test = ["spring-boot-starter-test", "spring-boot-restclient", "spring-boot-resttestclient", "reactor-test", "assertj-core"]
 cucumber = ["cucumber-java", "cucumber-java8", "cucumber-junit-platform-engine"]
-
-[plugins]
-
-graalvm = { id = "org.graalvm.buildtools.native", version.ref = "graalvm" }
-npm-publish = { id = "dev.petuska.npm.publish", version.ref = "npm-publish" }
