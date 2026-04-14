@@ -31,12 +31,12 @@ val didS2 = s2 {
 	}
 	transaction<DidRevokeCommand> {
 		from = DidState.Activated()
-		to = DidState.Activated()
+		to = DidState.Revoked()
 		role = DidRole.Owner()
 	}
 	transaction<DidRevokePublicKeyCommand> {
 		from = DidState.Activated()
-		to = DidState.Revoked()
+		to = DidState.Activated()
 		role = DidRole.Owner()
 	}
 }

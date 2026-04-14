@@ -13,18 +13,17 @@ import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
 import s2.sample.orderbook.sourcing.app.ssm.config.SpringTestBase
 import s2.sample.orderbook.storing.app.ssm.OrderBookDeciderEventImpl
-import s2.sample.orderbook.storing.app.ssm.config.OrderBookAutomateConfig
+import s2.sample.orderbook.storing.app.ssm.config.OrderBookAutomateEventConfig
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
 import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
 import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
 import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBookAutomate
 
 internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 
 	@Autowired
-	lateinit var orderBookAutomateConfig: OrderBookAutomateConfig
+	lateinit var orderBookAutomateEventConfig: OrderBookAutomateEventConfig
 
 	@Autowired
 	lateinit var orderBookDeciderImpl: OrderBookDeciderEventImpl
@@ -37,9 +36,9 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 			 .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBookAfterUpdate"))
 		orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
 		orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
-		val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
+		val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
 		val entity = ssmAutomatePersister.load(
-				AutomateContext(automate = orderBookAutomate("storing-test-1"),
+				AutomateContext(automate = orderBookAutomateEventConfig.automate(),
 				S2BatchProperties()
 			), event.id)
 		assertThat(entity?.name).isEqualTo("TheNewOrderBookAfterUpdate")
@@ -64,13 +63,13 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 		}.let {
 			orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
 		}.map { event ->
-			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
+			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomate("storing-test-2"),
+				automate = orderBookAutomateEventConfig.automate(),
 				S2BatchProperties()
 			), event.id)
 			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
-		}
+		}.toList()
 	}
 
 	@Test
@@ -92,9 +91,9 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 		}.let {
 			orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
 		}.toList().forEach { event ->
-			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
+			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomate("storing-test-3"),
+				automate = orderBookAutomateEventConfig.automate(),
 				S2BatchProperties()
 			), event.id)
 			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
@@ -115,9 +114,9 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 		val events = orderBookDeciderImpl.orderBookCreateDecider().invoke(all).toList()
 		assertThat(events).hasSize(5)
 		events.forEach { event ->
-			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
+			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomate("storing-test-4"),
+				automate = orderBookAutomateEventConfig.automate(),
 				S2BatchProperties()
 			), event.id)
 			assertThat(entity?.name).startsWith("TheNewOrderBook")

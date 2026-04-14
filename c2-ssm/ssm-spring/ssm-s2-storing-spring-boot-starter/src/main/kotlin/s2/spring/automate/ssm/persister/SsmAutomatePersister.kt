@@ -119,13 +119,15 @@ ENTITY : WithS2Id<ID> {
 			query.batchFlow(batch.asBatch()) { list ->
 				val bySession = list.associateBy { it.sessionId }
 				getSessions(list).map { session ->
-					val it = bySession[session.sessionName]!!
+					val context = bySession[session.sessionName]
+					?: throw IllegalStateException("No context found for session ${session.sessionName}")
 					val iteration = session.logs.maxOfOrNull { it.state.iteration }
+						?: throw IllegalStateException("No logs found for session ${session.sessionName}")
 
 					GetSessionResult(
-						transitionContext = it.transitionContext,
-						sessionId = it.sessionId,
-						iteration = iteration ?: 0
+						transitionContext = context.transitionContext,
+						sessionId = context.sessionId,
+						iteration = iteration
 					)
 				}
 			}

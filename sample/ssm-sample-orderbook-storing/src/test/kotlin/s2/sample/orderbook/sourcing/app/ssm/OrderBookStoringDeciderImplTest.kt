@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,7 +24,6 @@ import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
 import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
 import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
 import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
-import s2.sample.subautomate.domain.orderBookAutomate
 
 internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
 
@@ -57,11 +55,11 @@ internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
 		orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
 		val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
 		val entity = ssmAutomatePersister.load(AutomateContext(
-			automate = orderBookAutomate("storing-test-1"),
+			automate = orderBookAutomateConfig.automate(),
 			S2BatchProperties()
 		), event.id)
-		Assertions.assertThat(entity?.name).isEqualTo("TheNewOrderBookAfterUpdate")
-		Assertions.assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
+		assertThat(entity?.name).isEqualTo("TheNewOrderBookAfterUpdate")
+		assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
 	}
 	@Test
 	fun `should create flow(24-6) of order book`(): Unit = runTest {
@@ -84,13 +82,13 @@ internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
 		}.map { event ->
 			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(
-					AutomateContext(automate = orderBookAutomate("storing-test-2"),
+					AutomateContext(automate = orderBookAutomateConfig.automate(),
 					S2BatchProperties()
 				),
 				event.id
 			)
-			Assertions.assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
-		}
+			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
+		}.toList()
 	}
 
 	@Test
@@ -114,10 +112,9 @@ internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
 		}.toList().forEach { event ->
 			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomate("storing-test-3"),
+				automate = orderBookAutomateConfig.automate(),
 				S2BatchProperties()
 			), event.id)
-//			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
 			assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
 		}
 	}
@@ -138,7 +135,7 @@ internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
 			val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
 			val entity = ssmAutomatePersister.load(
 				AutomateContext(
-					automate = orderBookAutomate("storing-test-4"),
+					automate = orderBookAutomateConfig.automate(),
 					S2BatchProperties()
 				),
 				event.id

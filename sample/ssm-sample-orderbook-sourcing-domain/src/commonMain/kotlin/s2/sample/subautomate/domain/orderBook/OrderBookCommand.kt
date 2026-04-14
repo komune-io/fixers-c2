@@ -10,7 +10,6 @@ import s2.dsl.automate.model.WithS2Id
 import s2.dsl.automate.model.WithS2State
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.model.OrderId
 
 @Serializable
 data class OrderBookCreateCommand(
@@ -21,7 +20,7 @@ data class OrderBookCreateCommand(
 @SerialName("OrderBookCreatedEvent")
 data class OrderBookCreatedEvent(
 	val name: String,
-	val id: OrderId,
+	val id: OrderBookId,
 	val state: OrderBookState
 ) : OrderBookEvent() {
 	override fun s2Id() = id
@@ -39,7 +38,7 @@ data class OrderBookUpdateCommand(
 @SerialName("OrderBookUpdatedEvent")
 data class OrderBookUpdatedEvent(
 	val name: String,
-	val id: OrderId,
+	val id: OrderBookId,
 	val state: OrderBookState
 ) : OrderBookEvent() {
 	override fun s2Id() = id
@@ -53,7 +52,7 @@ data class OrderBookPublishCommand(override val id: OrderBookId) : OrderBookComm
 @Serializable
 @SerialName("OrderBookPublishedEvent")
 data class OrderBookPublishedEvent(
-	val id: OrderId,
+	val id: OrderBookId,
 	val state: OrderBookState
 ) : OrderBookEvent() {
 	override fun s2Id() = id
@@ -67,14 +66,14 @@ data class OrderBookCloseCommand(override val id: OrderBookId) : OrderBookComman
 @Serializable
 @SerialName("OrderBookClosedEvent")
 data class OrderBookClosedEvent(
-	val id: OrderId, val state: OrderBookState
+	val id: OrderBookId, val state: OrderBookState
 ) : OrderBookEvent() {
 	override fun s2Id() = id
 	override fun s2State() = state
 }
 
 @Serializable
-sealed class OrderBookEvent : Evt, WithS2Id<OrderId>, WithS2State<OrderBookState>
+sealed class OrderBookEvent : Evt, WithS2Id<OrderBookId>, WithS2State<OrderBookState>
 
 @Serializable
 sealed class OrderBookCommand : S2Command<OrderBookId>

@@ -60,7 +60,8 @@ EVENT: WithS2Id<ID>
 	internal var versioning: Boolean = false
 
 	override suspend fun load(id: ID): Flow<EVENT> {
-		return getSessionLogs(listOf(id.toString()))
+		val sessionName = buildSessionName(id)
+		return getSessionLogs(listOf(sessionName))
 			.toEvents()
 	}
 
@@ -189,12 +190,16 @@ EVENT: WithS2Id<ID>
 		return event
 	}
 
-	private fun buildSessionName(event: EVENT): String {
+	private fun buildSessionName(id: ID): String {
 		return if(versioning) {
-			"${s2Automate.name}-${event.s2Id()}"
+			"${s2Automate.name}-$id"
 		} else {
-			event.s2Id().toString()
+			id.toString()
 		}
+	}
+
+	private fun buildSessionName(event: EVENT): String {
+		return buildSessionName(event.s2Id())
 	}
 
 	private suspend fun getIteration(sessionId: SessionName): Int? {
