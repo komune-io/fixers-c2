@@ -52,6 +52,7 @@ class KtorRepository(
 		}
 		install(HttpTimeout) {
 			requestTimeoutMillis = timeout
+			connectTimeoutMillis = timeout
 		}
 	}
 

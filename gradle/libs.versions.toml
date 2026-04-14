@@ -54,6 +54,25 @@ cucumber-java = { group = "io.cucumber", name = "cucumber-java" }
 cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
 cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
 
+# Arrow (versions from BOM)
+arrow-core = { group = "io.arrow-kt", name = "arrow-core" }
+arrow-optics = { group = "io.arrow-kt", name = "arrow-optics" }
+arrow-optics-ksp = { group = "io.arrow-kt", name = "arrow-optics-ksp-plugin" }
+
+# Serialization (versions from BOM)
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json" }
+
+# Redis
+spring-boot-starter-data-redis-reactive = { group = "org.springframework.boot", name = "spring-boot-starter-data-redis-reactive" }
+lettuce-core = { group = "io.lettuce", name = "lettuce-core" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind" }
+commons-pool2 = { group = "org.apache.commons", name = "commons-pool2" }
+
+# Testcontainers
+spring-boot-testcontainers = { group = "org.springframework.boot", name = "spring-boot-testcontainers" }
+testcontainers-junit-jupiter = { group = "org.testcontainers", name = "testcontainers-junit-jupiter" }
+testcontainers-redis = { group = "com.redis", name = "testcontainers-redis" }
+
 # Project-specific
 fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
@@ -66,4 +85,6 @@ ktor = ["ktor-client-core", "ktor-client-content-negotiation", "ktor-client-logg
 spring-webflux = ["spring-boot-starter-actuator", "spring-boot-autoconfigure", "spring-boot-starter-webflux"]
 test = ["junit-jupiter", "junit-jupiter-api", "junit-platform-suite", "assertj-core", "kotlinx-coroutines-test"]
 spring-test = ["spring-boot-starter-test", "spring-boot-restclient", "spring-boot-resttestclient", "reactor-test", "assertj-core"]
+spring-redis = ["spring-boot-starter-data-redis-reactive", "lettuce-core", "jackson-databind", "commons-pool2"]
+ssm-sample-testcontainers = ["spring-boot-testcontainers", "testcontainers-junit-jupiter", "testcontainers-redis"]
 cucumber = ["cucumber-java", "cucumber-java8", "cucumber-junit-platform-engine"]

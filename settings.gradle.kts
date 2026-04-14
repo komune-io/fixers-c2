@@ -29,8 +29,6 @@ dependencyResolutionManagement {
 	}
 }
 
-rootProject.name = "fixers-c2"
-
 include(
 	"c2-ssm:ssm-bdd:ssm-bdd-config",
 	"c2-ssm:ssm-bdd:ssm-bdd-features",
@@ -97,4 +95,13 @@ include(
 include(
 	"c2-chaincode:chaincode-api:chaincode-api-fabric",
 	"c2-chaincode:chaincode-api:chaincode-api-gateway",
+)
+
+include(
+	"sample:ssm-sample-orderbook-sourcing-domain",
+	"sample:ssm-sample-orderbook-sourcing",
+	"sample:ssm-sample-orderbook-sourcing-permissive",
+	"sample:ssm-sample-orderbook-storing",
+	"sample:ssm-sample-did-domain",
+	"sample:ssm-sample-did-app",
 )
