@@ -15,4 +15,6 @@ dependencies {
 	commonMainApi(libs.arrow.core)
 	commonMainApi(libs.arrow.optics)
 	kspJvm(libs.arrow.optics.ksp)
+
+	jvmTestImplementation(libs.bundles.test)
 }

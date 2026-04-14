@@ -8,4 +8,6 @@ dependencies {
 	commonMainApi(catalogue.client.core)
 	commonMainApi(catalogue.client.ktor)
 	commonMainApi(catalogue.dsl.function)
+
+	jvmTestImplementation(libs.bundles.test)
 }

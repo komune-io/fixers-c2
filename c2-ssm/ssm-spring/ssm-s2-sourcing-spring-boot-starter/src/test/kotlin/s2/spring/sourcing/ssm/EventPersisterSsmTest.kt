@@ -125,6 +125,31 @@ class EventPersisterSsmTest {
 		assertThat(result).isEmpty()
 	}
 
+	@Test
+	fun `buildSessionName without versioning returns plain id`() {
+		val persister = createPersister()
+		persister.versioning = false
+		val result = invokeBuildSessionName(persister, "event-123")
+		assertThat(result).isEqualTo("event-123")
+	}
+
+	@Test
+	fun `buildSessionName with versioning returns prefixed name`() {
+		val persister = createPersister()
+		persister.versioning = true
+		val result = invokeBuildSessionName(persister, "event-123")
+		assertThat(result).isEqualTo("TestAutomate-event-123")
+	}
+
+	private fun invokeBuildSessionName(
+		persister: EventPersisterSsm<TestEvent, String>,
+		id: String
+	): String {
+		val method = EventPersisterSsm::class.java.getDeclaredMethod("buildSessionName", Any::class.java)
+		method.isAccessible = true
+		return method.invoke(persister, id) as String
+	}
+
 	private fun automateWithTransitions(): S2Automate {
 		return S2Automate(
 			name = "TestAutomate",
