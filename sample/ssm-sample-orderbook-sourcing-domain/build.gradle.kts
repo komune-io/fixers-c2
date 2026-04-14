@@ -11,6 +11,7 @@ tasks.matching { it.name == "compileProductionLibraryKotlinJs" }.configureEach {
 
 dependencies {
 	commonMainApi(libs.s2.automate.dsl)
+	commonMainApi(catalogue.dsl.function)
 	commonMainApi(libs.arrow.core)
 	commonMainApi(libs.arrow.optics)
 	kspJvm(libs.arrow.optics.ksp)
