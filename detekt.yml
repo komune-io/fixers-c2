@@ -1,0 +1,15 @@
+naming:
+  PackageNaming:
+    packagePattern: '[a-z0-9]+(\.[a-z][A-Za-z0-9]*)*'
+
+complexity:
+  TooManyFunctions:
+    active: false
+
+empty-blocks:
+  EmptyFunctionBlock:
+    ignoreOverridden: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: false

@@ -3,9 +3,6 @@ plugins {
 	alias(catalogue.plugins.kotlin.spring) apply false
 	alias(catalogue.plugins.kotlin.serialization) apply false
 	alias(catalogue.plugins.spring.boot) apply false
-	alias(libs.plugins.graalvm) apply false
-	alias(libs.plugins.npm.publish) apply false
-
 
 	alias(catalogue.plugins.fixers.gradle.kotlin.jvm) apply false
 	alias(catalogue.plugins.fixers.gradle.kotlin.mpp) apply false
@@ -16,15 +13,10 @@ plugins {
 	alias(catalogue.plugins.fixers.gradle.publish)
 }
 
-allprojects {
-	tasks.withType<Test> {
-		useJUnitPlatform()
-	}
-}
 
 fixers {
 	bundle {
-		id = "c2"
+		id = "fixers-c2"
 		group = "io.komune.c2"
 		name = "Chaincode Api and signed state machine"
 		description = "Aggregate all ssm data source to optimize request"
