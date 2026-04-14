@@ -7,4 +7,5 @@ dependencies {
 	commonMainImplementation(libs.s2.automate.dsl)
 	commonMainApi(catalogue.client.core)
 	commonMainApi(catalogue.client.ktor)
+	commonMainApi(catalogue.dsl.function)
 }
