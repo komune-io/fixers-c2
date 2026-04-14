@@ -19,7 +19,8 @@ open class PolymorphicEnumSerializer<T>(private val enumSerializer: KSerializer<
 	override fun deserialize(decoder: Decoder): T =
 		decoder.decodeStructure(descriptor)
 		{
-			decodeElementIndex(descriptor)
+			val index = decodeElementIndex(descriptor)
+			require(index == 0) { "Expected element at index 0 but got $index" }
 			decodeSerializableElement(descriptor, 0, enumSerializer)
 		}
 

@@ -2,6 +2,7 @@ plugins {
 	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
 	alias(catalogue.plugins.fixers.gradle.publish)
 	alias(catalogue.plugins.kotlin.kapt)
+	alias(catalogue.plugins.kotlin.serialization)
 }
 
 dependencies {
@@ -14,4 +15,6 @@ dependencies {
 
 	implementation(libs.spring.boot.autoconfigure)
 	kapt(libs.spring.boot.configuration.processor)
+
+	testImplementation(libs.bundles.test)
 }

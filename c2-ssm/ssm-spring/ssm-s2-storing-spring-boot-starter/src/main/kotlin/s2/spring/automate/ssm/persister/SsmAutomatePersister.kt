@@ -62,8 +62,8 @@ ENTITY : WithS2Id<ID> {
 		}.map { session ->
 			val lastTransaction = session.logs.maxByOrNull { transaction ->
 				transaction.state.iteration
-			}
-			objectMapper.readValue(lastTransaction!!.state.public as String, entityType)
+			} ?: throw IllegalStateException("No logs found for session ${session.sessionName}")
+			objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
 		}
 	}
 
@@ -86,7 +86,7 @@ ENTITY : WithS2Id<ID> {
 				session = SsmSession(
 					ssm = automate.name,
 					session = entity.s2Id().toString(),
-					roles = mapOf(agentSigner.name to automate.transitions[0].role.name),
+					roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
 					public = objectMapper.writeValueAsString(entity),
 					private = mapOf()
 				),
@@ -105,7 +105,7 @@ ENTITY : WithS2Id<ID> {
 	private fun getIterations(
 		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
 	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> {
-		return if(entityType.isAssignableFrom(WithS2Iteration::class.java)) {
+		return if(WithS2Iteration::class.java.isAssignableFrom(entityType)) {
 			query.map {
 				val entity = it.transitionContext.entity as WithS2Iteration
 				val iteration = entity.s2Iteration()

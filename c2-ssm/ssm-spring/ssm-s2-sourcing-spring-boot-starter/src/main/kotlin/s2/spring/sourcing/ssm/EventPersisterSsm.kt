@@ -81,9 +81,10 @@ EVENT: WithS2Id<ID>
 			val bySessionName = chunkedEvents.associateBy { buildSessionName(it) }
 			getSessions(bySessionName.keys).associateWith {
 				bySessionName[it.sessionName]
-			}.map { (session, event) ->
+			}.mapNotNull { (session, event) ->
+				event ?: return@mapNotNull null
 				val iteration = session.logs.maxOfOrNull { it.state.iteration }
-				ExecutableAction(event!!, iteration)
+				ExecutableAction(event, iteration)
 			}.groupBy {
 				it.action
 			}.flatMap { (action, eventsByAction) ->
@@ -141,7 +142,7 @@ EVENT: WithS2Id<ID>
 			session = SsmSession(
 				ssm = s2Automate.name,
 				session = sessionName,
-				roles = mapOf(agentSigner.name to s2Automate.transitions[0].role.name),
+				roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
 				public = public,
 				private = mapOf()
 			),
@@ -177,7 +178,7 @@ EVENT: WithS2Id<ID>
 			session = SsmSession(
 				ssm = s2Automate.name,
 				session = buildSessionName(event),
-				roles = mapOf(agentSigner.name to s2Automate.transitions[0].role.name),
+				roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
 				public = json.encodeToString(eventType.serializer(), event),
 				private = mapOf()
 			),
@@ -190,7 +191,7 @@ EVENT: WithS2Id<ID>
 
 	private fun buildSessionName(event: EVENT): String {
 		return if(versioning) {
-			return "${s2Automate.name}-${event.s2Id()}"
+			"${s2Automate.name}-${event.s2Id()}"
 		} else {
 			event.s2Id().toString()
 		}
@@ -238,7 +239,9 @@ EVENT: WithS2Id<ID>
 
 	@OptIn(InternalSerializationApi::class)
 	private fun List<SsmSessionStateLog>.toEvents(): Flow<EVENT> = sortedBy { it.state.iteration }.map {
-		json.decodeFromString(eventType.serializer(), it.state.public as String)
+		val publicData = it.state.public as? String
+			?: throw IllegalStateException("Expected state.public to be String but was ${it.state.public?.javaClass}")
+		json.decodeFromString(eventType.serializer(), publicData)
 	}.asFlow()
 }
 
