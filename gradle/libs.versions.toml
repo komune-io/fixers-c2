@@ -1,5 +1,5 @@
 [versions]
-fixers = "0.39.0"
+fixers = "0.40.0-SNAPSHOT"
 fabric = "2.2.26"
 bouncycastle = "1.70"
 cloudant = "0.10.16"
