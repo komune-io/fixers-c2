@@ -23,7 +23,7 @@ build:
 	-@mkdir build
 	@sed 's/__SSM_VERSION__/${VERSION}/' Dockerfile > build/Dockerfile_tmp
 	@sed 's/__EX02_VERSION__/${VERSION}/' build/Dockerfile_tmp > build/Dockerfile
-	@docker build \
+	@docker buildx build --output type=docker,compression=gzip,force-compression=true \
  		--platform=linux/amd64 \
 		--no-cache \
     	--build-arg SSM_VERSION=$$SSM_VERSION \
@@ -38,5 +38,4 @@ build:
     	-t ${FABRIC_CLI_IMG} ..
 
 push:
-	@docker tag ${FABRIC_CLI_IMG} ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_CLI_IMG} ${DOCKER_REPOSITORY}${FABRIC_CLI_IMG}

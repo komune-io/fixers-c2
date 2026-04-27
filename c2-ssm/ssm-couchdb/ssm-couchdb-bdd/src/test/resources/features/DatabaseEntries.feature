@@ -1,10 +1,10 @@
 Feature:
-#  Background:
-#    Given a couchdb configuration for local env
-#    And a channel named "sandbox"
-#    And a chaincode ssm names "ssm"
 
   Scenario: As a developer, I want to get all ssm in a database
+    Given An admin
+    And A ssm "db-entries-ssm" with transitions
+      | from | to | role   | action |
+      | 0    | 1  | Tester | Test   |
     Given I have a local database
     When I get all ssm for
       | channelId        | chaincodeId  |

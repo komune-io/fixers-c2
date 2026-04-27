@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught")
+
 package ssm.sdk.sign.crypto
 
 import java.security.PrivateKey

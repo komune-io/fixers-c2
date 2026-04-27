@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ca.bc-coop.bclan:
     container_name: ca-bclan-${DOCKER_NETWORK}

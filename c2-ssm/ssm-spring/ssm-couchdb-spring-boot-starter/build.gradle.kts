@@ -1,18 +1,16 @@
-import io.komune.gradle.dependencies.FixersVersions
-
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
-	kotlin("plugin.spring")
-	kotlin("kapt")
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+	alias(catalogue.plugins.fixers.gradle.publish)
+	alias(catalogue.plugins.kotlin.spring)
+	alias(catalogue.plugins.kotlin.kapt)
 }
 
 dependencies {
 	api(project(":c2-ssm:ssm-couchdb:ssm-couchdb-f2"))
 
-	api("io.komune.f2:f2-spring-boot-starter-function:${Versions.f2}")
+	api(libs.f2.spring.starter.function)
 
-	kapt("org.springframework.boot:spring-boot-configuration-processor:${FixersVersions.Spring.boot}")
+	kapt(libs.spring.boot.configuration.processor)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
 }

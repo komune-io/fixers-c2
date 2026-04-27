@@ -5,6 +5,7 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.Reader
 import java.net.MalformedURLException
+import java.net.URI
 import java.net.URL
 import java.nio.channels.FileChannel
 import java.nio.file.Path
@@ -21,7 +22,7 @@ object FileUtils {
 	@Throws(MalformedURLException::class)
 	fun getUrl(filename: String): URL {
 		return if (filename.startsWith(FILE)) {
-			URL(filename)
+			URI(filename).toURL()
 		} else {
 			Thread.currentThread().contextClassLoader.getResource(filename)!!
 		}

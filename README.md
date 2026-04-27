@@ -1,81 +1,111 @@
-# Introduction
+# fixers-c2
 
-This SDK is a Kotlin library used to interact with a [Blockchain-SSM](https://github.com/civis-blockchain/blockchain-ssm) chaincode hosted with Hyperledger Fabric.
+Kotlin SDK for interacting with [Blockchain-SSM](https://github.com/civis-blockchain/blockchain-ssm) (Signing State Machines) chaincode on Hyperledger Fabric.
 
-It contains three submodules, each with a different level of abstraction.  
+## Quick Start
 
-<img src="https://docs.smartb.city/s3/docs/ssm/diagrams/architecture.png" alt="drawing" width="300"/>
-<br /><br />
+### Using Spring Boot Starters (Recommended)
 
-# Infra
+```kotlin
+// Spring Boot auto-configuration for chaincode operations
+implementation("io.komune.c2:ssm-chaincode-spring-boot-starter:${Versions.c2}")
 
-## SSM-Chaincode
+// Spring Boot auto-configuration for CouchDB queries
+implementation("io.komune.c2:ssm-couchdb-spring-boot-starter:${Versions.c2}")
 
-[SSM-Chaincode](/docs/chaincode-dsl-signing-state-machine--page) communicates directly with the blockchain API and is able to make simple queries and transactions over Signing State Machines.
-
-* Build
-```
-make ssm-chaincode-package
-```
-
-## SSM-Sandbox
-
-This setup provides a Hyperledger Fabric Network pre-configured with generated cryptographic materials
-and the SSM chaincode installed, facilitating a quick start for development and testing purposes.
-
-* Build
-```
-make ssm-chaincode-package
+// Spring Boot auto-configuration for combined data queries
+implementation("io.komune.c2:ssm-data-spring-boot-starter:${Versions.c2}")
 ```
 
-# Lib 
+### Configuration
 
-## SSM-Chaincode
-[SSM-Chaincode](/docs/chaincode-dsl-signing-state-machine--page) communicates directly with the blockchain API and is able to make simple queries and transactions over Signing State Machines.
+```properties
+ssm.rest.url=http://peer0.pr-bc1.civis-blockchain.org:9090
+```
 
-**Import with Gradle**
+## Libraries
+
+### SSM-Chaincode
+
+Communicates directly with the blockchain API for queries and transactions over Signing State Machines.
+
 ```kotlin
 // Data models and query function definitions
-implementation("io.komune.c2:ssm-chaincode-dsl:${Versions.ssm}")
+implementation("io.komune.c2:ssm-chaincode-dsl:${Versions.c2}")
 
-// Implementation of query functions defined in ssm-chaincode-dsl
-implementation("io.komune.c2:f2-query:${Versions.ssm}")
-
-// Function to create an SSM
-implementation("io.komune.c2:f2-create-ssm:${Versions.ssm}")
-
-// Function to start a session on a given SSM
-implementation("io.komune.c2:f2-session-start:${Versions.ssm}")
-
-// Function to perform an action on a given session
-implementation("io.komune.c2:f2-session-perform-action:${Versions.ssm}")
+// F2 function implementations
+implementation("io.komune.c2:ssm-chaincode-f2:${Versions.c2}")
 ```
-> Note: All functions are implemented as Spring Beans, so they can be instantiated with Dependency Injection mechanism
 
-## SSM-CouchDB
+### SSM-CouchDB
 
-[SSM-CouchDB](/docs/ssm-couchdb-general--page) is able to query a CouchDB attached to a blockchain in order to optimize costly requests.
+Queries CouchDB attached to the blockchain to optimize costly requests (listing SSMs, sessions).
 
-**Import with Gradle**
 ```kotlin
 // Data models and query function definitions
-implementation("io.komune.c2:ssm-couchdb-dsl:${Versions.ssm}")
+implementation("io.komune.c2:ssm-couchdb-dsl:${Versions.c2}")
 
-// Implementation of query functions defined in ssm-couchdb-dsl
-implementation("io.komune.c2:ssm-couchdb-f2:${Versions.ssm}")
+// F2 function implementations
+implementation("io.komune.c2:ssm-couchdb-f2:${Versions.c2}")
 ```
-> Note: All functions are implemented as Spring Beans, so they can be instantiated with Dependency Injection mechanism
 
-## SSM-Data
+### SSM-Data
 
-[SSM-Data](/docs/ssm-tx-general--page) uses the two previous modules to provide more complex and detailed queries.
+Combines chaincode and CouchDB modules for complex queries.
 
-**Import with Gradle**
 ```kotlin
 // Data models and query function definitions
-implementation("io.komune.c2:ssm-data-dsl:${Versions.ssm}")
+implementation("io.komune.c2:ssm-data-dsl:${Versions.c2}")
 
-// Implementation of query functions defined in ssm-couchdb-dsl
-implementation("io.komune.c2:ssm-data-f2:${Versions.ssm}")
+// F2 function implementations
+implementation("io.komune.c2:ssm-data-f2:${Versions.c2}")
 ```
-> Note: All functions are implemented as Spring Beans, so they can be instantiated with Dependency Injection mechanism
+
+### SSM-TX
+
+Transaction management for SSM operations.
+
+```kotlin
+// Data models
+implementation("io.komune.c2:ssm-tx-dsl:${Versions.c2}")
+
+// F2 function implementations
+implementation("io.komune.c2:ssm-tx-f2:${Versions.c2}")
+```
+
+> All F2 functions are implemented as Spring Beans for dependency injection.
+
+## Development
+
+### Build Commands
+
+```bash
+make lint      # Run detekt static analysis
+make build     # Build and publish to Maven local
+make test      # Run all tests (requires dev environment)
+```
+
+### Development Environment
+
+A pre-configured Hyperledger Fabric network is provided via Docker Compose:
+
+```bash
+make dev up    # Start sandbox services
+make dev down  # Stop sandbox services
+make dev logs  # Follow service logs
+```
+
+Before running tests:
+```bash
+make test-pre  # Pull images, start containers, configure /etc/hosts
+```
+
+## Infrastructure
+
+### SSM-Sandbox
+
+Pre-configured Hyperledger Fabric Network with generated cryptographic materials and SSM chaincode installed. See [c2-sandbox/README.md](c2-sandbox/README.md) for details.
+
+### Chaincode API Gateway
+
+REST API gateway for blockchain operations. Builds as Docker image `c2-chaincode-api-gateway`.

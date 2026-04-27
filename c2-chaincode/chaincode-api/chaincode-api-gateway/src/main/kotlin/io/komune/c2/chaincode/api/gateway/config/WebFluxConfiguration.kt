@@ -29,5 +29,4 @@ class WebFluxConfiguration : WebFluxConfigurer {
     override fun configureHttpMessageCodecs(configurer: ServerCodecConfigurer) {
         configurer.defaultCodecs().maxInMemorySize(BYTE_COUNT) // Set to 10 MB
     }
-
 }

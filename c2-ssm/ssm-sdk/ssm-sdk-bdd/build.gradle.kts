@@ -1,7 +1,5 @@
-import io.komune.gradle.dependencies.FixersDependencies
-
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
 }
 
 dependencies {
@@ -10,7 +8,6 @@ dependencies {
 	api(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
 
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-core"))
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${Versions.jacksonKotlin}")
-
-	FixersDependencies.Jvm.Test.cucumber(::api)
+	implementation(libs.jackson.module.kotlin)
+	api(libs.bundles.cucumber)
 }

@@ -1,15 +1,33 @@
-
-
 pluginManagement {
 	repositories {
+		if(System.getenv("FIXERS_REPOSITORIES_MAVEN_LOCAL") == "true") {
+			mavenLocal()
+		}
 		gradlePluginPortal()
 		mavenCentral()
-		maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots") }
-		mavenLocal()
+		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
 	}
 }
 
-rootProject.name = "fixers-c2"
+dependencyResolutionManagement {
+	repositories {
+		mavenCentral()
+		maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
+		if(System.getenv("FIXERS_REPOSITORIES_MAVEN_LOCAL") == "true") {
+			mavenLocal()
+		}
+	}
+	versionCatalogs {
+		val fixersVersion = file("gradle/libs.versions.toml")
+			.readLines()
+			.firstNotNullOfOrNull {
+				Regex("^fixers\\s*=\\s*\"([^\"]+)\"").find(it)?.groupValues?.get(1)
+			} ?: error("fixers version not found in gradle/libs.versions.toml")
+		create("catalogue") {
+			from("io.komune.f2:f2-gradle-catalog:$fixersVersion")
+		}
+	}
+}
 
 include(
 	"c2-ssm:ssm-bdd:ssm-bdd-config",
@@ -33,7 +51,6 @@ include(
 
 include(
 	"c2-ssm:ssm-data:ssm-data-bdd",
-	"c2-ssm:ssm-data:ssm-data-client",
 	"c2-ssm:ssm-data:ssm-data-dsl",
 	"c2-ssm:ssm-data:ssm-data-f2",
 	"c2-ssm:ssm-data:ssm-data-sync",
@@ -60,11 +77,6 @@ include(
 	"c2-ssm:ssm-spring:ssm-tx-spring-boot-starter:ssm-tx-session-start-spring-boot-starter"
 )
 
-//include(
-//	"sample:ssm-full",
-//	"sample:ssm-full-ext",
-//)
-
 include(
 	"c2-ssm:ssm-tx:ssm-tx-bdd",
 	"c2-ssm:ssm-tx:ssm-tx-dsl",
@@ -72,8 +84,26 @@ include(
 )
 
 include(
+	"c2-ssm:ssm-s2:ssm-s2-dsl",
+)
+
+include(
+	"c2-ssm:ssm-spring:ssm-s2-storing-spring-boot-starter",
+	"c2-ssm:ssm-spring:ssm-s2-sourcing-spring-boot-starter",
+)
+
+include(
 	"c2-chaincode:chaincode-dsl",
 	"c2-chaincode:chaincode-api:chaincode-api-config",
 	"c2-chaincode:chaincode-api:chaincode-api-fabric",
 	"c2-chaincode:chaincode-api:chaincode-api-gateway",
+)
+
+include(
+	"sample:ssm-sample-orderbook-sourcing-domain",
+	"sample:ssm-sample-orderbook-sourcing",
+	"sample:ssm-sample-orderbook-sourcing-permissive",
+	"sample:ssm-sample-orderbook-storing",
+	"sample:ssm-sample-did-domain",
+	"sample:ssm-sample-did-app",
 )

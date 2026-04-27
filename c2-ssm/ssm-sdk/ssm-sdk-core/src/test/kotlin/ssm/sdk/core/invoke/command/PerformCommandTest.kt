@@ -14,7 +14,6 @@ class PerformCommandTest {
 	val  chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 
 	@Test
-	@Throws(Exception::class)
 	fun test_execute() {
 		val adamPair = loadKeyPair("command/adam")
 		val signerUser = SignerUser("adam", adamPair)
@@ -39,7 +38,6 @@ class PerformCommandTest {
 	}
 
 	@Test
-	@Throws(Exception::class)
 	fun test_executeWithPrivateMessage() {
 		val adamPair = loadKeyPair("command/adam")
 

@@ -1,0 +1,19 @@
+ssm:
+  signer:
+    user:
+      name: ssm-admin
+      key: user/ssm-admin
+    admin:
+      name: ssm-admin
+      key: user/ssm-admin
+  couchdb:
+    url: http://localhost:5984
+    username: couchdb
+    password: couchdb
+    serviceName: s2-sample-did
+  chaincode:
+    url: http://localhost:9090
+  batch:
+    timeout: 5000
+  chunking:
+    size: 6

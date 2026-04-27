@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-
   cli-init-ssm.bc-coop.bclan:
     container_name: cli-init-ssm-bclan-${DOCKER_NETWORK}
     image: ${DOCKER_REPOSITORY}c2-sandbox-cli:${VERSION_C2}

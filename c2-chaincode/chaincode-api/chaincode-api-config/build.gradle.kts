@@ -1,14 +1,13 @@
 plugins {
-    id("io.komune.fixers.gradle.kotlin.jvm")
-    kotlin("plugin.spring")
-    kotlin("kapt")
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.kotlin.spring)
+    alias(catalogue.plugins.kotlin.kapt)
 }
 
 dependencies {
     implementation(project(":c2-chaincode:chaincode-dsl"))
-
-    Dependencies.springBootConfigurationProcessor(::kapt)
-    Dependencies.f2Function(::implementation)
-    Dependencies.jackson(::implementation)
-    Dependencies.slf4j(::implementation)
+    kapt(libs.spring.boot.configuration.processor)
+    implementation(libs.f2.spring.starter.function)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.slf4j.api)
 }

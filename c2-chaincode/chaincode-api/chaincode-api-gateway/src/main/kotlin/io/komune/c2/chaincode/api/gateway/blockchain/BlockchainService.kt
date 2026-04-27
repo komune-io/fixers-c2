@@ -57,5 +57,4 @@ class BlockchainService(
 	override fun queryTransactionById(channelId: ChannelId, invokeArgs: InvokeArgs): String {
 		return fabricGatewayBlockClient.queryTransactionById(channelId, invokeArgs.values.first()).let(JsonUtils::toJson)
 	}
-
 }

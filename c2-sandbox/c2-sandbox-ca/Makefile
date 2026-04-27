@@ -20,7 +20,7 @@ lint:
 	docker run --rm -i hadolint/hadolint < Dockerfile
 
 build:
-	@docker build \
+	@docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		 --platform=linux/amd64 \
 		 --no-cache \
          --build-arg VERSION=$$VERSION \
@@ -35,9 +35,7 @@ build:
          -t ${FABRIC_CA_IMG} ..
 
 push:
-	@docker tag ${FABRIC_CA_IMG} ${DOCKER_REPOSITORY}${FABRIC_CA_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_CA_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_CA_IMG} ${DOCKER_REPOSITORY}${FABRIC_CA_IMG}
 
 push-latest:
-	@docker tag ${FABRIC_CA_IMG} ${FABRIC_CA_LATEST}
-	@docker push ${FABRIC_CA_LATEST}
+	@bash ../../infra/docker-push.sh ${FABRIC_CA_IMG} ${FABRIC_CA_LATEST}
