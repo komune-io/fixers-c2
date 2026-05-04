@@ -143,6 +143,7 @@ class CouchdbSsmClient(
 		return cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
 	}
 
+	@Suppress("SwallowedException")
 	suspend fun installSsmChangesFilter(dbName: DatabaseName) = suspendCoroutine<Boolean> { continuation ->
 		try {
 			cloudant.getDesignDocument(
@@ -178,6 +179,6 @@ class CouchdbSsmClient(
 			.groupLevel(1)
 			.key(arrayOf(docType.name))
 			.build()
-		return (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Double?)?.toInt() ?: 0
+		return (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
 	}
 }

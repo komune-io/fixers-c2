@@ -1,8 +1,5 @@
 package ssm.sdk.core.ktor
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.exc.MismatchedInputException
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.invoke.InvokeError
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
@@ -17,6 +14,8 @@ import ssm.sdk.dsl.buildArgs
 import ssm.sdk.dsl.buildCommandArgs
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JsonUtils
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.exc.MismatchedInputException
 
 class SsmRequester(
 	private val jsonConverter: JSONConverter,
@@ -99,7 +98,7 @@ class SsmRequester(
 		return coopRepository.invoke(
 			args
 		).handleResponse {
-			JsonUtils.mapper.readValue(it, type)
+			JsonUtils.toObject(it, type)
 		}
 	}
 
@@ -157,17 +156,21 @@ class SsmRequester(
 			invokeArgs
 		}
 
-		return coopRepository.invokeF2(
+		return coopRepository.invoke(
 			args
 		).handleResponse {
-			JsonUtils.mapper.readValue<List<InvokeReturn>>(it)
+			JsonUtils.toObject<List<InvokeReturn>>(it)
 		}
 	}
 
+	@Suppress("TooGenericExceptionCaught", "SwallowedException")
 	private fun <R> String.handleResponse(transform: (String)-> R): R = try {
 		transform(this)
 	} catch (e: MismatchedInputException) {
-		val error: InvokeError = JsonUtils.mapper.readValue(this)
+		if (this.isBlank()) {
+			throw InvokeException("Empty response from blockchain")
+		}
+		val error: InvokeError = JsonUtils.toObject(this)
 		throw InvokeException(error.message)
 	} catch (e: Exception) {
 		throw InvokeException("Error while parsing response", e)

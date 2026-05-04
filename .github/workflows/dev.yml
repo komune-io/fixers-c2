@@ -2,14 +2,14 @@ name: Dev
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
   pull_request:
-    types: [opened, synchronize, labeled]
+    types: [opened, synchronize, labeled, ready_for_review]
   push:
     branches:
       - main
       - 'release/*'
-    tags:
-      - '*'
 
 jobs:
   libs:
@@ -19,15 +19,15 @@ jobs:
       packages: write
     needs: docker
     with:
-      make-file: 'make_libs.mk'
-      on-tag: 'promote'
+      make-file: 'infra/make/libs.mk'
     secrets:
-      GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-      GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
-      PKG_GITHUB_USERNAME: ${{ github.actor }}
-      PKG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      PKG_SONATYPE_OSS_USERNAME: ${{ secrets.PKG_SONATYPE_OSS_USERNAME }}
-      PKG_SONATYPE_OSS_TOKEN: ${{ secrets.PKG_SONATYPE_OSS_TOKEN }}
+      FIXERS_PUBLISH_SIGNING_GPG_KEY: ${{ secrets.FIXERS_PUBLISH_SIGNING_GPG_KEY }}
+      FIXERS_PUBLISH_SIGNING_GPG_KEY_PASSWORD: ${{ secrets.FIXERS_PUBLISH_SIGNING_GPG_KEY_PASSWORD }}
+      FIXERS_PUBLISH_GITHUB_USERNAME: ${{ github.actor }}
+      FIXERS_PUBLISH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      FIXERS_PUBLISH_MAVEN_CENTRAL_USERNAME: ${{ secrets.FIXERS_PUBLISH_MAVEN_CENTRAL_USERNAME }}
+      FIXERS_PUBLISH_MAVEN_CENTRAL_PASSWORD: ${{ secrets.FIXERS_PUBLISH_MAVEN_CENTRAL_PASSWORD }}
+      FIXERS_SONAR_TOKEN: ${{ secrets.FIXERS_SONAR_TOKEN }}
 
   docker:
     uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main
@@ -35,37 +35,23 @@ jobs:
       contents: read
       packages: write
     with:
-      java-version: '21'
-      with-docker-registry-login: 'true'
-      make-file: 'make_docker.mk'
-      on-tag: 'publish promote'
-      force-publish: 'true'
+      with-stage-docker-registry-login: 'true'
+      with-promote-docker-registry-login: 'true'
+      make-file: 'infra/make/docker.mk'
+      force-stage: 'true'
     secrets:
-      PKG_GITHUB_USERNAME: ${{ github.actor }}
-      PKG_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DOCKER_PUBLISH_USERNAME: ${{ github.actor }}
-      DOCKER_PUBLISH_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      DOCKER_PROMOTE_USERNAME: ${{ secrets.DOCKER_IO_USERNAME }}
-      DOCKER_PROMOTE_PASSWORD: ${{ secrets.DOCKER_IO_PASSWORD }}
+      FIXERS_PUBLISH_GITHUB_USERNAME: ${{ github.actor }}
+      FIXERS_PUBLISH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DOCKER_STAGE_USERNAME: ${{ github.actor }}
+      DOCKER_STAGE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      DOCKER_PROMOTE_USERNAME: ${{ secrets.FIXERS_DOCKER_HUB_USERNAME }}
+      DOCKER_PROMOTE_PASSWORD: ${{ secrets.FIXERS_DOCKER_HUB_PASSWORD }}
 
-  docs:
-    uses: komune-io/fixers-gradle/.github/workflows/publish-storybook-workflow.yml@main
+  sec:
+    needs: libs
+    uses: komune-io/fixers-gradle/.github/workflows/sec-workflow.yml@main
     permissions:
-      contents: read
-      packages: write
-      pages: write
-      id-token: write
-    with:
-      on-tag: 'publish_promote'
-      make-file: 'make_docs.mk'
-      with-chromatic: false
-      storybook-dir: storybook
-      storybook-static-dir: storybook-static
+      contents: write
+      pull-requests: read
     secrets:
-      NPM_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-      DOCKER_PUBLISH_USERNAME: ${{ github.actor }}
-      DOCKER_PUBLISH_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      DOCKER_PROMOTE_USERNAME: ${{ secrets.DOCKER_IO_USERNAME }}
-      DOCKER_PROMOTE_PASSWORD: ${{ secrets.DOCKER_IO_PASSWORD }}
-
+      FIXERS_SONAR_TOKEN: ${{ secrets.FIXERS_SONAR_TOKEN }}

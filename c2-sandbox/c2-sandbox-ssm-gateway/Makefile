@@ -20,10 +20,9 @@ test:
 package: lint build test push
 
 build:
-	@docker build \
+	@docker buildx build --output type=docker,compression=gzip,force-compression=true \
 	 	--platform=linux/amd64 \
 	 	--no-cache \
-    	--build-arg DOCKER_REPOSITORY=$$DOCKER_REPOSITORY \
     	--build-arg VERSION=$$VERSION \
     	--build-arg coop_channel=$$coop_channel \
     	--build-arg coop_ccid=$$coop_ccid \
@@ -35,5 +34,4 @@ build:
     	-t ${FABRIC_SSM_REST_IMG} ..
 
 push:
-	@docker tag ${FABRIC_SSM_REST_IMG} ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_SSM_REST_IMG} ${DOCKER_REPOSITORY}${FABRIC_SSM_REST_IMG}

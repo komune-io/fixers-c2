@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught", "SwallowedException")
+
 package ssm.sdk.sign.crypto
 
 import java.io.File

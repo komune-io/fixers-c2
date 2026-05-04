@@ -1,0 +1,102 @@
+[versions]
+fixers = "0.39.0-SNAPSHOT"
+fabric = "2.2.26"
+fabricGateway = "1.7.1"
+grpc = "1.67.1"
+protobuf = "4.28.2"
+bouncycastle = "1.70"
+cloudant = "0.10.16"
+
+[libraries]
+# S2 modules
+s2-automate-dsl = { group = "io.komune.s2", name = "s2-automate-dsl", version.ref = "fixers" }
+s2-automate-core = { group = "io.komune.s2", name = "s2-automate-core", version.ref = "fixers" }
+s2-spring-boot-starter-storing = { group = "io.komune.s2", name = "s2-spring-boot-starter-storing", version.ref = "fixers" }
+s2-spring-boot-starter-sourcing = { group = "io.komune.s2", name = "s2-spring-boot-starter-sourcing", version.ref = "fixers" }
+# F2 (versions from BOM)
+f2-client-core = { group = "io.komune.f2", name = "f2-client-core" }
+f2-client-ktor = { group = "io.komune.f2", name = "f2-client-ktor" }
+f2-dsl-cqrs = { group = "io.komune.f2", name = "f2-dsl-cqrs" }
+f2-dsl-function = { group = "io.komune.f2", name = "f2-dsl-function" }
+f2-spring-starter-function = { group = "io.komune.f2", name = "f2-spring-boot-starter-function" }
+f2-spring-starter-auth-tenant = { group = "io.komune.f2", name = "f2-spring-boot-starter-auth-tenant" }
+f2-spring-starter-function-http = { group = "io.komune.f2", name = "f2-spring-boot-starter-function-http" }
+
+# Ktor (versions from BOM)
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core" }
+ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation" }
+ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio" }
+ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json" }
+ktor-serialization-jackson = { group = "io.ktor", name = "ktor-serialization-jackson" }
+
+# Spring Boot (versions from BOM)
+spring-boot-autoconfigure = { group = "org.springframework.boot", name = "spring-boot-autoconfigure" }
+spring-boot-configuration-processor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor" }
+spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+spring-boot-starter-webflux = { group = "org.springframework.boot", name = "spring-boot-starter-webflux" }
+spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-restclient = { group = "org.springframework.boot", name = "spring-boot-restclient" }
+spring-boot-resttestclient = { group = "org.springframework.boot", name = "spring-boot-resttestclient" }
+
+# JSON (versions from BOM)
+jackson-module-kotlin = { group = "tools.jackson.module", name = "jackson-module-kotlin" }
+
+# Logging (versions from BOM)
+slf4j-api = { group = "org.slf4j", name = "slf4j-api" }
+
+# Test (versions from BOM)
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api" }
+junit-platform-suite = { group = "org.junit.platform", name = "junit-platform-suite" }
+assertj-core = { group = "org.assertj", name = "assertj-core" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test" }
+reactor-test = { group = "io.projectreactor", name = "reactor-test" }
+
+# Cucumber (versions from BOM)
+cucumber-java = { group = "io.cucumber", name = "cucumber-java" }
+cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
+cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
+
+# Arrow (versions from BOM)
+arrow-core = { group = "io.arrow-kt", name = "arrow-core" }
+arrow-optics = { group = "io.arrow-kt", name = "arrow-optics" }
+arrow-optics-ksp = { group = "io.arrow-kt", name = "arrow-optics-ksp-plugin" }
+
+# Serialization (versions from BOM)
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json" }
+
+# Redis
+spring-boot-starter-data-redis-reactive = { group = "org.springframework.boot", name = "spring-boot-starter-data-redis-reactive" }
+lettuce-core = { group = "io.lettuce", name = "lettuce-core" }
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind" }
+commons-pool2 = { group = "org.apache.commons", name = "commons-pool2" }
+
+# Testcontainers
+spring-boot-testcontainers = { group = "org.springframework.boot", name = "spring-boot-testcontainers" }
+testcontainers-junit-jupiter = { group = "org.testcontainers", name = "testcontainers-junit-jupiter" }
+testcontainers-redis = { group = "com.redis", name = "testcontainers-redis" }
+
+# Project-specific
+fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
+fabric-gateway = { group = "org.hyperledger.fabric", name = "fabric-gateway", version.ref = "fabricGateway" }
+fabric-protos = { group = "org.hyperledger.fabric", name = "fabric-protos", version = "0.3.2" }
+grpc-bom = { group = "io.grpc", name = "grpc-bom", version.ref = "grpc" }
+grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf" }
+grpc-stub = { group = "io.grpc", name = "grpc-stub" }
+grpc-netty-shaded = { group = "io.grpc", name = "grpc-netty-shaded" }
+protobuf-bom = { group = "com.google.protobuf", name = "protobuf-bom", version.ref = "protobuf" }
+protobuf-java = { group = "com.google.protobuf", name = "protobuf-java" }
+bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
+cloudant = { group = "com.ibm.cloud", name = "cloudant", version.ref = "cloudant" }
+
+[bundles]
+f2-client = ["f2-client-core", "f2-client-ktor", "f2-dsl-cqrs", "f2-dsl-function"]
+f2-dsl = ["f2-dsl-cqrs", "f2-dsl-function"]
+ktor = ["ktor-client-core", "ktor-client-content-negotiation", "ktor-client-logging", "ktor-client-cio", "ktor-serialization-kotlinx-json", "ktor-serialization-jackson"]
+spring-webflux = ["spring-boot-starter-actuator", "spring-boot-autoconfigure", "spring-boot-starter-webflux"]
+test = ["junit-jupiter", "junit-jupiter-api", "junit-platform-suite", "assertj-core", "kotlinx-coroutines-test"]
+spring-test = ["spring-boot-starter-test", "spring-boot-restclient", "spring-boot-resttestclient", "reactor-test", "assertj-core"]
+spring-redis = ["spring-boot-starter-data-redis-reactive", "lettuce-core", "jackson-databind", "commons-pool2"]
+ssm-sample-testcontainers = ["spring-boot-testcontainers", "testcontainers-junit-jupiter", "testcontainers-redis"]
+cucumber = ["cucumber-java", "cucumber-java8", "cucumber-junit-platform-engine"]

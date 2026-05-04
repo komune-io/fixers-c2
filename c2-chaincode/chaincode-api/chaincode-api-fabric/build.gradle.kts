@@ -1,33 +1,33 @@
 plugins {
-    id("io.komune.fixers.gradle.kotlin.jvm")
-    kotlin("plugin.spring")
-    kotlin("kapt")
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.kotlin.spring)
+    alias(catalogue.plugins.kotlin.kapt)
 }
 
 dependencies {
     implementation(project(":c2-chaincode:chaincode-api:chaincode-api-config"))
     implementation(project(":c2-chaincode:chaincode-dsl"))
 
-    Dependencies.springBootAuthConfiguration(::implementation, ::kapt)
-    Dependencies.jackson(::implementation)
-    Dependencies.slf4j(::implementation)
-
+    kapt(libs.spring.boot.configuration.processor)
+    implementation(libs.spring.boot.autoconfigure)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.slf4j.api)
 
     // Enforce platform versions
-    implementation(enforcedPlatform("io.grpc:grpc-bom:1.67.1"))
-    implementation(enforcedPlatform("com.google.protobuf:protobuf-bom:4.28.2"))
+    implementation(enforcedPlatform(libs.grpc.bom))
+    implementation(enforcedPlatform(libs.protobuf.bom))
 
-    // Main dependencies
-    api("org.hyperledger.fabric:fabric-gateway:1.7.1") {
+    // Fabric Gateway API
+    api(libs.fabric.gateway) {
         exclude(group = "org.hyperledger.fabric", module = "fabric-protos")
     }
-    implementation("org.hyperledger.fabric:fabric-protos:0.3.2")
+    implementation(libs.fabric.protos)
 
-    // Explicitly declare protobuf and grpc dependencies
-    implementation("com.google.protobuf:protobuf-java")
-    implementation("io.grpc:grpc-protobuf")
-    implementation("io.grpc:grpc-stub")
-    implementation("io.grpc:grpc-netty-shaded")
+    // gRPC/protobuf
+    implementation(libs.protobuf.java)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.netty.shaded)
 
-    Dependencies.test(::testImplementation)
+    testImplementation(libs.bundles.test)
 }

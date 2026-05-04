@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-chaincode/chaincode-ex02"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-chaincode/chaincode-ssm"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-sandbox/c2-sandbox-ca"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-sandbox/c2-sandbox-cli"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-sandbox/c2-sandbox-orderer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-sandbox/c2-sandbox-peer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/c2-sandbox/c2-sandbox-ssm-gateway"
+    schedule:
+      interval: "weekly"

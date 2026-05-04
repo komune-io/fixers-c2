@@ -1,4 +1,0 @@
-{
-  "sessionName" : "DataSsmSessionId",
-  "ssmUri" : "ssm:channel:chaincode:ssmName"
-}

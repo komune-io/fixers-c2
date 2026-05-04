@@ -22,8 +22,8 @@ interface TransactionDTO {
 	val blockId: BlockId
 
 	/**
-	 * Execution date of the transaction
-	 * @example 1627984925000
+	 * Execution date of the transaction as epoch milliseconds
+	 * @example 1738410430231
 	 */
 	val timestamp: Long
 
@@ -45,16 +45,11 @@ interface TransactionDTO {
 	val creator: IdentitiesInfoDTO
 
 	/**
-	 * Nonce of the transaction
-	 * @example "TODO"
+	 * Random value used to prevent replay attacks.
+	 * Each transaction includes a unique nonce to ensure it cannot be submitted twice.
+	 * @example "j/gVtg9VQ+8tvui/GTyxlILV8HIakce3"
 	 */
 	val nonce: ByteArray
-
-	/**
-	 * Validation code of the transaction
-	 * @example "TODO"
-	 */
-//	val validationCode: Byte
 }
 
 /**
@@ -73,6 +68,4 @@ class Transaction(
 	override val channelId: String,
 	override val creator: IdentitiesInfo,
 	override val nonce: ByteArray,
-//	override val validationCode: Byte,
 ) : TransactionDTO
-

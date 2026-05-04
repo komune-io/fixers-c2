@@ -14,7 +14,7 @@ lint:
 	docker run --rm -i hadolint/hadolint < Dockerfile
 
 build:
-	docker build --no-cache \
+	docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		--platform=linux/amd64 \
 		--no-cache \
 		--build-arg VERSION_FABRIC=${VERSION_FABRIC} \
@@ -24,8 +24,7 @@ build:
 		-t ${SSM_CHAINCODE_IMG} .
 
 push:
-	@docker tag ${SSM_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
-	@docker push ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
+	@bash ../../infra/docker-push.sh ${SSM_CHAINCODE_IMG} ${DOCKER_REPOSITORY}${SSM_CHAINCODE_IMG}
 
 inspect:
 	@docker run -it ${SSM_CHAINCODE_IMG} sh

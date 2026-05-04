@@ -17,7 +17,7 @@ lint:
 	docker run --rm -i hadolint/hadolint < Dockerfile
 
 build:
-	docker build \
+	docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		 --platform=linux/amd64 \
 		 --no-cache \
     	--build-arg VERSION_FABRIC=$$VERSION_FABRIC \
@@ -27,5 +27,4 @@ build:
     	-t ${FABRIC_ORDERER_IMG} ..
 
 push:
-	@docker tag ${FABRIC_ORDERER_IMG} ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}
-	@docker push ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}
+	@bash ../../infra/docker-push.sh ${FABRIC_ORDERER_IMG} ${DOCKER_REPOSITORY}${FABRIC_ORDERER_IMG}

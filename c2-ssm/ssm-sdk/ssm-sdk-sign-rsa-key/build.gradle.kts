@@ -1,11 +1,9 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+	alias(catalogue.plugins.fixers.gradle.publish)
 }
 
 dependencies {
-
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
-	implementation("org.bouncycastle:bcprov-jdk15on:${Versions.bouncycastleVersion}")
-
+	implementation(libs.bouncycastle)
 }

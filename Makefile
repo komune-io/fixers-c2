@@ -1,30 +1,35 @@
 VERSION = $(shell cat VERSION)
 
-.PHONY: lint build test publish promote
+.PHONY: clean lint build test publish promote
 
 ## New
+clean:
+	@make -f infra/make/libs.mk clean
+	@make -f infra/make/docker.mk clean
+
 lint:
-	@make -f libs.mk lint
-	@make -f docker.mk lint
+	@make -f infra/make/libs.mk lint
+	@make -f infra/make/docker.mk lint
 
 build:
-	@make -f libs.mk build
-	@make -f docker.mk build
+	@make -f infra/make/libs.mk build
+	@make -f infra/make/docker.mk build
 
 test-pre:
-	@make -f libs.mk test-pre
+	@make -f infra/make/libs.mk test-pre
 
 test:
-	@make -f libs.mk test
-	@make -f docker.mk test
+	@make -f infra/make/libs.mk test
+	@make -f infra/make/docker.mk test
 
-publish:
-	@make -f libs.mk publish
-	@make -f docker.mk publish
+stage:
+	@make -f infra/make/libs.mk stage
+	@make -f infra/make/docker.mk stage
+
 
 promote:
-	@make -f libs.mk promote
-	@make -f docker.mk promote
+	@make -f infra/make/libs.mk promote
+	@make -f infra/make/docker.mk promote
 
 ## DOCKER-COMPOSE DEV ENVIRONMENT
 include infra/docker-compose/dev-compose.mk

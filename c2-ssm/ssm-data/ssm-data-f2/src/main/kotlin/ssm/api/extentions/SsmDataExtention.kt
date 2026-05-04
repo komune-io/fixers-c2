@@ -47,6 +47,7 @@ fun Ssm.toDataSsm(ssm: SsmUri): DataSsm {
 	)
 }
 
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
 suspend fun SessionName.getSessionLogs(
 	ssmUri: SsmUri,
 	ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,

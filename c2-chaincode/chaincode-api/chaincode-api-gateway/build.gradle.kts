@@ -1,8 +1,7 @@
 plugins {
-	id("io.spring.dependency-management")
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	kotlin("plugin.spring")
-	id("org.springframework.boot")
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+	alias(catalogue.plugins.kotlin.spring)
+	alias(catalogue.plugins.spring.boot)
 }
 
 dependencies {
@@ -10,10 +9,16 @@ dependencies {
 	implementation(project(":c2-chaincode:chaincode-dsl"))
 	implementation(project(":c2-chaincode:chaincode-api:chaincode-api-fabric"))
 
-	Dependencies.springWebFlux(::implementation)
-	Dependencies.f2Auth(::implementation)
-	Dependencies.f2Http(::implementation)
-	Dependencies.jackson(::implementation)
+	implementation(libs.bundles.spring.webflux)
+	implementation(libs.f2.spring.starter.auth.tenant)
+	implementation(libs.f2.spring.starter.function.http)
+	implementation(libs.jackson.module.kotlin)
 
-	Dependencies.springTest(::testImplementation)
+	testImplementation(libs.bundles.spring.test)
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
+	environment.set(mapOf(
+		"BPE_APPEND_JAVA_TOOL_OPTIONS" to " -XX:MaxDirectMemorySize=64m"
+	))
 }

@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration
 import ssm.chaincode.f2.features.command.SsmTxCreateFunctionImpl
 import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionImpl
 import ssm.sdk.core.SsmTxService
-import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
 
 @Configuration(proxyBeanMethods = false)
@@ -18,7 +17,6 @@ class SsmTxSessionPerformActionAutoConfiguration {
 	@ConditionalOnBean(SsmTxService::class)
 	fun ssmTxSessionPerformActionFunction(
 		ssmTxService: SsmTxService,
-		properties: SsmTxProperties
 	): SsmTxSessionPerformActionFunction {
 		return SsmTxSessionPerformActionFunctionImpl(ssmTxService)
 	}

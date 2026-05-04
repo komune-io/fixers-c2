@@ -1,8 +1,0 @@
-{
-  "couchdb" : {
-    "url" : "http://peer.sandbox.Komune.io:9000",
-    "username" : "admin",
-    "password" : "admin",
-    "serviceName" : "ssm-couchdb"
-  }
-}

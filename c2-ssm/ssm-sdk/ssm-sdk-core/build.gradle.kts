@@ -1,6 +1,6 @@
 plugins {
-	id("io.komune.fixers.gradle.kotlin.jvm")
-	id("io.komune.fixers.gradle.publish")
+	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+	alias(catalogue.plugins.fixers.gradle.publish)
 }
 
 dependencies {
@@ -10,10 +10,8 @@ dependencies {
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign-rsa-key"))
 
-//	FixersDependencies.Jvm.Kotlin.ktorClient(::implementation)
-//	api("io.ktor:ktor-client-content-negotiation:2.0.0")
-
-	Dependencies.ktor(::implementation)
+	implementation(libs.bundles.ktor)
+	implementation(libs.jackson.module.kotlin)
 
 	testImplementation(project(":c2-ssm:ssm-sdk:ssm-sdk-bdd"))
 }
