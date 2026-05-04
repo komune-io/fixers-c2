@@ -1,16 +1,16 @@
 package ssm.chaincode.f2.features.command
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.burst
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.Ssm
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.burst
 import ssm.chaincode.f2.utils.SsmException
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
-import ssm.sdk.dsl.InvokeReturn
 import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmInitdResult
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction

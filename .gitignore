@@ -21,6 +21,3 @@
 *.iml
 *.ipr
 **/out/
-
-### Storybook ###
-storybook/node_modules

@@ -1,10 +1,10 @@
 package ssm.sync.sdk
 
 import f2.dsl.fnc.invokeWith
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ssm.chaincode.dsl.model.SessionName
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.SsmUri
 import ssm.chaincode.dsl.model.uri.toSsmUri
 import ssm.couchdb.dsl.model.DatabaseChangesDTO

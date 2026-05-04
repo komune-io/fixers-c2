@@ -1,13 +1,13 @@
 package ssm.couchdb.f2.query
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.from
 import ssm.couchdb.client.CouchdbSsmClient
 import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryDTO
 import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryFunction

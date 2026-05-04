@@ -4,13 +4,13 @@ import f2.dsl.cqrs.page.OffsetPaginationDTO
 import f2.dsl.cqrs.page.PageQueryDTO
 import f2.dsl.cqrs.page.PageQueryResultDTO
 import f2.dsl.fnc.F2Function
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.ChaincodeUriDTO
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
 import ssm.chaincode.dsl.model.SsmName
 import ssm.chaincode.dsl.model.SsmSessionStateDTO
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.ChaincodeUriDTO
 
 /**
  * Retrieve the list of all known sessions of a given SSM
@@ -57,9 +57,9 @@ interface CouchdbSsmSessionStateListQueryResultDTO : PageQueryResultDTO<SsmSessi
 @JsExport
 @JsName("CouchdbSsmSessionStateListQuery")
 class CouchdbSsmSessionStateListQuery(
-	override val pagination: OffsetPaginationDTO? = null,
-	override val chaincodeUri: ChaincodeUri,
-	override val ssm: SsmName? = null
+    override val pagination: OffsetPaginationDTO? = null,
+    override val chaincodeUri: ChaincodeUri,
+    override val ssm: SsmName? = null
 ) : CouchdbSsmSessionStateListQueryDTO
 
 /**

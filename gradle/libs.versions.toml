@@ -1,6 +1,9 @@
 [versions]
 fixers = "0.40.0-SNAPSHOT"
 fabric = "2.2.26"
+fabricGateway = "1.7.1"
+grpc = "1.67.1"
+protobuf = "4.28.2"
 bouncycastle = "1.70"
 cloudant = "0.10.17"
 
@@ -17,6 +20,7 @@ f2-dsl-cqrs = { group = "io.komune.f2", name = "f2-dsl-cqrs" }
 f2-dsl-function = { group = "io.komune.f2", name = "f2-dsl-function" }
 f2-spring-starter-function = { group = "io.komune.f2", name = "f2-spring-boot-starter-function" }
 f2-spring-starter-auth-tenant = { group = "io.komune.f2", name = "f2-spring-boot-starter-auth-tenant" }
+f2-spring-starter-function-http = { group = "io.komune.f2", name = "f2-spring-boot-starter-function-http" }
 
 # Ktor (versions from BOM)
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core" }
@@ -75,6 +79,14 @@ testcontainers-redis = { group = "com.redis", name = "testcontainers-redis" }
 
 # Project-specific
 fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
+fabric-gateway = { group = "org.hyperledger.fabric", name = "fabric-gateway", version.ref = "fabricGateway" }
+fabric-protos = { group = "org.hyperledger.fabric", name = "fabric-protos", version = "0.3.2" }
+grpc-bom = { group = "io.grpc", name = "grpc-bom", version.ref = "grpc" }
+grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf" }
+grpc-stub = { group = "io.grpc", name = "grpc-stub" }
+grpc-netty-shaded = { group = "io.grpc", name = "grpc-netty-shaded" }
+protobuf-bom = { group = "com.google.protobuf", name = "protobuf-bom", version.ref = "protobuf" }
+protobuf-java = { group = "com.google.protobuf", name = "protobuf-java" }
 bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
 cloudant = { group = "com.ibm.cloud", name = "cloudant", version.ref = "cloudant" }
 

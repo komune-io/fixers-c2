@@ -1,10 +1,10 @@
 package ssm.tx.dsl.features.ssm
 
 import f2.dsl.fnc.F2Function
-import ssm.chaincode.dsl.blockchain.TransactionId
+import io.komune.c2.chaincode.dsl.ChaincodeUriDTO
+import io.komune.c2.chaincode.dsl.TransactionId
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.Ssm
-import ssm.chaincode.dsl.model.uri.ChaincodeUriDTO
 import ssm.tx.dsl.features.SsmCommandDTO
 import ssm.tx.dsl.features.SsmCommandResultDTO
 
@@ -22,9 +22,9 @@ typealias SsmTxCreateFunction = F2Function<SsmCreateCommand, SsmCreateResult>
  * @title Create SSM: Parameters
  */
 class SsmCreateCommand(
-	override val chaincodeUri: ChaincodeUriDTO,
-	val signerName: AgentName,
-	/**
+    override val chaincodeUri: ChaincodeUriDTO,
+    val signerName: AgentName,
+    /**
 	 * Description of the SSM to create
 	 */
 	val ssm: Ssm,

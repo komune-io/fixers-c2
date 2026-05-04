@@ -1,13 +1,13 @@
 package ssm.chaincode.dsl.query
 
 import f2.dsl.fnc.F2Function
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
 import ssm.chaincode.dsl.SsmItemsResultDTO
 import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.AgentName
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 /**
  * Retrieves all users

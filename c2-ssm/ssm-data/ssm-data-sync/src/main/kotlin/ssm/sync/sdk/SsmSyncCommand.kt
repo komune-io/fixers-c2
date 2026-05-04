@@ -1,9 +1,9 @@
 package ssm.sync.sdk
 
 import f2.dsl.fnc.F2Function
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmName
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.SsmUri
 import ssm.couchdb.dsl.model.ChangeEventId
 import ssm.data.dsl.model.DataSsmSessionState
@@ -24,11 +24,11 @@ interface SyncSsmCommandResultDTO {
 }
 
 class SyncSsmCommand(
-	override val lastEventId: ChangeEventId?,
-	override val chaincodeUri: ChaincodeUri,
-	override val ssmName: SsmName,
-	override val sessionName: SessionName? = null,
-	override val limit: Long? = null,
+    override val lastEventId: ChangeEventId?,
+    override val chaincodeUri: ChaincodeUri,
+    override val ssmName: SsmName,
+    override val sessionName: SessionName? = null,
+    override val limit: Long? = null,
 ) : SyncSsmCommandDTO
 
 data class SyncSsmCommandResult(

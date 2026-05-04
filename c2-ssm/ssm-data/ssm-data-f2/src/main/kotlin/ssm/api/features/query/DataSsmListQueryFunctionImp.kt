@@ -1,6 +1,7 @@
 package ssm.api.features.query
 
 import f2.dsl.fnc.invokeWith
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -8,7 +9,6 @@ import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import ssm.api.extentions.toDataSsm
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.couchdb.dsl.query.CouchdbSsmListQuery
 import ssm.couchdb.dsl.query.CouchdbSsmListQueryFunction
 import ssm.data.dsl.features.query.DataSsmListQuery

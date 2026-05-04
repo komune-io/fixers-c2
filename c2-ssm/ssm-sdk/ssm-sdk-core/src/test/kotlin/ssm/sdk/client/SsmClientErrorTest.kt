@@ -1,7 +1,9 @@
 package ssm.sdk.client
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.AssertionsForClassTypes
@@ -15,7 +17,6 @@ import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 import ssm.chaincode.dsl.model.SsmTransition
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
 import ssm.sdk.dsl.InvokeException
@@ -82,26 +83,27 @@ class SsmClientErrorTest {
 
 	@Suppress("LongMethod")
 	@Test
-	fun fullTest() = runBlocking<Unit> {
+	fun fullTest() = runTest {
 		println("//////////////////////////////")
 		println("registerUser1")
 		tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
 		// Catch the exception from the second call
-		assertThatThrowable {
+		val tt = assertThatThrowable {
 			tx.sendRegisterUser(
 				chaincodeUri,
-				agentUser1, signerAdmin.name)
-		}.isInstanceOf(InvokeException::class.java)
-			.hasMessage("Identifier USER_${agentUser1.name} already in use.")
+				agentUser1,
+				signerAdmin.name
+			)
+		}
+		tt.isInstanceOf(InvokeException::class.java)
+		tt.hasMessage("Identifier USER_${agentUser1.name} already in use.")
 
 
 		println("//////////////////////////////")
 		println("registerUser2")
 		tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
 		assertThatThrowable {
-			tx.sendRegisterUser(
-				chaincodeUri,
-				agentUser2, signerAdmin.name)
+			tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
 		}.isInstanceOf(InvokeException::class.java)
 			.hasMessage("Identifier USER_${agentUser2.name} already in use.")
 

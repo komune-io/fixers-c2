@@ -1,9 +1,9 @@
 package ssm.chaincode.dsl.model
 
+import io.komune.c2.chaincode.dsl.TransactionId
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
-import ssm.chaincode.dsl.blockchain.TransactionId
 
 @JsExport
 @JsName("SsmSessionStateLogDTO")
@@ -30,6 +30,6 @@ interface SsmSessionStateLogDTO {
 @JsExport
 @JsName("SsmSessionStateLog")
 data class SsmSessionStateLog(
-	override val txId: TransactionId,
-	override val state: SsmSessionState,
+    override val txId: TransactionId,
+    override val state: SsmSessionState,
 ) : SsmSessionStateLogDTO

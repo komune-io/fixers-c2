@@ -16,8 +16,8 @@ import s2.spring.automate.sourcing.S2AutomateDeciderSpring
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
 import s2.spring.sourcing.ssm.S2SourcingSsmAdapter
 import ssm.chaincode.dsl.model.Agent
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.from
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.from
 import ssm.sdk.sign.extention.loadFromFile
 
 @Configuration

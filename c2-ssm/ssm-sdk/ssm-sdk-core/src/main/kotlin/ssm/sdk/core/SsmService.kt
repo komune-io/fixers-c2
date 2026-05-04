@@ -1,7 +1,7 @@
 package ssm.sdk.core
 
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import ssm.sdk.core.ktor.SsmRequester
-import ssm.sdk.dsl.InvokeReturn
 import ssm.sdk.dsl.SsmCmd
 import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.sign.SsmCmdSigner

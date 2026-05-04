@@ -19,7 +19,9 @@
             "requests": "grpcs://peer0.bc-coop.bclan:7051",
             "events": "grpcs://peer0.bc-coop.bclan:7053",
             "serverHostname": "peer0.bc-coop.bclan",
-            "tlsCacerts": "crypto-config/peerOrganizations/bc-coop.bclan/peers/peer0.bc-coop.bclan/msp/tlscacerts/tlsca.bc-coop.bclan-cert.pem"
+            "tlsCacerts": "crypto-config/peerOrganizations/bc-coop.bclan/peers/peer0.bc-coop.bclan/msp/tlscacerts/tlsca.bc-coop.bclan-cert.pem",
+            "signcerts": "crypto-config/peerOrganizations/bc-coop.bclan/users/Admin@bc-coop.bclan/msp/signcerts",
+            "keystore": "crypto-config/peerOrganizations/bc-coop.bclan/users/Admin@bc-coop.bclan/msp/keystore"
           }
         }
       }
