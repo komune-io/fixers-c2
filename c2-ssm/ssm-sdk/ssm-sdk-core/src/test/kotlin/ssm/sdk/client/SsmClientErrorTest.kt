@@ -2,11 +2,8 @@ package ssm.sdk.client
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
-import org.assertj.core.api.AssertionsForClassTypes
 import org.assertj.core.util.Lists
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -83,7 +80,7 @@ class SsmClientErrorTest {
 
 	@Suppress("LongMethod")
 	@Test
-	fun fullTest() = runTest {
+	suspend fun fullTest() {
 		println("//////////////////////////////")
 		println("registerUser1")
 		tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
@@ -166,9 +163,7 @@ class SsmClientErrorTest {
 }
 
 
-fun assertThatThrowable(exec : suspend () -> Unit): AbstractThrowableAssert<*, Throwable> {
-	val throwable = AssertionsForClassTypes.catchThrowable{
-		runBlocking { exec() }
-	}
+suspend fun assertThatThrowable(exec: suspend () -> Unit): AbstractThrowableAssert<*, Throwable> {
+	val throwable = runCatching { exec() }.exceptionOrNull()
 	return Assertions.assertThat(throwable)
 }

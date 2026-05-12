@@ -5,8 +5,6 @@ import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.Transaction
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import java.util.UUID
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.assertj.core.util.Lists
 import org.junit.jupiter.api.AfterEach
@@ -106,21 +104,21 @@ class SsmClientArrayTest {
 
     @Order(5)
     @Test
-    fun listAdmin() = runBlocking<Unit> {
+    suspend fun listAdmin() {
         val agentRet = query.listAdmins(chaincodeUri)
         Assertions.assertThat(agentRet).contains(ADMIN_NAME)
     }
 
     @Order(10)
     @Test
-    fun adminUser() = runBlocking<Unit> {
+    suspend fun adminUser() {
         val agentFormClient = query.getAdmin(chaincodeUri, ADMIN_NAME)
         Assertions.assertThat(agentFormClient).isEqualTo(agentAdmin)
     }
 
     @Test
     @Order(20)
-    fun registerUser1() = runTest {
+    suspend fun registerUser1() {
         val transactionEvent = tx.sendRegisterUser(
             listOf(
                 UserRegisterCommand(chaincodeUri, signerAdmin.name, agentUser1),
@@ -141,28 +139,28 @@ class SsmClientArrayTest {
 
     @Order(30)
     @Test
-    fun agentUser1() = runTest {
+    suspend fun agentUser1() {
         val agentRet = query.getAgent(chaincodeUri, agentUser1.name)
         Assertions.assertThat(agentRet).isEqualTo(agentUser1)
     }
 
     @Order(50)
     @Test
-    fun agentUser2() = runTest {
+    suspend fun agentUser2() {
         val agentRet = query.getAgent(chaincodeUri, agentUser2.name)
         Assertions.assertThat(agentRet).isEqualTo(agentUser2)
     }
 
     @Test
     @Order(55)
-    fun listAgent() = runTest {
+    suspend fun listAgent() {
         val agentRet = query.listUsers(chaincodeUri)
         Assertions.assertThat(agentRet).contains(agentUser1.name, agentUser2.name)
     }
 
     @Test
     @Order(60)
-    fun createSsm() = runTest {
+    suspend fun createSsm() {
         val sell = SsmTransition(0, 1, "Seller", "Sell")
         val buy = SsmTransition(1, 2, "Buyer", "Buy")
         val ssm = SsmCreateCommand(
@@ -183,7 +181,7 @@ class SsmClientArrayTest {
 
     @Order(70)
     @Test
-    fun ssm() = runTest {
+    suspend fun ssm() {
         val ssmReq = query.getSsm(
             chaincodeUri,
             ssmName
@@ -194,7 +192,7 @@ class SsmClientArrayTest {
 
     @Test
     @Order(80)
-    fun start() = runTest {
+    suspend fun start() {
         val roles: Map<String, String> = mapOf(
             agentUser1.name to "Buyer", agentUser2.name to "Seller"
         )
@@ -208,7 +206,7 @@ class SsmClientArrayTest {
 
     @Order(90)
     @Test
-    fun session() = runTest {
+    suspend fun session() {
         val sessionRequested = query.getSession(
             chaincodeUri,
             sessionName
@@ -224,7 +222,7 @@ class SsmClientArrayTest {
 
     @Test
     @Order(100)
-    fun performSell() = runTest {
+    suspend fun performSell() {
         var context = SsmContext(sessionName, "100 dollars 1978 Camaro", 0, emptyMap())
         context = context.addPrivateMessage(
             "Message to signer1",
@@ -238,7 +236,7 @@ class SsmClientArrayTest {
 
     @Order(110)
     @Test
-    fun sessionAfterSell() = runTest {
+    suspend fun sessionAfterSell() {
         val sell = SsmTransition(0, 1, "Seller", "Sell")
         val sessionRequested = query.getSession(
             chaincodeUri,
@@ -253,7 +251,7 @@ class SsmClientArrayTest {
 
     @Order(110)
     @Test
-    fun sessionAfterSellShouldReturnEncryptMessage() = runTest {
+    suspend fun sessionAfterSellShouldReturnEncryptMessage() {
 //		val (from, to, role, action) = SsmTransition(0, 1, "Seller", "Sell")
         val state = query.getSession(chaincodeUri, sessionName)
         val expectedMessage = state?.getPrivateMessage(signerUser1)
@@ -262,7 +260,7 @@ class SsmClientArrayTest {
 
     @Test
     @Order(120)
-    fun performBuy() = runTest {
+    suspend fun performBuy() {
         val context = SsmContext(sessionName, "Deal !", 1, emptyMap())
         val transactionEvent = tx.sendPerform(listOf(SsmPerformCommand(chaincodeUri, signerUser1.name, "Buy", context)))
         assertThatTransactionExists(transactionEvent.first())
@@ -280,7 +278,7 @@ class SsmClientArrayTest {
 
     @Order(130)
     @Test
-    fun sessionAfterBuy() = runTest {
+    suspend fun sessionAfterBuy() {
         val buy = SsmTransition(1, 2, "Buyer", "Buy")
         val state = query.getSession(
             chaincodeUri,
@@ -296,7 +294,7 @@ class SsmClientArrayTest {
     @Test
     @Order(135)
     @Throws(Exception::class)
-    fun logSession() = runTest {
+    suspend fun logSession() {
         val sessionRequested = query.log(
             chaincodeUri,
             sessionName
@@ -306,14 +304,14 @@ class SsmClientArrayTest {
 
     @Test
     @Order(140)
-    fun listSsm() = runTest {
+    suspend fun listSsm() {
         val agentRet = query.listSsm(chaincodeUri)
         Assertions.assertThat(agentRet).contains(ssmName)
     }
 
     @Test
     @Order(150)
-    fun listSession() = runTest {
+    suspend fun listSession() {
         val agentRet = query.listSession(chaincodeUri)
         Assertions.assertThat(agentRet).contains(sessionName)
     }

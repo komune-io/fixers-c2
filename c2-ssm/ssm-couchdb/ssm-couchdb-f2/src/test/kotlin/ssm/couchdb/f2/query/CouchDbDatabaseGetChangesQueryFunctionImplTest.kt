@@ -1,7 +1,6 @@
 package ssm.couchdb.f2.query
 
 import f2.dsl.fnc.invokeWith
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import ssm.couchdb.bdd.TestConfig
@@ -13,7 +12,7 @@ internal class CouchDbDatabaseGetChangesQueryFunctionImplTest: FunctionTestBase(
 	var fnc: CouchdbDatabaseGetChangesQueryFunction = queries.couchdbDatabaseGetChangesQueryFunction()
 
 	@Test
-	fun `should return all certificates changes` (): Unit = runBlocking {
+	suspend fun `should return all certificates changes`() {
 		val result = CouchdbDatabaseGetChangesQuery(
 			chaincodeId = TestConfig.CHAINCODE_ID,
 			channelId = TestConfig.CHANNEL_ID,
@@ -27,7 +26,7 @@ internal class CouchDbDatabaseGetChangesQueryFunctionImplTest: FunctionTestBase(
 	}
 
 	@Test
-	fun `should return five certificates changes` (): Unit = runBlocking {
+	suspend fun `should return five certificates changes`() {
 		val result = CouchdbDatabaseGetChangesQuery(
 			chaincodeId = TestConfig.CHAINCODE_ID,
 			channelId = TestConfig.CHANNEL_ID,
@@ -41,7 +40,7 @@ internal class CouchDbDatabaseGetChangesQueryFunctionImplTest: FunctionTestBase(
 	}
 
 	@Test
-	fun `should get session changes`(): Unit = runBlocking {
+	suspend fun `should get session changes`() {
 		val result = CouchdbDatabaseGetChangesQuery(
 			chaincodeId = TestConfig.CHAINCODE_ID,
 			channelId = TestConfig.CHANNEL_ID,

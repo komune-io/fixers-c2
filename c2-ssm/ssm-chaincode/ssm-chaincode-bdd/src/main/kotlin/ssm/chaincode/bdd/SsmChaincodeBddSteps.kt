@@ -3,7 +3,6 @@ package ssm.chaincode.bdd
 import f2.dsl.fnc.invoke
 import io.cucumber.java8.En
 import io.cucumber.java8.Scenario
-import kotlinx.coroutines.runBlocking
 import ssm.bdd.config.SsmQueryStep
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
@@ -57,15 +56,13 @@ class SsmChaincodeBddSteps : SsmQueryStep(), En {
 			.items.toList()
 	}
 
-	override suspend fun listUsers() = runBlocking {
+	override suspend fun listUsers(): List<String> =
 		ssmChaincodeQueryFunctions.ssmListUserQueryFunction()
 			.invoke(SsmListUserQuery(bag.chaincodeUri))
 			.items.toList()
-	}
 
-	override suspend fun listAdmins() = runBlocking {
+	override suspend fun listAdmins(): List<String> =
 		ssmChaincodeQueryFunctions.ssmListAdminQueryFunction()
 			.invoke(SsmListAdminQuery(bag.chaincodeUri))
 			.items.toList()
-	}
 }
