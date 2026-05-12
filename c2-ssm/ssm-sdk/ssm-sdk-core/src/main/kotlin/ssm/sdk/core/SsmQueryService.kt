@@ -21,7 +21,6 @@ import ssm.sdk.core.invoke.query.SsmQuery
 import ssm.sdk.core.invoke.query.TransactionQuery
 import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
-import ssm.sdk.json.JsonUtils
 import tools.jackson.core.type.TypeReference
 
 @Suppress("TooManyFunctions")
@@ -124,11 +123,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
-		}.map { item ->
-			item?.let { JsonUtils.toObject(it, SsmSessionState::class.java) }
+			ssmRequester.query(it, object : TypeReference<List<SsmSessionState?>>() {})
 		}
-
 	}
 
 	override suspend fun getTransactions(queries: List<GetTransactionQuery>): List<Transaction?> {
@@ -136,11 +132,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.txId, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
-		}.map { item ->
-			item?.let { JsonUtils.toObject(it, Transaction::class.java) }
+			ssmRequester.query(it, object : TypeReference<List<Transaction?>>() {})
 		}
-
 	}
 
 	override suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block> {
@@ -158,10 +151,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String>>() {})
-		}.map { item ->
-			item.let { JsonUtils.toObject(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
+			ssmRequester.query(it, object : TypeReference<List<List<SsmSessionStateLog>>>() {})
 		}
-
 	}
 }

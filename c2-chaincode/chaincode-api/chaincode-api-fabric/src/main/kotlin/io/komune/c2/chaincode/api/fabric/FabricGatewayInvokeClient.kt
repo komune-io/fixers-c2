@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.EndorseException
 import org.hyperledger.fabric.protos.gateway.ErrorDetail
 import org.slf4j.Logger
@@ -58,36 +59,43 @@ class FabricGatewayClient(
     ): List<Transaction> = coroutineScope {
         logger.info("Invoke[${invokeArgsList.size}] transactions in [${channelId}:$chaincodeId]")
         val start = currentTimeMillis()
-        val proposal = invokeArgsList.map { invokeArgs ->
-                try {
-                    val contract = fabricGatewayBuilder.contract(channelId, chaincodeId)
-                     contract.newProposal(invokeArgs.function)
-                        .addArguments(*invokeArgs.values.toTypedArray())
-                        .build()
-                        .endorse()
-                } catch (e: EndorseException) {
-                    val message = extractErrorMessage(e)
-                    throw InvokeException(message, e)
-                }
 
+        val contracts = fabricGatewayBuilder.contracts(channelId, chaincodeId)
+        val results = invokeArgsList.map { invokeArgs ->
+            async(parallelIO) { contracts.random().commitTransaction(channelId, chaincodeId, invokeArgs) }
+        }.awaitAll()
+
+        logger.info("Transactions[${invokeArgsList.size}] completed in ${currentTimeMillis() - start} ms")
+        results
+    }
+
+    private fun Contract.commitTransaction(
+        channelId: ChannelId,
+        chaincodeId: ChaincodeId,
+        invokeArgs: InvokeArgs,
+    ): Transaction {
+        val endorsed = try {
+            newProposal(invokeArgs.function)
+                .addArguments(*invokeArgs.values.toTypedArray())
+                .build()
+                .endorse()
+        } catch (e: EndorseException) {
+            throw InvokeException(extractErrorMessage(e), e)
         }
 
-        val asyncSubmit = proposal.map { tr ->
-            async(parallelIO) {
-                val startSubmit = currentTimeMillis()
-                logger.info("Submit transaction[${tr.transactionId}] in [${channelId}:$chaincodeId]...")
-                tr.submitAsync()
-                logger.info("Submitted transaction[${tr.transactionId}] " +
-                        "in [${channelId}:$chaincodeId] in ${currentTimeMillis() - startSubmit} ms")
-                Transaction(
-                    tr.transactionId,
-                    tr.result.toString()
-                )
-            }
+        logger.info("Submit transaction[${endorsed.transactionId}] in [${channelId}:$chaincodeId]...")
+        val submitted = endorsed.submitAsync()
+        val status = submitted.status
+        if (!status.isSuccessful) {
+            throw InvokeException(
+                "Transaction[${endorsed.transactionId}] failed to commit: code=${status.code}"
+            )
         }
-        asyncSubmit.awaitAll().also {
-            logger.info("Transactions[${invokeArgsList.size}] completed in ${currentTimeMillis() - start} ms")
-        }
+        logger.info(
+            "Committed transaction[{}] in [{}:{}] block {}",
+            endorsed.transactionId, channelId, chaincodeId, status.blockNumber
+        )
+        return Transaction(endorsed.transactionId, String(endorsed.result))
     }
 
     private fun extractErrorMessage(e: EndorseException): String {

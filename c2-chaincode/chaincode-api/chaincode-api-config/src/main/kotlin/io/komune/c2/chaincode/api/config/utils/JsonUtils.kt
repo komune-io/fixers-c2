@@ -2,8 +2,10 @@ package io.komune.c2.chaincode.api.config.utils
 
 import java.io.IOException
 import java.net.URL
+import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.node.NullNode
 import tools.jackson.module.kotlin.KotlinModule
 import tools.jackson.module.kotlin.readValue
 
@@ -16,6 +18,13 @@ object JsonUtils {
     fun toJson(obj: Any?): String {
         return mapper.writeValueAsString(obj)
     }
+
+    fun toNode(value: String): JsonNode {
+        if (value.isBlank()) return NullNode.instance
+        return mapper.readTree(value)
+    }
+
+    fun valueToTree(value: Any): JsonNode = mapper.valueToTree(value)
 
     @Throws(IOException::class)
     fun <T> toObject(value: URL?, clazz: Class<T>?): T {

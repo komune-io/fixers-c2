@@ -12,7 +12,11 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.springframework.stereotype.Service
+import tools.jackson.databind.JsonNode
 
 @Service
 class ChaincodeService(
@@ -21,36 +25,45 @@ class ChaincodeService(
 	private val chaincodeConfiguration: C2ChaincodeConfiguration,
 ) {
 
-	suspend fun execute(args: InvokeRequest): String {
+	suspend fun execute(args: InvokeRequest): JsonNode {
 		val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(args.channelid, args.chaincodeid)
 		val invokeArgs = args.toInvokeArgs()
 		return when (args.cmd) {
-			InvokeRequestType.invoke -> doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+			InvokeRequestType.invoke -> JsonUtils.valueToTree(
+				doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+			)
 			InvokeRequestType.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
 		}
 	}
 
-	suspend fun execute(args: List<InvokeRequest>): List<Any> {
-		return args.map { params ->
-			val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(params.channelid, params.chaincodeid)
-			val invokeArgs = InvokeArgs(params.fcn, params.args.toList())
-			when (params.cmd) {
-				InvokeRequestType.invoke -> doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
-				InvokeRequestType.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+	suspend fun execute(args: List<InvokeRequest>): List<JsonNode> = coroutineScope {
+		args.map { params ->
+			async {
+				val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(
+					params.channelid, params.chaincodeid
+				)
+				val invokeArgs = InvokeArgs(params.fcn, params.args.toList())
+				when (params.cmd) {
+					InvokeRequestType.invoke -> JsonUtils.valueToTree(
+						doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+					)
+					InvokeRequestType.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+				}
 			}
-		}
+		}.awaitAll()
 	}
 
 	private suspend fun doQuery(
         channelId: ChannelId,
         chainCodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-	): String {
-		return if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
+	): JsonNode {
+		val raw = if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
 			blockchainService.query(channelId, invokeArgs)
 		} else {
 			doQueryChaincode(channelId, chainCodeId, invokeArgs)
 		}
+		return JsonUtils.toNode(raw)
 	}
 
 	private suspend fun doQueryChaincode(
@@ -69,9 +82,8 @@ class ChaincodeService(
         channelId: ChannelId,
         chainCodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-	): String {
+	): InvokeReturn {
 		return doInvoke(channelId, chainCodeId, listOf(invokeArgs)).first()
-			.let (JsonUtils::toJson)
 	}
 
 	suspend fun doInvoke(
