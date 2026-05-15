@@ -1,15 +1,35 @@
 package s2.spring.automate.ssm.persister
 
+import f2.dsl.cqrs.Event
+import f2.dsl.fnc.F2Function
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import s2.automate.core.config.S2BatchProperties
+import s2.automate.core.context.AutomateContext
+import s2.automate.core.context.TransitionAppliedContext
+import s2.automate.core.persist.PersistOutcome
+import s2.dsl.automate.S2Automate
+import s2.dsl.automate.S2Command
+import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2StateValue
+import s2.dsl.automate.S2Transition
+import s2.dsl.automate.S2TransitionValue
 import s2.dsl.automate.model.WithS2Id
 import s2.dsl.automate.model.WithS2Iteration
 import s2.dsl.automate.model.WithS2State
+import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 import ssm.chaincode.dsl.model.SsmTransition
+import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
+import ssm.sdk.dsl.CommandOutcome
+import tools.jackson.databind.ObjectMapper
 
 class SsmAutomatePersisterTest {
 
@@ -118,6 +138,110 @@ class SsmAutomatePersisterTest {
 		}
 		assertThat(exception.message).contains("session-unknown")
 	}
+
+	// --- Fixtures for persistWithOutcomes test ---
+
+	/** Marker event type used in the v2 persist test. */
+	data class TestEvt(val id: String = "") : Event
+
+	/** Command type used as the `msg` in TransitionAppliedContext. */
+	data class TestCommand(override val id: String) : S2Command<String>
+
+	/**
+	 * Minimal S2Automate with one transition (result = null so withResultAsAction = false,
+	 * meaning the persister uses msg::class.simpleName as the action name).
+	 */
+	private val testAutomate: S2Automate = S2Automate(
+		name = "test-ssm",
+		version = null,
+		transitions = arrayOf(
+			S2Transition(
+				from = S2StateValue(name = "StateOne", position = 1),
+				to = S2StateValue(name = "StateTwo", position = 2),
+				role = S2RoleValue(name = "TestRole"),
+				action = S2TransitionValue(name = "TestCommand"),
+				result = null,
+			)
+		),
+	)
+
+	private fun makeTransitionContext(
+		entity: IterableEntity,
+	): TransitionAppliedContext<TestState, String, IterableEntity, TestEvt, S2Automate> {
+		val from: TestState = object : TestState { override val position = entity.status }
+		return TransitionAppliedContext(
+			automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
+			from = from,
+			msg = TestCommand(id = entity.id),
+			event = TestEvt(id = entity.id),
+			entity = entity,
+		)
+	}
+
+	@Test
+	fun `persistWithOutcomes maps mixed v2 results to per-item PersistOutcome`() = runTest {
+		// Stub v2 perform: items whose commandId contains "id-3" return Rejected, others Committed.
+		// commandId pattern is "${sessionId}:${iteration + 1}" per SsmAutomatePersister source.
+		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
+			F2Function { commands ->
+				commands.map { cmd ->
+					if (cmd.commandId.contains("id-3")) {
+						CommandOutcome(
+							outcome = "Rejected",
+							commandId = cmd.commandId,
+							errorCode = "MVCC_READ_CONFLICT",
+							errorMessage = "stale read",
+						)
+					} else {
+						CommandOutcome(
+							outcome = "Committed",
+							commandId = cmd.commandId,
+							transactionId = "tx-${cmd.commandId}",
+							blockNumber = 100L,
+						)
+					}
+				}
+			}
+
+		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2 =
+			F2Function { _ -> error("v2Start should not be called by persistWithOutcomes") }
+
+		// V1 stubs — never reached because IterableEntity uses the in-process getIterations branch
+		// and persistWithOutcomes never calls the v1 perform path.
+		val v1Start: ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction =
+			F2Function { _ -> error("v1Start should not be called") }
+		val v1Perform: ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction =
+			F2Function { _ -> error("v1Perform should not be called") }
+		val v1Logs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+			F2Function { _ -> error("ssmGetSessionLogsQueryFunction should not be called for IterableEntity") }
+
+		val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
+			ssmSessionStartFunction = v1Start,
+			ssmSessionPerformActionFunction = v1Perform,
+			ssmSessionStartFunctionV2 = v2Start,
+			ssmSessionPerformActionFunctionV2 = v2Perform,
+			ssmGetSessionLogsQueryFunction = v1Logs,
+			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+			entityType = IterableEntity::class.java,
+			agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+			objectMapper = ObjectMapper(),
+			batch = S2BatchProperties(),
+		)
+
+		val ctx1 = makeTransitionContext(IterableEntity("id-1", status = 1, iteration = 0))
+		val ctx2 = makeTransitionContext(IterableEntity("id-2", status = 1, iteration = 0))
+		val ctx3 = makeTransitionContext(IterableEntity("id-3", status = 1, iteration = 0))
+
+		val outcomes = persister.persistWithOutcomes(flowOf(ctx1, ctx2, ctx3)).toList()
+
+		assertThat(outcomes).hasSize(3)
+		assertThat(outcomes.filterIsInstance<PersistOutcome.Committed<TestEvt>>()).hasSize(2)
+		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
+		assertThat(rejected.errorCode).isEqualTo("MVCC_READ_CONFLICT")
+		assertThat(rejected.commandId).contains("id-3")
+	}
+
+	// --- end fixtures ---
 
 	private fun ssmLog(txId: String, iteration: Int): SsmSessionStateLog {
 		return SsmSessionStateLog(
