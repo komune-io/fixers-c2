@@ -3,6 +3,8 @@ package io.komune.c2.chaincode.api.gateway
 import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.api.gateway.chaincode.ChaincodeService
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestV2
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import org.slf4j.LoggerFactory
@@ -61,6 +63,14 @@ class ChaincodeRestEndpoint(
 	): List<JsonNode> {
 		logger.debug("Invoking chaincode ${args.size} items")
 		return chaincodeService.execute(args)
+	}
+
+	@PostMapping(path = ["invoke/v2"], consumes = [MediaType.APPLICATION_JSON_VALUE])
+	suspend fun invokeV2(
+		@RequestBody args: List<InvokeRequestV2>,
+	): List<InvokeOutcome> {
+		logger.debug("Invoking chaincode v2 ${args.size} items")
+		return chaincodeService.executeV2(args)
 	}
 
 }
