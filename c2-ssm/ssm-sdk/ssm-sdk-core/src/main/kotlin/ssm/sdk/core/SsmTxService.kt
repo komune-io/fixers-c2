@@ -14,8 +14,11 @@ import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 import ssm.sdk.core.command.SsmCreateCommand
 import ssm.sdk.core.command.SsmPerformCommand
+import ssm.sdk.core.command.SsmPerformCommandV2
 import ssm.sdk.core.command.SsmStartCommand
+import ssm.sdk.core.command.SsmStartCommandV2
 import ssm.sdk.core.command.UserRegisterCommand
+import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.core.invoke.command.CreateCmd
 import ssm.sdk.core.invoke.command.PerformCmd
 import ssm.sdk.core.invoke.command.RegisterCmd
@@ -81,6 +84,26 @@ class SsmTxService(
 				perform(command.action, command.context, command.chaincodeUri, command.signerName)
 			}
 		}
+	}
+
+	fun sendStartV2(commands: Flow<SsmStartCommandV2>): Flow<CommandOutcome> =
+		commands.batch(batch.toBatch(), ::sendStartV2)
+
+	fun sendPerformV2(commands: Flow<SsmPerformCommandV2>): Flow<CommandOutcome> =
+		commands.batch(batch.toBatch(), ::sendPerformV2)
+
+	suspend fun sendStartV2(commands: List<SsmStartCommandV2>): List<CommandOutcome> {
+		logger.info("Start[v2] ${commands.size} session(s)")
+		val signed = ssmService.signss { commands.map { start(it.session, it.chaincodeUri, it.signerName) } }
+		val ids = commands.map { it.commandId }
+		return ssmService.invokeAllV2(signed, ids)
+	}
+
+	suspend fun sendPerformV2(commands: List<SsmPerformCommandV2>): List<CommandOutcome> {
+		logger.info("Perform[v2] ${commands.size} action(s)")
+		val signed = ssmService.signs { commands.map { perform(it.action, it.context, it.chaincodeUri, it.signerName) } }
+		val ids = commands.map { it.commandId }
+		return ssmService.invokeAllV2(signed, ids)
 	}
 
 

@@ -2,6 +2,7 @@ package ssm.sdk.core
 
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import ssm.sdk.core.ktor.SsmRequester
+import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
 import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.sign.SsmCmdSigner
@@ -39,6 +40,14 @@ class SsmService(
 		}
 	}
 
+	fun signs(build: () -> List<SsmCmd>): List<SsmCmdSigned> {
+		return build().map { ssmCmd -> sign(ssmCmd) }
+	}
+
+	fun signss(build: () -> List<SsmCmd>): List<SsmCmdSigned> {
+		return build().map { ssmCmd -> sign(ssmCmd) }
+	}
+
 	fun sign(command: SsmCmd): SsmCmdSigned {
 		return ssmCmdSigner.sign(command)
 	}
@@ -49,5 +58,9 @@ class SsmService(
 
 	suspend fun send(ssmCommandSigneds: List<SsmCmdSigned>): List<InvokeReturn> {
 		return ssmRequester.invoke(ssmCommandSigneds)
+	}
+
+	suspend fun invokeAllV2(signed: List<SsmCmdSigned>, commandIds: List<String>): List<CommandOutcome> {
+		return ssmRequester.invokeAllV2(signed, commandIds)
 	}
 }

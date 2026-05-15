@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ssm.chaincode.f2.features.command.SsmTxCreateFunctionImpl
 import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionImpl
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2Impl
 import ssm.sdk.core.SsmTxService
 import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
 
@@ -19,5 +21,14 @@ class SsmTxSessionPerformActionAutoConfiguration {
 		ssmTxService: SsmTxService,
 	): SsmTxSessionPerformActionFunction {
 		return SsmTxSessionPerformActionFunctionImpl(ssmTxService)
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(SsmTxSessionPerformActionFunctionV2::class)
+	@ConditionalOnBean(SsmTxService::class)
+	fun ssmTxSessionPerformActionFunctionV2(
+		ssmTxService: SsmTxService,
+	): SsmTxSessionPerformActionFunctionV2 {
+		return SsmTxSessionPerformActionFunctionV2Impl(ssmTxService)
 	}
 }
