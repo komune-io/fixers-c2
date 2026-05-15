@@ -14,4 +14,6 @@ dependencies {
 	implementation(libs.jackson.module.kotlin)
 
 	testImplementation(project(":c2-ssm:ssm-sdk:ssm-sdk-bdd"))
+	testImplementation("io.ktor:ktor-client-mock")
+	testImplementation(libs.bundles.test)
 }

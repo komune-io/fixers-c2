@@ -8,6 +8,7 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import org.slf4j.LoggerFactory
 import ssm.sdk.core.invoke.builder.HasGet
 import ssm.sdk.core.invoke.builder.HasList
+import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.InvokeException
 import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.dsl.buildArgs
@@ -161,6 +162,22 @@ class SsmRequester(
 		).handleResponse {
 			JsonUtils.toObject<List<InvokeReturn>>(it)
 		}
+	}
+
+	@Throws(Exception::class)
+	suspend fun invokeAllV2(
+		cmds: List<SsmCmdSigned>,
+		commandIds: List<String>,
+	): List<CommandOutcome> {
+		require(commandIds.size == cmds.size) {
+			"commandIds.size=${commandIds.size} must match cmds.size=${cmds.size}"
+		}
+		val total = cmds.size
+		cmds.logger("Invoke[v2]", total) { it.chaincodeUri }
+
+		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
+		val raw = coopRepository.invokeV2(args, commandIds)
+		return JsonUtils.toObject<List<CommandOutcome>>(raw)
 	}
 
 	@Suppress("TooGenericExceptionCaught", "SwallowedException")

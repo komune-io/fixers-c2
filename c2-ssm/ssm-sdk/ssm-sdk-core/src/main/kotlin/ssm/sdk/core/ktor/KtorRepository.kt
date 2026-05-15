@@ -29,6 +29,7 @@ class KtorRepository(
 	private val baseUrl: String,
 	private val timeout: Long,
 	private val authCredentials: AuthCredentials?,
+	client: HttpClient? = null,
 ) {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
@@ -40,7 +41,7 @@ class KtorRepository(
 		val ARGS_PROPS = InvokeRequest::args.name
 	}
 
-	val client = HttpClient(CIO) {
+	val client = client ?: HttpClient(CIO) {
 		if(logger.isDebugEnabled) {
 			install(Logging)
 		}
@@ -157,6 +158,32 @@ class KtorRepository(
 			)
 		}
 		return client.post("$baseUrl/invokeF2") {
+			addAuth()
+			contentType(ContentType.Application.Json)
+			setBody(body)
+		}.bodyAsText()
+	}
+
+	suspend fun invokeV2(
+		invokeArgs: List<InvokeRequest>,
+		commandIds: List<String>,
+	): String {
+		require(invokeArgs.size == commandIds.size) {
+			"commandIds.size=${commandIds.size} must match invokeArgs.size=${invokeArgs.size}"
+		}
+		val body = invokeArgs.zip(commandIds).map { (req, cid) ->
+			mapOf(
+				"commandId" to cid,
+				"request" to mapOf(
+					CMD_PROPS to req.cmd.name,
+					FCN_PROPS to req.fcn,
+					ARGS_PROPS to req.args,
+					CHANNEL_ID_PROPS to req.channelid,
+					CHAINCODE_ID_PROPS to req.chaincodeid,
+				),
+			)
+		}
+		return client.post("$baseUrl/invoke/v2") {
 			addAuth()
 			contentType(ContentType.Application.Json)
 			setBody(body)
