@@ -24,9 +24,11 @@ import org.hyperledger.fabric.client.identity.X509Identity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class FabricGatewayBuilder(
-    private val fabricConfigLoader: FabricConfigLoader,
+open class FabricGatewayBuilder(
+    private val fabricConfigLoader: FabricConfigLoader?,
 ) {
+    /** No-arg constructor for subclassing in tests (fabricConfigLoader is never used when contracts() is overridden). */
+    protected constructor() : this(null)
 
     private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
 
@@ -39,7 +41,7 @@ class FabricGatewayBuilder(
         return contracts(channelId, chaincodeId).shuffled().first()
     }
 
-    fun contracts(
+    open fun contracts(
         channelId: ChannelId,
         chaincodeId: ChaincodeId
     ): List<Contract> {
@@ -67,11 +69,12 @@ class FabricGatewayBuilder(
 
     @Suppress("LongMethod")
     private fun createGateways(channelId: ChannelId): List<Gateway> {
-        val channelConfig = fabricConfigLoader.getChannelConfig(channelId)
+        val loader = requireNotNull(fabricConfigLoader) { "fabricConfigLoader must not be null" }
+        val channelConfig = loader.getChannelConfig(channelId)
         val cryptoConfigBase = channelConfig.config.crypto
         val organizationName = channelConfig.user.org
 
-        val fabricConfig = fabricConfigLoader.getFabricConfig(channelId)
+        val fabricConfig = loader.getFabricConfig(channelId)
         val organizationConfig = fabricConfig.network.organisations[organizationName]!!
         val trustManager = organizationConfig.ca.getTlsCacertsAsUrl(cryptoConfigBase)
         val credentials = TlsChannelCredentials.newBuilder()

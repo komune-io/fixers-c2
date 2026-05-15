@@ -6,13 +6,13 @@ import io.grpc.StatusRuntimeException
 import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
-import io.komune.c2.chaincode.dsl.invoke.InvokeException
 import java.lang.System.currentTimeMillis
 import java.util.StringJoiner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.EndorseException
 import org.hyperledger.fabric.protos.gateway.ErrorDetail
@@ -55,14 +55,27 @@ class FabricGatewayClient(
     suspend fun invoke(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,
-        invokeArgsList: List<InvokeArgs>
-    ): List<Transaction> = coroutineScope {
+        invokeArgsList: List<InvokeArgs>,
+        commandIds: List<String> = invokeArgsList.indices.map { "auto-$it" },
+    ): List<TxOutcome> = supervisorScope {
+        require(commandIds.size == invokeArgsList.size) {
+            "commandIds.size=${commandIds.size} must match invokeArgsList.size=${invokeArgsList.size}"
+        }
         logger.info("Invoke[${invokeArgsList.size}] transactions in [${channelId}:$chaincodeId]")
         val start = currentTimeMillis()
 
         val contracts = fabricGatewayBuilder.contracts(channelId, chaincodeId)
-        val results = invokeArgsList.map { invokeArgs ->
-            async(parallelIO) { contracts.random().commitTransaction(channelId, chaincodeId, invokeArgs) }
+        val results = invokeArgsList.zip(commandIds).map { (args, commandId) ->
+            async(parallelIO) {
+                runCatching { contracts.random().commitTransaction(channelId, chaincodeId, args, commandId) }
+                    .getOrElse { e ->
+                        TxOutcome.Transient(
+                            commandId = commandId,
+                            errorCode = "UNEXPECTED",
+                            errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+                        )
+                    }
+            }
         }.awaitAll()
 
         logger.info("Transactions[${invokeArgsList.size}] completed in ${currentTimeMillis() - start} ms")
@@ -73,29 +86,59 @@ class FabricGatewayClient(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-    ): Transaction {
+        commandId: String,
+    ): TxOutcome {
         val endorsed = try {
             newProposal(invokeArgs.function)
                 .addArguments(*invokeArgs.values.toTypedArray())
                 .build()
                 .endorse()
         } catch (e: EndorseException) {
-            throw InvokeException(extractErrorMessage(e), e)
+            return TxOutcome.Rejected(
+                commandId = commandId,
+                errorCode = "ENDORSE_FAILED",
+                errorMessage = extractErrorMessage(e),
+            )
+        } catch (e: io.grpc.StatusRuntimeException) {
+            return TxOutcome.Transient(
+                commandId = commandId,
+                errorCode = "GRPC_${e.status.code.name}",
+                errorMessage = e.message ?: "gRPC failure",
+            )
         }
 
         logger.info("Submit transaction[${endorsed.transactionId}] in [${channelId}:$chaincodeId]...")
-        val submitted = endorsed.submitAsync()
-        val status = submitted.status
-        if (!status.isSuccessful) {
-            throw InvokeException(
-                "Transaction[${endorsed.transactionId}] failed to commit: code=${status.code}"
+        val submitted = try {
+            endorsed.submitAsync()
+        } catch (e: Exception) {
+            return TxOutcome.Indeterminate(
+                commandId = commandId,
+                errorCode = "SUBMIT_FAILED",
+                errorMessage = e.message ?: "submit failed",
             )
         }
-        logger.info(
-            "Committed transaction[{}] in [{}:{}] block {}",
-            endorsed.transactionId, channelId, chaincodeId, status.blockNumber
-        )
-        return Transaction(endorsed.transactionId, String(endorsed.result))
+
+        val status = submitted.status
+        return if (status.isSuccessful) {
+            logger.info(
+                "Committed transaction[{}] in [{}:{}] block {}",
+                endorsed.transactionId, channelId, chaincodeId, status.blockNumber
+            )
+            TxOutcome.Committed(
+                commandId = commandId,
+                transactionId = endorsed.transactionId,
+                blockNumber = status.blockNumber,
+                payload = String(endorsed.result),
+            )
+        } else {
+            TxOutcome.Conflict(
+                commandId = commandId,
+                errorCode = status.code.name,
+                errorMessage = "Transaction[${endorsed.transactionId}] failed to commit: code=${status.code}",
+                transactionId = endorsed.transactionId,
+                blockNumber = status.blockNumber,
+            )
+        }
     }
 
     private fun extractErrorMessage(e: EndorseException): String {

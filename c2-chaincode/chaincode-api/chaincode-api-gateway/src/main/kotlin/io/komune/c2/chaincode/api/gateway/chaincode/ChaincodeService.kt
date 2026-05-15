@@ -7,6 +7,7 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgsUtils
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
+import io.komune.c2.chaincode.api.fabric.TxOutcome
 import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainServiceI
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
@@ -95,8 +96,14 @@ class ChaincodeService(
 			channelId = channelId,
 			chaincodeId = chainCodeId,
 			invokeArgsList = invokeArgs
-		).map {
-			InvokeReturn("SUCCESS", "", it.transactionId)
+		).map { outcome ->
+			when (outcome) {
+				is TxOutcome.Committed -> InvokeReturn("SUCCESS", "", outcome.transactionId)
+				is TxOutcome.Rejected -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Transient -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Indeterminate -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Conflict -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+			}
 		}
 	}
 
