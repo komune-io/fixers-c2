@@ -1,9 +1,9 @@
 package ssm.sdk.client
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import java.util.UUID
-import org.assertj.core.api.AbstractThrowableAssert
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.util.Lists
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
@@ -16,7 +16,6 @@ import ssm.chaincode.dsl.model.SsmSession
 import ssm.chaincode.dsl.model.SsmTransition
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
-import ssm.sdk.dsl.InvokeException
 import ssm.sdk.sign.SsmCmdSignerSha256RSASigner
 import ssm.sdk.sign.extention.addPrivateMessage
 import ssm.sdk.sign.extention.loadFromFile
@@ -78,31 +77,23 @@ class SsmClientErrorTest {
 		private var privateMessage: Map<String, String>? = null
 	}
 
+	// Per-item TxOutcome refactor (8ed59690): legacy /invoke returns InvokeReturn("ERROR", "<code>: <msg>", "")
+	// per item instead of throwing. Tests assert on the surfaced outcome.
 	@Suppress("LongMethod")
 	@Test
 	suspend fun fullTest() {
 		println("//////////////////////////////")
 		println("registerUser1")
 		tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
-		// Catch the exception from the second call
-		val tt = assertThatThrowable {
-			tx.sendRegisterUser(
-				chaincodeUri,
-				agentUser1,
-				signerAdmin.name
-			)
-		}
-		tt.isInstanceOf(InvokeException::class.java)
-		tt.hasMessage("Identifier USER_${agentUser1.name} already in use.")
+		tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
+			.assertChaincodeError("Identifier USER_${agentUser1.name} already in use.")
 
 
 		println("//////////////////////////////")
 		println("registerUser2")
 		tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
-		assertThatThrowable {
-			tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
-		}.isInstanceOf(InvokeException::class.java)
-			.hasMessage("Identifier USER_${agentUser2.name} already in use.")
+		tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
+			.assertChaincodeError("Identifier USER_${agentUser2.name} already in use.")
 
 		println("//////////////////////////////")
 		println("createSsm")
@@ -111,10 +102,8 @@ class SsmClientErrorTest {
 		val ssm = Ssm(ssmName, Lists.newArrayList(sell, buy))
 		tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
 
-		assertThatThrowable {
-			tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
-		}.isInstanceOf(InvokeException::class.java)
-			.hasMessage("Identifier SSM_${ssmName} already in use.")
+		tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
+			.assertChaincodeError("Identifier SSM_${ssmName} already in use.")
 
 		println("//////////////////////////////")
 		println("startSession")
@@ -127,10 +116,8 @@ class SsmClientErrorTest {
 		)
 		tx.sendStart(chaincodeUri, session, signerAdmin.name)
 
-		assertThatThrowable {
-			tx.sendStart(chaincodeUri, session, signerAdmin.name)
-		}.isInstanceOf(InvokeException::class.java)
-			.hasMessage("Identifier STATE_${sessionName} already in use.")
+		tx.sendStart(chaincodeUri, session, signerAdmin.name)
+			.assertChaincodeError("Identifier STATE_${sessionName} already in use.")
 
 
 		println("//////////////////////////////")
@@ -143,27 +130,21 @@ class SsmClientErrorTest {
 		privateMessage = sellcontext.private
 		tx.sendPerform(chaincodeUri,"Sell", sellcontext, signerUser2.name)
 
-		assertThatThrowable {
-			tx.sendPerform(chaincodeUri,"Sell", sellcontext, signerUser2.name)
-		}
-			.isInstanceOf(InvokeException::class.java)
-			.hasMessage("No valid transition from state ")
+		tx.sendPerform(chaincodeUri,"Sell", sellcontext, signerUser2.name)
+			.assertChaincodeError("No valid transition from state ")
 
 		println("//////////////////////////////")
 		println("performBuy")
 		val buyContext = SsmContext(sessionName, "Deal !", 1, emptyMap())
 		tx.sendPerform(chaincodeUri,"Buy", buyContext, signerUser1.name)
 
-		assertThatThrowable {
-			tx.sendPerform(chaincodeUri,"Buy", buyContext, signerUser1.name)
-		}.isInstanceOf(InvokeException::class.java)
-			.hasMessage("No valid transition from state ")
+		tx.sendPerform(chaincodeUri,"Buy", buyContext, signerUser1.name)
+			.assertChaincodeError("No valid transition from state ")
 	}
 
-}
+	private fun InvokeReturn.assertChaincodeError(messageSubstring: String) {
+		assertThat(status).isEqualTo("ERROR")
+		assertThat(info).contains(messageSubstring)
+	}
 
-
-suspend fun assertThatThrowable(exec: suspend () -> Unit): AbstractThrowableAssert<*, Throwable> {
-	val throwable = runCatching { exec() }.exceptionOrNull()
-	return Assertions.assertThat(throwable)
 }

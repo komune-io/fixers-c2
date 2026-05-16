@@ -82,6 +82,7 @@ class FabricGatewayClient(
         results
     }
 
+    @Suppress("ReturnCount")
     private fun Contract.commitTransaction(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,

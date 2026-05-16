@@ -86,9 +86,14 @@ class SsmClientV2ItTest {
     @Order(10)
     @Test
     fun registerAdmin() = runTest {
+        // Admin name is static (tied to signing identity), so it may already be registered
+        // on a long-lived sandbox from prior runs. Either outcome is acceptable.
         val result = tx.sendRegisterUser(chaincodeUri, agentAdmin, signerAdmin.name)
         assertThat(result).isNotNull
-        assertThat(result.status).isEqualTo("SUCCESS")
+        if (result.status != "SUCCESS") {
+            assertThat(result.status).isEqualTo("ERROR")
+            assertThat(result.info).contains("Identifier USER_${agentAdmin.name} already in use.")
+        }
     }
 
     @Order(20)
@@ -231,8 +236,10 @@ class SsmClientV2ItTest {
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
 
         // Start both sessions via v1 path
-        tx.sendStart(chaincodeUri, SsmSession(ssmName, sessionName1, roles, "Batch perform 1", emptyMap()), signerAdmin.name)
-        tx.sendStart(chaincodeUri, SsmSession(ssmName, sessionName2, roles, "Batch perform 2", emptyMap()), signerAdmin.name)
+        val session1 = SsmSession(ssmName, sessionName1, roles, "Batch perform 1", emptyMap())
+        val session2 = SsmSession(ssmName, sessionName2, roles, "Batch perform 2", emptyMap())
+        tx.sendStart(chaincodeUri, session1, signerAdmin.name)
+        tx.sendStart(chaincodeUri, session2, signerAdmin.name)
 
         val commandId1 = "cmd-batch-perform-1-$uuid"
         val commandId2 = "cmd-batch-perform-2-$uuid"

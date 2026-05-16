@@ -27,7 +27,10 @@ import org.slf4j.LoggerFactory
 open class FabricGatewayBuilder(
     private val fabricConfigLoader: FabricConfigLoader?,
 ) {
-    /** No-arg constructor for subclassing in tests (fabricConfigLoader is never used when contracts() is overridden). */
+    /**
+     * No-arg constructor for subclassing in tests
+     * (fabricConfigLoader is never used when contracts() is overridden).
+     */
     protected constructor() : this(null)
 
     private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
