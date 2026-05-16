@@ -82,7 +82,11 @@ class ChaincodeServiceLegacyExecuteSupervisorScopeTest {
             ): List<io.komune.c2.chaincode.dsl.invoke.InvokeReturn> {
                 invokeCallCount++
                 return invokeArgs.map {
-                    io.komune.c2.chaincode.dsl.invoke.InvokeReturn(status = "SUCCESS", info = "", transactionId = "tx-stub")
+                    io.komune.c2.chaincode.dsl.invoke.InvokeReturn(
+                        status = "SUCCESS",
+                        info = "",
+                        transactionId = "tx-stub",
+                    )
                 }
             }
         }

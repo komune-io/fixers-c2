@@ -121,7 +121,7 @@ class SsmTxServiceV2Test {
                 0 -> """{"outcome":"Committed","commandId":"$id","transactionId":"tx-$id","blockNumber":$i}"""
                 1 -> """{"outcome":"Rejected","commandId":"$id","errorCode":"ERR","errorMessage":"rejected"}"""
                 2 -> """{"outcome":"Transient","commandId":"$id","errorCode":"RETRY","errorMessage":"transient"}"""
-                3 -> """{"outcome":"Indeterminate","commandId":"$id","errorCode":"UNKNOWN","errorMessage":"indeterminate"}"""
+                3 -> """{"outcome":"Indeterminate","commandId":"$id","errorCode":"X","errorMessage":"u"}"""
                 else -> """{"outcome":"Conflict","commandId":"$id","errorCode":"MVCC","errorMessage":"conflict"}"""
             }
         }.joinToString(",\n")

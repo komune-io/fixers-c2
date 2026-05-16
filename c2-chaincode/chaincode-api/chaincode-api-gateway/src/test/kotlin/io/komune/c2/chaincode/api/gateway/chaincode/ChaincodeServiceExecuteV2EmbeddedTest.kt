@@ -277,7 +277,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     }
 
     @Test
-    fun `POST invoke-v2 wraps gateway-side exception as Rejected with errorCode GATEWAY_EXCEPTION commandId preserved`() {
+    fun `POST invoke-v2 wraps gateway exception as Rejected with GATEWAY_EXCEPTION code`() {
         // ChaincodeService.executeV2 has runCatching wrapping the whole operation.
         // getChannelChaincodePair throws InvokeException for unknown channel/chaincode,
         // which is caught and becomes a GATEWAY_EXCEPTION Rejected outcome.
