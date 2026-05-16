@@ -2,6 +2,8 @@ package s2.spring.automate.ssm.persister
 
 import f2.dsl.cqrs.Event
 import f2.dsl.fnc.F2Function
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -178,6 +180,19 @@ class SsmAutomatePersisterTest {
 		)
 	}
 
+	private fun makeSimpleTransitionContext(
+		entity: SimpleEntity,
+	): TransitionAppliedContext<TestState, String, SimpleEntity, TestEvt, S2Automate> {
+		val from: TestState = object : TestState { override val position = entity.status }
+		return TransitionAppliedContext(
+			automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
+			from = from,
+			msg = TestCommand(id = entity.id),
+			event = TestEvt(id = entity.id),
+			entity = entity,
+		)
+	}
+
 	@Test
 	fun `persistWithOutcomes maps mixed v2 results to per-item PersistOutcome`() = runTest {
 		// Stub v2 perform: items whose commandId contains "id-3" return Rejected, others Committed.
@@ -239,6 +254,80 @@ class SsmAutomatePersisterTest {
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
 		assertThat(rejected.errorCode).isEqualTo("MVCC_READ_CONFLICT")
 		assertThat(rejected.commandId).contains("id-3")
+	}
+
+	@Test
+	fun `persistWithOutcomes emits Rejected for sessions missing from chaincode (lookup branch)`() = runTest {
+		val performCommandsSeen = mutableListOf<String>()
+
+		// v2 perform: capture which commands were sent, return Committed for each
+		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
+			F2Function { commands ->
+				commands.map { cmd ->
+					performCommandsSeen.add(cmd.commandId)
+					CommandOutcome(
+						outcome = "Committed",
+						commandId = cmd.commandId,
+						transactionId = "tx-${cmd.commandId}",
+						blockNumber = 1L,
+					)
+				}
+			}
+
+		// Session-logs query: return sess-1 and sess-3 only (omit sess-2)
+		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+			F2Function { queries ->
+				queries.toList()
+					.filter { it.sessionName != "sess-2" }
+					.map { q ->
+						SsmGetSessionLogsQueryResult(
+							ssmName = "test-ssm",
+							sessionName = q.sessionName,
+							logs = listOf(ssmLog("tx-${q.sessionName}", iteration = 0)),
+						)
+					}
+					.asFlow()
+			}
+
+		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2 =
+			F2Function { _ -> error("v2Start should not be called") }
+		val v1Start: ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction =
+			F2Function { _ -> error("v1Start should not be called") }
+		val v1Perform: ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction =
+			F2Function { _ -> error("v1Perform should not be called") }
+
+		val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
+			ssmSessionStartFunction = v1Start,
+			ssmSessionPerformActionFunction = v1Perform,
+			ssmSessionStartFunctionV2 = v2Start,
+			ssmSessionPerformActionFunctionV2 = v2Perform,
+			ssmGetSessionLogsQueryFunction = logsQuery,
+			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+			entityType = SimpleEntity::class.java,
+			agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+			objectMapper = ObjectMapper(),
+			batch = S2BatchProperties(),
+		)
+
+		val ctx1 = makeSimpleTransitionContext(SimpleEntity("sess-1", status = 1))
+		val ctx2 = makeSimpleTransitionContext(SimpleEntity("sess-2", status = 1))
+		val ctx3 = makeSimpleTransitionContext(SimpleEntity("sess-3", status = 1))
+
+		val outcomes = persister.persistWithOutcomes(flowOf(ctx1, ctx2, ctx3)).toList()
+
+		assertThat(outcomes).hasSize(3)
+
+		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
+		assertThat(rejected.errorCode).isEqualTo("SESSION_NOT_FOUND")
+		assertThat(rejected.commandId).contains("sess-2")
+
+		val committed = outcomes.filterIsInstance<PersistOutcome.Committed<TestEvt>>()
+		assertThat(committed).hasSize(2)
+		assertThat(committed.map { it.commandId }).noneMatch { it.contains("sess-2") }
+
+		// Critical: the missing-session item must NOT have reached the chaincode call
+		assertThat(performCommandsSeen).hasSize(2)
+		assertThat(performCommandsSeen).noneMatch { it.contains("sess-2") }
 	}
 
 	// --- end fixtures ---
