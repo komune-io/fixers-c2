@@ -23,7 +23,7 @@ class SsmSessionStartAutoConfiguration {
 		SsmTxSessionStartFunctionImpl(ssmTxService)
 
 	@Bean
-	@ConditionalOnMissingBean(SsmTxSessionStartFunctionV2::class)
+	@ConditionalOnMissingBean(name = ["ssmTxSessionStartFunctionV2"])
 	@ConditionalOnBean(SsmTxService::class)
 	fun ssmTxSessionStartFunctionV2(
 		ssmTxService: SsmTxService,
