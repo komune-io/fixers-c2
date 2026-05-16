@@ -24,7 +24,7 @@ class SsmTxSessionPerformActionAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(SsmTxSessionPerformActionFunctionV2::class)
+	@ConditionalOnMissingBean(name = ["ssmTxSessionPerformActionFunctionV2"])
 	@ConditionalOnBean(SsmTxService::class)
 	fun ssmTxSessionPerformActionFunctionV2(
 		ssmTxService: SsmTxService,
