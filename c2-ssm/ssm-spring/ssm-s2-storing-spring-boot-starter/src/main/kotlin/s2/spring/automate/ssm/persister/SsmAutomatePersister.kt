@@ -311,7 +311,7 @@ ENTITY : WithS2Id<ID> {
 			)
 		}
 		return when (outcome.outcome) {
-			"Committed" -> PersistOutcome.Committed(
+			"Committed" -> PersistOutcome.Success(
 				commandId = commandId,
 				event = event,
 				transactionId = outcome.transactionId.orEmpty(),

@@ -155,7 +155,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
         assertThat(outcomes).hasSize(1)
-        val committed = outcomes.single() as PersistOutcome.Committed<TestEvt>
+        val committed = outcomes.single() as PersistOutcome.Success<TestEvt>
         assertThat(committed.transactionId).isEqualTo("tx-123")
         assertThat(committed.blockNumber).isEqualTo(42L)
         assertThat(committed.event.id).isEqualTo("entity-1")
@@ -164,7 +164,12 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes maps Rejected outcomes correctly`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Rejected", commandId = "", errorCode = "ENDORSE_FAILED", errorMessage = "endorsement failed"),
+            CommandOutcome(
+                outcome = "Rejected",
+                commandId = "",
+                errorCode = "ENDORSE_FAILED",
+                errorMessage = "endorsement failed",
+            ),
         ))
         val ctx = makeInitTransitionContext(IterableEntity("entity-rej", 1, 0))
 
@@ -179,7 +184,12 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes maps Transient outcomes correctly`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Transient", commandId = "", errorCode = "GRPC_UNAVAILABLE", errorMessage = "peer down"),
+            CommandOutcome(
+                outcome = "Transient",
+                commandId = "",
+                errorCode = "GRPC_UNAVAILABLE",
+                errorMessage = "peer down",
+            ),
         ))
         val ctx = makeInitTransitionContext(IterableEntity("entity-tr", 1, 0))
 
@@ -194,7 +204,12 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes maps Indeterminate outcomes correctly`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Indeterminate", commandId = "", errorCode = "SUBMIT_FAILED", errorMessage = "orderer timeout"),
+            CommandOutcome(
+                outcome = "Indeterminate",
+                commandId = "",
+                errorCode = "SUBMIT_FAILED",
+                errorMessage = "orderer timeout",
+            ),
         ))
         val ctx = makeInitTransitionContext(IterableEntity("entity-ind", 1, 0))
 
@@ -209,7 +224,12 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes maps Conflict outcomes correctly`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Conflict", commandId = "", errorCode = "MVCC_READ_CONFLICT", errorMessage = "conflict"),
+            CommandOutcome(
+                outcome = "Conflict",
+                commandId = "",
+                errorCode = "MVCC_READ_CONFLICT",
+                errorMessage = "conflict",
+            ),
         ))
         val ctx = makeInitTransitionContext(IterableEntity("entity-cf", 1, 0))
 
@@ -255,7 +275,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val outcomes = persister.persistInitWithOutcomes(contexts.asFlow()).toList()
 
         assertThat(outcomes).hasSize(5)
-        assertThat(outcomes.filterIsInstance<PersistOutcome.Committed<TestEvt>>()).hasSize(1)
+        assertThat(outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()).hasSize(1)
         assertThat(outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>()).hasSize(1)
         assertThat(outcomes.filterIsInstance<PersistOutcome.Transient<TestEvt>>()).hasSize(1)
         assertThat(outcomes.filterIsInstance<PersistOutcome.Indeterminate<TestEvt>>()).hasSize(1)

@@ -250,7 +250,7 @@ class SsmAutomatePersisterTest {
 		val outcomes = persister.persistWithOutcomes(flowOf(ctx1, ctx2, ctx3)).toList()
 
 		assertThat(outcomes).hasSize(3)
-		assertThat(outcomes.filterIsInstance<PersistOutcome.Committed<TestEvt>>()).hasSize(2)
+		assertThat(outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()).hasSize(2)
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
 		assertThat(rejected.errorCode).isEqualTo("MVCC_READ_CONFLICT")
 		assertThat(rejected.commandId).contains("id-3")
@@ -321,7 +321,7 @@ class SsmAutomatePersisterTest {
 		assertThat(rejected.errorCode).isEqualTo("SESSION_NOT_FOUND")
 		assertThat(rejected.commandId).contains("sess-2")
 
-		val committed = outcomes.filterIsInstance<PersistOutcome.Committed<TestEvt>>()
+		val committed = outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()
 		assertThat(committed).hasSize(2)
 		assertThat(committed.map { it.commandId }).noneMatch { it.contains("sess-2") }
 
