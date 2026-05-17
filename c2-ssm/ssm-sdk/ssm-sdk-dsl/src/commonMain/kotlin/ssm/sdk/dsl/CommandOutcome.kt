@@ -13,6 +13,8 @@ data class CommandOutcome(
     val errorCode: String? = null,
     val errorMessage: String? = null,
     val payload: String? = null,
+    val errorClass: String = "UNKNOWN",
+    val errorOrigin: String = "UNKNOWN",
 )
 
 /** Quick predicates used by retry policy code in plateform. */

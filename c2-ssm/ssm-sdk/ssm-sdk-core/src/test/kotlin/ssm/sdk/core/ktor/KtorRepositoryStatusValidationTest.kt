@@ -108,6 +108,9 @@ class KtorRepositoryStatusValidationTest {
         assertThat(outcomes[1].commandId).isEqualTo("cmd-2")
         assertThat(outcomes[1].outcome).isEqualTo("Rejected")
         assertThat(outcomes[1].errorCode).isEqualTo("MVCC_READ_CONFLICT")
+        // 200: deserialized from wire — errorClass/Origin default to UNKNOWN when absent in JSON
+        assertThat(outcomes[0].errorClass).isEqualTo("UNKNOWN")
+        assertThat(outcomes[0].errorOrigin).isEqualTo("UNKNOWN")
     }
 
     // --------------------------------------------------------------------------
@@ -124,11 +127,27 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_400")
+            assertThat(outcome.errorClass).isEqualTo("INPUT")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
     @Test
-    fun `invokeV2 on 403 synthesises N×Rejected outcomes with HTTP_403 errorCode`(): Unit = runBlocking {
+    fun `invokeV2 on 401 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+        val repo = buildRepository(HttpStatusCode.Unauthorized, "Unauthorized")
+        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+
+        assertThat(outcomes).hasSize(commandIds.size)
+        outcomes.forEach { outcome ->
+            assertThat(outcome.outcome).isEqualTo("Rejected")
+            assertThat(outcome.errorCode).isEqualTo("HTTP_401")
+            assertThat(outcome.errorClass).isEqualTo("AUTH")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
+        }
+    }
+
+    @Test
+    fun `invokeV2 on 403 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.Forbidden, "Forbidden")
         val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
 
@@ -136,11 +155,13 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_403")
+            assertThat(outcome.errorClass).isEqualTo("AUTH")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
     @Test
-    fun `invokeV2 on 404 synthesises N×Rejected outcomes`(): Unit = runBlocking {
+    fun `invokeV2 on 404 synthesises N×Rejected outcomes with INPUT errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.NotFound, "Not Found")
         val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
 
@@ -148,6 +169,8 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_404")
+            assertThat(outcome.errorClass).isEqualTo("INPUT")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -156,7 +179,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on 500 synthesises N×Transient outcomes`(): Unit = runBlocking {
+    fun `invokeV2 on 500 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.InternalServerError, "Internal Server Error")
         val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
 
@@ -165,11 +188,13 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Transient")
             assertThat(outcome.errorCode).isEqualTo("HTTP_500")
+            assertThat(outcome.errorClass).isEqualTo("NETWORK")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
     @Test
-    fun `invokeV2 on 503 synthesises N×Transient outcomes with HTTP_503 errorCode`(): Unit = runBlocking {
+    fun `invokeV2 on 503 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.ServiceUnavailable, "Service Unavailable")
         val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
 
@@ -177,6 +202,8 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Transient")
             assertThat(outcome.errorCode).isEqualTo("HTTP_503")
+            assertThat(outcome.errorClass).isEqualTo("NETWORK")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -194,11 +221,13 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("CONNECT_REFUSED")
+            assertThat(outcome.errorClass).isEqualTo("NETWORK")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_SDK")
         }
     }
 
     @Test
-    fun `connect refused yields Indeterminate with CONNECT_REFUSED code`(): Unit = runBlocking {
+    fun `connect refused yields Indeterminate with CONNECT_REFUSED code and NETWORK class`(): Unit = runBlocking {
         // Use a hermetic MockEngine instead of 127.0.0.1:1 to avoid environment-dependent
         // behaviour (sandboxed Docker / hardened macOS may give TIMEOUT or PermissionException
         // rather than ECONNREFUSED, making the test flaky in CI).
@@ -208,10 +237,12 @@ class KtorRepositoryStatusValidationTest {
         val outcomes = repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
+        assertThat(outcomes.single().errorClass).isEqualTo("NETWORK")
+        assertThat(outcomes.single().errorOrigin).isEqualTo("C2_SDK")
     }
 
     @Test
-    fun `request timeout yields Indeterminate with TIMEOUT code`(): Unit = runBlocking {
+    fun `request timeout yields Indeterminate with TIMEOUT code and NETWORK class`(): Unit = runBlocking {
         val mockEngine = MockEngine { _ ->
             delay(10_000)
             respond(content = "never reaches", status = HttpStatusCode.OK)
@@ -235,6 +266,8 @@ class KtorRepositoryStatusValidationTest {
         )
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("TIMEOUT")
+        assertThat(outcomes.single().errorClass).isEqualTo("NETWORK")
+        assertThat(outcomes.single().errorOrigin).isEqualTo("C2_SDK")
     }
 
     // --------------------------------------------------------------------------
@@ -250,6 +283,8 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("UNEXPECTED_HTTP_302")
+            assertThat(outcome.errorClass).isEqualTo("UNKNOWN")
+            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 

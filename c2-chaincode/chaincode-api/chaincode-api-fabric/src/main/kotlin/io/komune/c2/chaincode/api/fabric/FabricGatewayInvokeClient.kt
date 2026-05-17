@@ -74,6 +74,7 @@ class FabricGatewayClient(
                             commandId = commandId,
                             errorCode = "UNEXPECTED",
                             errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+                            errorClass = "UNKNOWN",
                         )
                     }
             }
@@ -100,12 +101,14 @@ class FabricGatewayClient(
                 commandId = commandId,
                 errorCode = "ENDORSE_FAILED",
                 errorMessage = extractErrorMessage(e),
+                errorClass = "BUSINESS",
             )
         } catch (e: io.grpc.StatusRuntimeException) {
             return TxOutcome.Transient(
                 commandId = commandId,
                 errorCode = "GRPC_${e.status.code.name}",
                 errorMessage = e.message ?: "gRPC failure",
+                errorClass = "NETWORK",
             )
         }
 
@@ -154,11 +157,13 @@ class FabricGatewayClient(
                 commandId = commandId,
                 errorCode = "GRPC_${e.status.code.name}",
                 errorMessage = e.message ?: "gRPC submit failure",
+                errorClass = "NETWORK",
             )
             else -> TxOutcome.Indeterminate(
                 commandId = commandId,
                 errorCode = "SUBMIT_FAILED",
                 errorMessage = e.message ?: "submit failed",
+                errorClass = "INFRA",
             )
         }
     }

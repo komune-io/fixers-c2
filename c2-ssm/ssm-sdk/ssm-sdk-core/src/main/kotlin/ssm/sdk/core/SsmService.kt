@@ -102,6 +102,8 @@ class SsmService(
 							commandId = commandId,
 							errorCode = "SIGN_FAILED",
 							errorMessage = e.message,
+							errorClass = "AUTH",
+							errorOrigin = "C2_SDK",
 						),
 					)
 				},
