@@ -8,6 +8,7 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.lang.System.currentTimeMillis
 import java.util.StringJoiner
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -112,11 +113,7 @@ class FabricGatewayClient(
         val submitted = try {
             endorsed.submitAsync()
         } catch (e: Exception) {
-            return TxOutcome.Indeterminate(
-                commandId = commandId,
-                errorCode = "SUBMIT_FAILED",
-                errorMessage = e.message ?: "submit failed",
-            )
+            return mapSubmitFailure(e, commandId)
         }
 
         val status = submitted.status
@@ -137,6 +134,31 @@ class FabricGatewayClient(
                 statusCodeName = status.code.name,
                 transactionId = endorsed.transactionId,
                 blockNumber = status.blockNumber,
+            )
+        }
+    }
+
+    /**
+     * Maps a submit-phase exception to the appropriate TxOutcome.
+     *
+     * - [CancellationException] is rethrown immediately to preserve structured concurrency.
+     * - [StatusRuntimeException] (gRPC connectivity failure) → [TxOutcome.Transient] with code
+     *   "GRPC_<code>" (e.g. GRPC_UNAVAILABLE, GRPC_DEADLINE_EXCEEDED). The caller may retry.
+     * - Any other [Exception] → [TxOutcome.Indeterminate] with code "SUBMIT_FAILED".
+     *   The transaction fate is unknown; operator investigation is required.
+     */
+    internal fun mapSubmitFailure(e: Exception, commandId: String): TxOutcome {
+        if (e is CancellationException) throw e
+        return when (e) {
+            is io.grpc.StatusRuntimeException -> TxOutcome.Transient(
+                commandId = commandId,
+                errorCode = "GRPC_${e.status.code.name}",
+                errorMessage = e.message ?: "gRPC submit failure",
+            )
+            else -> TxOutcome.Indeterminate(
+                commandId = commandId,
+                errorCode = "SUBMIT_FAILED",
+                errorMessage = e.message ?: "submit failed",
             )
         }
     }
