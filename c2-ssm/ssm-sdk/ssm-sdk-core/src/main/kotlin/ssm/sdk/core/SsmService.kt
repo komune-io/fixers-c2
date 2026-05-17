@@ -60,7 +60,57 @@ class SsmService(
 		return ssmRequester.invoke(ssmCommandSigneds)
 	}
 
-	suspend fun invokeAllV2(signed: List<SsmCmdSigned>, commandIds: List<String>): List<CommandOutcome> {
-		return ssmRequester.invokeAllV2(signed, commandIds)
+	/**
+	 * Signs each [SsmCmd] individually (per-item resilience) and sends all successfully-signed
+	 * commands to the blockchain as a batch. Commands that fail to sign produce a
+	 * [CommandOutcome] with outcome="Rejected" and errorCode="SIGN_FAILED" instead of
+	 * aborting the whole batch. Closes leak O.
+	 */
+	@Suppress("TooGenericExceptionCaught")
+	suspend fun invokeAllV2(
+		cmds: List<SsmCmd>,
+		commandIds: List<String>,
+	): List<CommandOutcome> {
+		require(commandIds.size == cmds.size) {
+			"commandIds.size=${commandIds.size} must match cmds.size=${cmds.size}"
+		}
+
+		data class SignResult(
+			val commandId: String,
+			val signed: SsmCmdSigned?,
+			val failure: CommandOutcome?,
+		)
+
+		val signResults = cmds.zip(commandIds).map { (cmd, commandId) ->
+			runCatching { ssmCmdSigner.sign(cmd) }.fold(
+				onSuccess = { signed ->
+					SignResult(commandId = commandId, signed = signed, failure = null)
+				},
+				onFailure = { e ->
+					SignResult(
+						commandId = commandId,
+						signed = null,
+						failure = CommandOutcome(
+							outcome = "Rejected",
+							commandId = commandId,
+							errorCode = "SIGN_FAILED",
+							errorMessage = e.message,
+						),
+					)
+				},
+			)
+		}
+
+		val signFailures = signResults.mapNotNull { it.failure }
+		val successSigned = signResults.mapNotNull { it.signed }
+		val successCommandIds = signResults.filter { it.signed != null }.map { it.commandId }
+
+		val invokeOutcomes = if (successSigned.isEmpty()) {
+			emptyList()
+		} else {
+			ssmRequester.invokeAllV2(successSigned, successCommandIds)
+		}
+
+		return signFailures + invokeOutcomes
 	}
 }

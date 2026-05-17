@@ -176,8 +176,7 @@ class SsmRequester(
 		cmds.logger("Invoke[v2]", total) { it.chaincodeUri }
 
 		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
-		val raw = coopRepository.invokeV2(args, commandIds)
-		return JsonUtils.toObject<List<CommandOutcome>>(raw)
+		return coopRepository.invokeV2(args, commandIds)
 	}
 
 	@Suppress("TooGenericExceptionCaught", "SwallowedException")

@@ -15,7 +15,9 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.http.path
 import io.ktor.serialization.jackson.jackson
 import org.slf4j.LoggerFactory
@@ -23,6 +25,8 @@ import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
+import ssm.sdk.dsl.CommandOutcome
+import ssm.sdk.json.JsonUtils
 
 
 class KtorRepository(
@@ -164,10 +168,11 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
+	@Suppress("TooGenericExceptionCaught")
 	suspend fun invokeV2(
 		invokeArgs: List<InvokeRequest>,
 		commandIds: List<String>,
-	): String {
+	): List<CommandOutcome> {
 		require(invokeArgs.size == commandIds.size) {
 			"commandIds.size=${commandIds.size} must match invokeArgs.size=${invokeArgs.size}"
 		}
@@ -183,11 +188,53 @@ class KtorRepository(
 				),
 			)
 		}
-		return client.post("$baseUrl/invoke/v2") {
-			addAuth()
-			contentType(ContentType.Application.Json)
-			setBody(body)
-		}.bodyAsText()
+		return try {
+			val response = client.post("$baseUrl/invoke/v2") {
+				addAuth()
+				contentType(ContentType.Application.Json)
+				setBody(body)
+			}
+			val statusValue = response.status.value
+			when {
+				response.status.isSuccess() -> {
+					JsonUtils.toObject<List<CommandOutcome>>(response.bodyAsText())
+				}
+				statusValue in 400..499 -> synthesiseOutcomes(
+					commandIds = commandIds,
+					outcome = "Rejected",
+					errorCode = "HTTP_$statusValue",
+					errorMessage = response.bodyAsText(),
+				)
+				else -> synthesiseOutcomes(
+					commandIds = commandIds,
+					outcome = "Transient",
+					errorCode = "HTTP_$statusValue",
+					errorMessage = response.bodyAsText(),
+				)
+			}
+		} catch (e: Exception) {
+			logger.warn("invokeV2 network error for commandIds={}: {}", commandIds, e.message)
+			synthesiseOutcomes(
+				commandIds = commandIds,
+				outcome = "Indeterminate",
+				errorCode = "NETWORK_ERROR",
+				errorMessage = e.message,
+			)
+		}
+	}
+
+	private fun synthesiseOutcomes(
+		commandIds: List<String>,
+		outcome: String,
+		errorCode: String,
+		errorMessage: String?,
+	): List<CommandOutcome> = commandIds.map { commandId ->
+		CommandOutcome(
+			outcome = outcome,
+			commandId = commandId,
+			errorCode = errorCode,
+			errorMessage = errorMessage,
+		)
 	}
 
 	private fun HttpRequestBuilder.addAuth() {

@@ -94,16 +94,16 @@ class SsmTxService(
 
 	suspend fun sendStartV2(commands: List<SsmStartCommandV2>): List<CommandOutcome> {
 		logger.info("Start[v2] ${commands.size} session(s)")
-		val signed = ssmService.signss { commands.map { start(it.session, it.chaincodeUri, it.signerName) } }
+		val cmds = commands.map { start(it.session, it.chaincodeUri, it.signerName) }
 		val ids = commands.map { it.commandId }
-		return ssmService.invokeAllV2(signed, ids)
+		return ssmService.invokeAllV2(cmds, ids)
 	}
 
 	suspend fun sendPerformV2(commands: List<SsmPerformCommandV2>): List<CommandOutcome> {
 		logger.info("Perform[v2] ${commands.size} action(s)")
-		val signed = ssmService.signs { commands.map { perform(it.action, it.context, it.chaincodeUri, it.signerName) } }
+		val cmds = commands.map { perform(it.action, it.context, it.chaincodeUri, it.signerName) }
 		val ids = commands.map { it.commandId }
-		return ssmService.invokeAllV2(signed, ids)
+		return ssmService.invokeAllV2(cmds, ids)
 	}
 
 
