@@ -132,10 +132,9 @@ class FabricGatewayClient(
                 payload = String(endorsed.result),
             )
         } else {
-            TxOutcome.Conflict(
+            TxValidationCodeMapper.toOutcome(
                 commandId = commandId,
-                errorCode = status.code.name,
-                errorMessage = "Transaction[${endorsed.transactionId}] failed to commit: code=${status.code}",
+                statusCodeName = status.code.name,
                 transactionId = endorsed.transactionId,
                 blockNumber = status.blockNumber,
             )

@@ -26,9 +26,9 @@ class TxValidationCodeMapperTest {
     }
 
     @Test
-    fun `ENDORSEMENT_POLICY_FAILURE maps to Conflict`() {
+    fun `ENDORSEMENT_POLICY_FAILURE maps to Rejected`() {
         val outcome = TxValidationCodeMapper.toOutcome("c1", "tx1", 42L, TxValidationCode.ENDORSEMENT_POLICY_FAILURE)
-        assertThat(outcome).isInstanceOf(TxOutcome.Conflict::class.java)
+        assertThat(outcome).isInstanceOf(TxOutcome.Rejected::class.java)
     }
 
     @Test

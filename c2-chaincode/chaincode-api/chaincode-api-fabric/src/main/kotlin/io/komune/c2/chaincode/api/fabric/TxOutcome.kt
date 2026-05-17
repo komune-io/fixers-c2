@@ -45,18 +45,64 @@ sealed interface TxOutcome {
 }
 
 object TxValidationCodeMapper {
+
+    /**
+     * Maps a raw validation-code name (as returned by status.code.name at commit
+     * time) to the appropriate TxOutcome subtype. Using the string form avoids a
+     * hard dependency on the proto-generated TxValidationCode enum at call sites
+     * that only have the name available.
+     *
+     * Conflict  — transient state issue; caller should refetch state and retry.
+     * Rejected  — permanent policy / format failure; retrying will not help.
+     * Indeterminate — unknown future code; operator investigation required.
+     */
+    fun toOutcome(
+        commandId: String,
+        statusCodeName: String,
+        transactionId: String?,
+        blockNumber: Long?,
+    ): TxOutcome = when (statusCodeName) {
+        "MVCC_READ_CONFLICT", "PHANTOM_READ_CONFLICT", "INVALID_OTHER_REASON" ->
+            TxOutcome.Conflict(
+                commandId = commandId,
+                errorCode = statusCodeName,
+                errorMessage = "validation: $statusCodeName",
+                transactionId = transactionId,
+                blockNumber = blockNumber,
+            )
+        "ENDORSEMENT_POLICY_FAILURE", "BAD_RWSET", "BAD_CHANNEL_HEADER",
+        "BAD_HEADER_EXTENSION", "INVALID_CONFIG_TRANSACTION", "MARSHAL_TX_ERROR",
+        "TARGET_CHAIN_NOT_FOUND", "UNAUTHORISED" ->
+            TxOutcome.Rejected(
+                commandId = commandId,
+                errorCode = statusCodeName,
+                errorMessage = "validation: $statusCodeName",
+            )
+        else ->
+            TxOutcome.Indeterminate(
+                commandId = commandId,
+                errorCode = statusCodeName,
+                errorMessage = "unknown validation code: $statusCodeName",
+            )
+    }
+
+    /**
+     * Enum-based overload retained for call sites that have the proto enum
+     * available (e.g. TxValidationCodeMapperTest). Delegates to the string form.
+     */
     fun toOutcome(
         commandId: String,
         transactionId: String,
         blockNumber: Long,
         code: TxValidationCode,
-    ): TxOutcome = when (code) {
-        TxValidationCode.VALID -> TxOutcome.Committed(commandId, transactionId, blockNumber, payload = "")
-        TxValidationCode.MVCC_READ_CONFLICT,
-        TxValidationCode.PHANTOM_READ_CONFLICT,
-        TxValidationCode.ENDORSEMENT_POLICY_FAILURE,
-        TxValidationCode.INVALID_OTHER_REASON,
-        -> TxOutcome.Conflict(commandId, code.name, "validation failed: ${code.name}", transactionId, blockNumber)
-        else -> TxOutcome.Rejected(commandId, code.name, "validation failed: ${code.name}")
+    ): TxOutcome = if (code == TxValidationCode.VALID) {
+        TxOutcome.Committed(commandId, transactionId, blockNumber, payload = "")
+    } else {
+        toOutcome(
+            commandId = commandId,
+            statusCodeName = code.name,
+            transactionId = transactionId,
+            blockNumber = blockNumber,
+        )
     }
 }
