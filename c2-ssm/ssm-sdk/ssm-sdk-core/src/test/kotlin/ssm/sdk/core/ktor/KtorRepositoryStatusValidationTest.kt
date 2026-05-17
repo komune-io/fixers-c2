@@ -199,15 +199,13 @@ class KtorRepositoryStatusValidationTest {
 
     @Test
     fun `connect refused yields Indeterminate with CONNECT_REFUSED code`(): Unit = runBlocking {
-        val repo = KtorRepository(
-            baseUrl = "http://127.0.0.1:1",
-            timeout = 500L,
-            authCredentials = null,
-        )
-        val outcomes = repo.invokeV2(
-            invokeArgs = listOf(sampleInvokeArgs.first()),
-            commandIds = listOf("cmd-1"),
-        )
+        // Use a hermetic MockEngine instead of 127.0.0.1:1 to avoid environment-dependent
+        // behaviour (sandboxed Docker / hardened macOS may give TIMEOUT or PermissionException
+        // rather than ECONNREFUSED, making the test flaky in CI).
+        val mockEngine = MockEngine { _ -> throw java.net.ConnectException("Connection refused") }
+        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
+        val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
+        val outcomes = repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
     }
@@ -275,5 +273,19 @@ class KtorRepositoryStatusValidationTest {
         val outcomes = repo.invokeV2(args, ids)
 
         assertThat(outcomes.map { it.commandId }).isEqualTo(ids)
+    }
+
+    // --------------------------------------------------------------------------
+    // CancellationException propagation (structured concurrency)
+    // --------------------------------------------------------------------------
+
+    @Test
+    fun `runCatching rethrows CancellationException instead of synthesising`(): Unit = runBlocking {
+        val mockEngine = MockEngine { _ -> throw kotlinx.coroutines.CancellationException("cancel") }
+        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
+        val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
+        org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
+            repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+        }
     }
 }

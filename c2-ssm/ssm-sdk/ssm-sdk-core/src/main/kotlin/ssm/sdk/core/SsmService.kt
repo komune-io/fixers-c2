@@ -65,6 +65,10 @@ class SsmService(
 	 * commands to the blockchain as a batch. Commands that fail to sign produce a
 	 * [CommandOutcome] with outcome="Rejected" and errorCode="SIGN_FAILED" instead of
 	 * aborting the whole batch. Closes leak O.
+	 *
+	 * The returned list is NOT guaranteed to preserve the input command order;
+	 * signing failures are emitted before invoke outcomes. Callers must key
+	 * results by [CommandOutcome.commandId], never by position.
 	 */
 	suspend fun invokeAllV2(
 		cmds: List<SsmCmd>,
@@ -86,6 +90,10 @@ class SsmService(
 					SignResult(commandId = commandId, signed = signed, failure = null)
 				},
 				onFailure = { e ->
+					// sign() is non-suspending today so CancellationException is not a live risk,
+					// but rethrow defensively to preserve structured concurrency if sign() ever
+					// becomes a suspend fun in the future.
+					if (e is kotlinx.coroutines.CancellationException) throw e
 					SignResult(
 						commandId = commandId,
 						signed = null,

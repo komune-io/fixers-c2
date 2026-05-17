@@ -196,7 +196,10 @@ class KtorRepository(
 				setBody(body)
 			}
 			mapHttpResponse(response, commandIds)
-		}.getOrElse { e -> mapNetworkError(e, commandIds) }
+		}.getOrElse { e ->
+			if (e is kotlinx.coroutines.CancellationException) throw e
+			mapNetworkError(e, commandIds)
+		}
 	}
 
 	private suspend fun mapHttpResponse(
