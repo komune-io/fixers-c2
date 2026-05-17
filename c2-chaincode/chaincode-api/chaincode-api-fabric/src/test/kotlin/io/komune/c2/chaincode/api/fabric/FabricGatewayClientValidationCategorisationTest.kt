@@ -52,6 +52,15 @@ class FabricGatewayClientValidationCategorisationTest {
             Arguments.of("MARSHAL_TX_ERROR", "Rejected", "MARSHAL_TX_ERROR"),
             Arguments.of("TARGET_CHAIN_NOT_FOUND", "Rejected", "TARGET_CHAIN_NOT_FOUND"),
             Arguments.of("UNAUTHORISED", "Rejected", "UNAUTHORISED"),
+            // New Conflict codes
+            Arguments.of("DUPLICATE_TXID", "Conflict", "DUPLICATE_TXID"),
+            Arguments.of("INVALID_WRITESET", "Conflict", "INVALID_WRITESET"),
+            // New Rejected codes (representative sample)
+            Arguments.of("NIL_ENVELOPE", "Rejected", "NIL_ENVELOPE"),
+            Arguments.of("BAD_PAYLOAD", "Rejected", "BAD_PAYLOAD"),
+            Arguments.of("EXPIRED_CHAINCODE", "Rejected", "EXPIRED_CHAINCODE"),
+            // Defensive bucket — NOT_VALIDATED stays Indeterminate
+            Arguments.of("NOT_VALIDATED", "Indeterminate", "NOT_VALIDATED"),
             Arguments.of("SOME_FUTURE_CODE", "Indeterminate", "SOME_FUTURE_CODE"),
         )
     }

@@ -62,7 +62,8 @@ object TxValidationCodeMapper {
         transactionId: String?,
         blockNumber: Long?,
     ): TxOutcome = when (statusCodeName) {
-        "MVCC_READ_CONFLICT", "PHANTOM_READ_CONFLICT", "INVALID_OTHER_REASON" ->
+        "MVCC_READ_CONFLICT", "PHANTOM_READ_CONFLICT", "INVALID_OTHER_REASON",
+        "DUPLICATE_TXID", "INVALID_WRITESET" ->
             TxOutcome.Conflict(
                 commandId = commandId,
                 errorCode = statusCodeName,
@@ -72,7 +73,12 @@ object TxValidationCodeMapper {
             )
         "ENDORSEMENT_POLICY_FAILURE", "BAD_RWSET", "BAD_CHANNEL_HEADER",
         "BAD_HEADER_EXTENSION", "INVALID_CONFIG_TRANSACTION", "MARSHAL_TX_ERROR",
-        "TARGET_CHAIN_NOT_FOUND", "UNAUTHORISED" ->
+        "TARGET_CHAIN_NOT_FOUND", "UNAUTHORISED",
+        "NIL_ENVELOPE", "BAD_PAYLOAD", "BAD_COMMON_HEADER", "BAD_CREATOR_SIGNATURE",
+        "INVALID_ENDORSER_TRANSACTION", "UNSUPPORTED_TX_PAYLOAD", "BAD_PROPOSAL_TXID",
+        "UNKNOWN_TX_TYPE", "NIL_TXACTION", "EXPIRED_CHAINCODE",
+        "CHAINCODE_VERSION_CONFLICT", "BAD_RESPONSE_PAYLOAD", "ILLEGAL_WRITESET",
+        "INVALID_CHAINCODE" ->
             TxOutcome.Rejected(
                 commandId = commandId,
                 errorCode = statusCodeName,
