@@ -66,7 +66,6 @@ class SsmService(
 	 * [CommandOutcome] with outcome="Rejected" and errorCode="SIGN_FAILED" instead of
 	 * aborting the whole batch. Closes leak O.
 	 */
-	@Suppress("TooGenericExceptionCaught")
 	suspend fun invokeAllV2(
 		cmds: List<SsmCmd>,
 		commandIds: List<String>,

@@ -43,6 +43,8 @@ class KtorRepository(
 		val CHAINCODE_ID_PROPS = InvokeRequest::chaincodeid.name
 		val FCN_PROPS = InvokeRequest::fcn.name
 		val ARGS_PROPS = InvokeRequest::args.name
+		val CLIENT_ERROR_RANGE = 400..499
+		val SERVER_ERROR_RANGE = 500..599
 	}
 
 	val client = client ?: HttpClient(CIO) {
@@ -168,7 +170,6 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
-	@Suppress("TooGenericExceptionCaught")
 	suspend fun invokeV2(
 		invokeArgs: List<InvokeRequest>,
 		commandIds: List<String>,
@@ -188,39 +189,59 @@ class KtorRepository(
 				),
 			)
 		}
-		return try {
+		return runCatching {
 			val response = client.post("$baseUrl/invoke/v2") {
 				addAuth()
 				contentType(ContentType.Application.Json)
 				setBody(body)
 			}
-			val statusValue = response.status.value
-			when {
-				response.status.isSuccess() -> {
-					JsonUtils.toObject<List<CommandOutcome>>(response.bodyAsText())
-				}
-				statusValue in 400..499 -> synthesiseOutcomes(
-					commandIds = commandIds,
-					outcome = "Rejected",
-					errorCode = "HTTP_$statusValue",
-					errorMessage = response.bodyAsText(),
-				)
-				else -> synthesiseOutcomes(
-					commandIds = commandIds,
-					outcome = "Transient",
-					errorCode = "HTTP_$statusValue",
-					errorMessage = response.bodyAsText(),
-				)
-			}
-		} catch (e: Exception) {
-			logger.warn("invokeV2 network error for commandIds={}: {}", commandIds, e.message)
-			synthesiseOutcomes(
+			mapHttpResponse(response, commandIds)
+		}.getOrElse { e -> mapNetworkError(e, commandIds) }
+	}
+
+	private suspend fun mapHttpResponse(
+		response: io.ktor.client.statement.HttpResponse,
+		commandIds: List<String>,
+	): List<CommandOutcome> {
+		val statusValue = response.status.value
+		return when {
+			response.status.isSuccess() -> JsonUtils.toObject(response.bodyAsText())
+			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
+				commandIds = commandIds,
+				outcome = "Rejected",
+				errorCode = "HTTP_$statusValue",
+				errorMessage = response.bodyAsText(),
+			)
+			statusValue in SERVER_ERROR_RANGE -> synthesiseOutcomes(
+				commandIds = commandIds,
+				outcome = "Transient",
+				errorCode = "HTTP_$statusValue",
+				errorMessage = response.bodyAsText(),
+			)
+			else -> synthesiseOutcomes(
 				commandIds = commandIds,
 				outcome = "Indeterminate",
-				errorCode = "NETWORK_ERROR",
-				errorMessage = e.message,
+				errorCode = "UNEXPECTED_HTTP_$statusValue",
+				errorMessage = response.bodyAsText(),
 			)
 		}
+	}
+
+	private fun mapNetworkError(e: Throwable, commandIds: List<String>): List<CommandOutcome> {
+		val code = when (e) {
+			is io.ktor.client.plugins.HttpRequestTimeoutException,
+			is io.ktor.client.network.sockets.ConnectTimeoutException,
+			is java.net.SocketTimeoutException -> "TIMEOUT"
+			is java.net.ConnectException -> "CONNECT_REFUSED"
+			else -> "TRANSPORT_ERROR"
+		}
+		logger.warn("invokeV2 network error ({}) for commandIds={}: {}", code, commandIds, e.message)
+		return synthesiseOutcomes(
+			commandIds = commandIds,
+			outcome = "Indeterminate",
+			errorCode = code,
+			errorMessage = e.message,
+		)
 	}
 
 	private fun synthesiseOutcomes(

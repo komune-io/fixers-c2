@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -12,6 +13,7 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -191,6 +193,65 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEachIndexed { i, outcome ->
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
+            assertThat(outcome.errorCode).isEqualTo("CONNECT_REFUSED")
+        }
+    }
+
+    @Test
+    fun `connect refused yields Indeterminate with CONNECT_REFUSED code`(): Unit = runBlocking {
+        val repo = KtorRepository(
+            baseUrl = "http://127.0.0.1:1",
+            timeout = 500L,
+            authCredentials = null,
+        )
+        val outcomes = repo.invokeV2(
+            invokeArgs = listOf(sampleInvokeArgs.first()),
+            commandIds = listOf("cmd-1"),
+        )
+        assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
+        assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
+    }
+
+    @Test
+    fun `request timeout yields Indeterminate with TIMEOUT code`(): Unit = runBlocking {
+        val mockEngine = MockEngine { _ ->
+            delay(10_000)
+            respond(content = "never reaches", status = HttpStatusCode.OK)
+        }
+        val client = HttpClient(mockEngine) {
+            install(ContentNegotiation) { jackson() }
+            install(HttpTimeout) {
+                requestTimeoutMillis = 100L
+                connectTimeoutMillis = 100L
+            }
+        }
+        val repo = KtorRepository(
+            baseUrl = "http://test",
+            timeout = 100L,
+            authCredentials = null,
+            client = client,
+        )
+        val outcomes = repo.invokeV2(
+            invokeArgs = listOf(sampleInvokeArgs.first()),
+            commandIds = listOf("cmd-1"),
+        )
+        assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
+        assertThat(outcomes.single().errorCode).isEqualTo("TIMEOUT")
+    }
+
+    // --------------------------------------------------------------------------
+    // Unexpected HTTP status (outside 2xx / 4xx / 5xx)
+    // --------------------------------------------------------------------------
+
+    @Test
+    fun `invokeV2 on unexpected status synthesises N×Indeterminate with UNEXPECTED_HTTP code`(): Unit = runBlocking {
+        val repo = buildRepository(HttpStatusCode.fromValue(302), "Redirect")
+        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+
+        assertThat(outcomes).hasSize(commandIds.size)
+        outcomes.forEach { outcome ->
+            assertThat(outcome.outcome).isEqualTo("Indeterminate")
+            assertThat(outcome.errorCode).isEqualTo("UNEXPECTED_HTTP_302")
         }
     }
 
