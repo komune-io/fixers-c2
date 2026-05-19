@@ -168,22 +168,28 @@ class FabricGatewayClient(
         }
     }
 
-    private fun extractErrorMessage(e: EndorseException): String {
-        val cause = e.cause as StatusRuntimeException
-        val grpcStatusDetailsKey =
-            Metadata.Key.of("grpc-status-details-bin", Metadata.BINARY_BYTE_MARSHALLER)
-        val errors = StringJoiner(";")
-        cause.trailers?.get(grpcStatusDetailsKey)?.let {
-            val status: Status = Status.parseFrom(it)
-
-            for (detail in status.detailsList) {
-                if (detail.typeUrl == "type.googleapis.com/gateway.ErrorDetail") {
-                    val details = ErrorDetail.parseFrom(detail.value)
-                    errors.add(details.message.replace("chaincode response 500, ", ""))
+    internal fun extractErrorMessage(e: EndorseException): String {
+        val cause = e.cause
+        if (cause is StatusRuntimeException) {
+            val grpcStatusDetailsKey =
+                Metadata.Key.of("grpc-status-details-bin", Metadata.BINARY_BYTE_MARSHALLER)
+            val errors = StringJoiner(";")
+            cause.trailers?.get(grpcStatusDetailsKey)?.let {
+                val status: Status = Status.parseFrom(it)
+                for (detail in status.detailsList) {
+                    if (detail.typeUrl == "type.googleapis.com/gateway.ErrorDetail") {
+                        val details = ErrorDetail.parseFrom(detail.value)
+                        errors.add(details.message.replace("chaincode response 500, ", ""))
+                    }
                 }
             }
+            val parsed = errors.toString()
+            if (parsed.isNotEmpty()) return parsed
+            return cause.status.description
+                ?: cause.message
+                ?: ""
         }
-        return errors.toString()
+        return e.message ?: e::class.simpleName ?: ""
     }
 }
 

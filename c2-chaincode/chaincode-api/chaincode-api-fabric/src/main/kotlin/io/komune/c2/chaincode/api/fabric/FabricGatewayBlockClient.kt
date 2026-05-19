@@ -30,23 +30,19 @@ class FabricGatewayBlockClient(
 
     fun queryAllBlocksIds(channelId: ChannelId): List<Long> {
         val gateway = fabricGatewayBuilder.gateway(channelId)
-        return gateway.use {
-            val network = gateway.getNetwork(channelId)
-            val contract = network.getContract("qscc")
-            val blockIds = contract.evaluateTransaction("GetChainInfo", channelId)
-            val height = BlockchainInfo.parseFrom(blockIds).height
-            (0..height-1).toList()
-        }
+        val network = gateway.getNetwork(channelId)
+        val contract = network.getContract("qscc")
+        val blockIds = contract.evaluateTransaction("GetChainInfo", channelId)
+        val height = BlockchainInfo.parseFrom(blockIds).height
+        return (0..height - 1).toList()
     }
 
     fun queryBlockByTransactionId(channelId: ChannelId, transactionId: TransactionId): BlockDsl {
         val gateway = fabricGatewayBuilder.gateway(channelId)
-        return gateway.use {
-            val network = gateway.getNetwork(channelId)
-            val contract = network.getContract("qscc")
-            val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
-            blockResponse.toBlock()
-        }
+        val network = gateway.getNetwork(channelId)
+        val contract = network.getContract("qscc")
+        val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
+        return blockResponse.toBlock()
     }
 
     fun queryBlockIdByTransactionId(
@@ -54,22 +50,18 @@ class FabricGatewayBlockClient(
         channelId: ChannelId,
         transactionId: TransactionId
     ): BlockId {
-        return gateway.use {
-            val network = gateway.getNetwork(channelId)
-            val contract = network.getContract("qscc")
-            val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
-            blockResponse.toBlock().blockId
-        }
+        val network = gateway.getNetwork(channelId)
+        val contract = network.getContract("qscc")
+        val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
+        return blockResponse.toBlock().blockId
     }
 
     fun queryBlockByNumber(channelId: ChannelId, blockId: Long): BlockDsl {
         val gateway = fabricGatewayBuilder.gateway(channelId)
-        return gateway.use {
-            val network = gateway.getNetwork(channelId)
-            val contract = network.getContract("qscc")
-            val blockResponse = contract.evaluateTransaction("GetBlockByNumber", channelId, blockId.toString())
-            blockResponse.toBlock()
-        }
+        val network = gateway.getNetwork(channelId)
+        val contract = network.getContract("qscc")
+        val blockResponse = contract.evaluateTransaction("GetBlockByNumber", channelId, blockId.toString())
+        return blockResponse.toBlock()
     }
 
     private fun ByteArray.toBlock(): BlockDsl {
@@ -90,16 +82,14 @@ class FabricGatewayBlockClient(
 
     fun queryTransactionById(channelId: ChannelId, transactionId: TransactionId): TransactionDsl {
         val gateway = fabricGatewayBuilder.gateway(channelId)
-        return gateway.use {
-            val network = gateway.getNetwork(channelId)
-            val contract = network.getContract("qscc")
-            val data = contract.evaluateTransaction("GetTransactionByID", channelId, transactionId)
-            val processedTransaction = ProcessedTransaction.parseFrom(data)
-            val payload = Payload.parseFrom(processedTransaction.transactionEnvelope.payload)
-            payload.asTransaction {
-                0
-//                queryBlockIdByTransactionId(gateway, channelId, transactionId)
-            }
+        val network = gateway.getNetwork(channelId)
+        val contract = network.getContract("qscc")
+        val data = contract.evaluateTransaction("GetTransactionByID", channelId, transactionId)
+        val processedTransaction = ProcessedTransaction.parseFrom(data)
+        val payload = Payload.parseFrom(processedTransaction.transactionEnvelope.payload)
+        return payload.asTransaction {
+            0
+//            queryBlockIdByTransactionId(gateway, channelId, transactionId)
         }
     }
 

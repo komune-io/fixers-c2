@@ -1,7 +1,6 @@
 package ssm.sdk.core.ktor
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
-import io.komune.c2.chaincode.dsl.invoke.InvokeError
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
@@ -16,7 +15,6 @@ import ssm.sdk.dsl.buildCommandArgs
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JsonUtils
 import tools.jackson.core.type.TypeReference
-import tools.jackson.databind.exc.MismatchedInputException
 
 class SsmRequester(
 	private val jsonConverter: JSONConverter,
@@ -179,17 +177,11 @@ class SsmRequester(
 		return coopRepository.invokeV2(args, commandIds)
 	}
 
-	@Suppress("TooGenericExceptionCaught", "SwallowedException")
-	private fun <R> String.handleResponse(transform: (String)-> R): R = try {
+	private fun <R> String.handleResponse(transform: (String) -> R): R = try {
 		transform(this)
-	} catch (e: MismatchedInputException) {
-		if (this.isBlank()) {
-			throw InvokeException("Empty response from blockchain")
-		}
-		val error: InvokeError = JsonUtils.toObject(this)
-		throw InvokeException(error.message)
 	} catch (e: Exception) {
-		throw InvokeException("Error while parsing response", e)
+		val excerpt = this.take(200).ifBlank { "<empty>" }
+		throw InvokeException("Error parsing response: $excerpt", e)
 	}
 }
 
