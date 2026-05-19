@@ -15,8 +15,6 @@ import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
 import s2.automate.core.persist.AutomatePersister
-import s2.automate.core.persist.ErrorClass
-import s2.automate.core.persist.ErrorOrigin
 import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2State
@@ -312,10 +310,6 @@ ENTITY : WithS2Id<ID> {
 				errorMessage = "No CommandOutcome returned for $commandId",
 			)
 		}
-		val errorClass = runCatching { ErrorClass.valueOf(outcome.errorClass) }
-			.getOrDefault(ErrorClass.UNKNOWN)
-		val errorOrigin = runCatching { ErrorOrigin.valueOf(outcome.errorOrigin) }
-			.getOrDefault(ErrorOrigin.UNKNOWN)
 		return when (outcome.outcome) {
 			"Committed" -> PersistOutcome.Success(
 				commandId = commandId,
@@ -327,29 +321,21 @@ ENTITY : WithS2Id<ID> {
 				commandId = commandId,
 				errorCode = outcome.errorCode.orEmpty(),
 				errorMessage = outcome.errorMessage.orEmpty(),
-				errorClass = errorClass,
-				errorOrigin = errorOrigin,
 			)
 			"Transient" -> PersistOutcome.Transient(
 				commandId = commandId,
 				errorCode = outcome.errorCode.orEmpty(),
 				errorMessage = outcome.errorMessage.orEmpty(),
-				errorClass = errorClass,
-				errorOrigin = errorOrigin,
 			)
 			"Indeterminate" -> PersistOutcome.Indeterminate(
 				commandId = commandId,
 				errorCode = outcome.errorCode.orEmpty(),
 				errorMessage = outcome.errorMessage.orEmpty(),
-				errorClass = errorClass,
-				errorOrigin = errorOrigin,
 			)
 			"Conflict" -> PersistOutcome.Conflict(
 				commandId = commandId,
 				errorCode = outcome.errorCode.orEmpty(),
 				errorMessage = outcome.errorMessage.orEmpty(),
-				errorClass = errorClass,
-				errorOrigin = errorOrigin,
 			)
 			else -> PersistOutcome.Indeterminate(
 				commandId = commandId,

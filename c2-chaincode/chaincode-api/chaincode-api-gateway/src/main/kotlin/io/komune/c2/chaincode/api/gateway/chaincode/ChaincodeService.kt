@@ -131,23 +131,19 @@ class ChaincodeService(
 		is TxOutcome.Rejected -> InvokeOutcome(
 			outcome = "Rejected", commandId = commandId,
 			errorCode = errorCode, errorMessage = errorMessage,
-			errorClass = errorClass, errorOrigin = "FABRIC",
 		)
 		is TxOutcome.Transient -> InvokeOutcome(
 			outcome = "Transient", commandId = commandId,
 			errorCode = errorCode, errorMessage = errorMessage,
-			errorClass = errorClass, errorOrigin = "FABRIC",
 		)
 		is TxOutcome.Indeterminate -> InvokeOutcome(
 			outcome = "Indeterminate", commandId = commandId,
 			errorCode = errorCode, errorMessage = errorMessage,
-			errorClass = errorClass, errorOrigin = "FABRIC",
 		)
 		is TxOutcome.Conflict -> InvokeOutcome(
 			outcome = "Conflict", commandId = commandId,
 			errorCode = errorCode, errorMessage = errorMessage,
 			transactionId = transactionId, blockNumber = blockNumber,
-			errorClass = errorClass, errorOrigin = "FABRIC",
 		)
 	}
 
@@ -164,8 +160,6 @@ class ChaincodeService(
 						commandId = params.commandId,
 						errorCode = "GATEWAY_EXCEPTION",
 						errorMessage = e.message ?: e::class.simpleName.orEmpty(),
-						errorClass = "INFRA",
-						errorOrigin = "C2_GATEWAY",
 					)
 				}
 			}

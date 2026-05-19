@@ -14,6 +14,4 @@ data class InvokeOutcome(
     val errorCode: String? = null,
     val errorMessage: String? = null,
     val payload: String? = null,
-    val errorClass: String = "UNKNOWN",
-    val errorOrigin: String = "UNKNOWN",
 )

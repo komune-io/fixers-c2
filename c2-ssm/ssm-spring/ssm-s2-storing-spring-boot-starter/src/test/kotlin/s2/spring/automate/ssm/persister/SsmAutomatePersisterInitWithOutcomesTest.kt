@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Test
 import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
 import s2.automate.core.context.InitTransitionAppliedContext
-import s2.automate.core.persist.ErrorClass
-import s2.automate.core.persist.ErrorOrigin
 import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2InitCommand
@@ -258,54 +256,6 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         // commandId is "start:<entityId>" (set by SsmAutomatePersister.persistInitWithOutcomes)
         assertThat(outcomes[0].commandId).isEqualTo("start:entity-A")
         assertThat(outcomes[1].commandId).isEqualTo("start:entity-B")
-    }
-
-    // ---------------------------------------------------------------------------
-    // errorClass + errorOrigin round-trip tests (Task 3.3)
-    // ---------------------------------------------------------------------------
-
-    @Test
-    fun `toPersistOutcome forwards errorClass and errorOrigin from CommandOutcome`() = runTest {
-        val persister = buildPersister(listOf(
-            CommandOutcome(
-                outcome = "Rejected",
-                commandId = "",
-                errorCode = "MVCC_READ_CONFLICT",
-                errorMessage = "conflict",
-                errorClass = "STATE",
-                errorOrigin = "FABRIC",
-            ),
-        ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-ec", 1, 0))
-
-        val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
-
-        assertThat(outcomes).hasSize(1)
-        val rejected = outcomes.single() as PersistOutcome.Rejected<TestEvt>
-        assertThat(rejected.errorClass).isEqualTo(ErrorClass.STATE)
-        assertThat(rejected.errorOrigin).isEqualTo(ErrorOrigin.FABRIC)
-    }
-
-    @Test
-    fun `toPersistOutcome falls back to UNKNOWN for unparseable errorClass and errorOrigin`() = runTest {
-        val persister = buildPersister(listOf(
-            CommandOutcome(
-                outcome = "Transient",
-                commandId = "",
-                errorCode = "SOME_ERROR",
-                errorMessage = "err",
-                errorClass = "INVALID_CLASS_VALUE",
-                errorOrigin = "INVALID_ORIGIN_VALUE",
-            ),
-        ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-fb", 1, 0))
-
-        val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
-
-        assertThat(outcomes).hasSize(1)
-        val transient = outcomes.single() as PersistOutcome.Transient<TestEvt>
-        assertThat(transient.errorClass).isEqualTo(ErrorClass.UNKNOWN)
-        assertThat(transient.errorOrigin).isEqualTo(ErrorOrigin.UNKNOWN)
     }
 
     @Test

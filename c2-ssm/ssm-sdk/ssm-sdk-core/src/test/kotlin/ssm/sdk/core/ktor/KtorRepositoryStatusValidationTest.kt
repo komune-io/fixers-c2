@@ -108,9 +108,6 @@ class KtorRepositoryStatusValidationTest {
         assertThat(outcomes[1].commandId).isEqualTo("cmd-2")
         assertThat(outcomes[1].outcome).isEqualTo("Rejected")
         assertThat(outcomes[1].errorCode).isEqualTo("MVCC_READ_CONFLICT")
-        // 200: deserialized from wire — errorClass/Origin default to UNKNOWN when absent in JSON
-        assertThat(outcomes[0].errorClass).isEqualTo("UNKNOWN")
-        assertThat(outcomes[0].errorOrigin).isEqualTo("UNKNOWN")
     }
 
     // --------------------------------------------------------------------------
@@ -127,8 +124,6 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_400")
-            assertThat(outcome.errorClass).isEqualTo("INPUT")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -141,8 +136,6 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_401")
-            assertThat(outcome.errorClass).isEqualTo("AUTH")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -155,8 +148,6 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_403")
-            assertThat(outcome.errorClass).isEqualTo("AUTH")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -169,8 +160,6 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_404")
-            assertThat(outcome.errorClass).isEqualTo("INPUT")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -188,8 +177,6 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Transient")
             assertThat(outcome.errorCode).isEqualTo("HTTP_500")
-            assertThat(outcome.errorClass).isEqualTo("NETWORK")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -202,8 +189,6 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Transient")
             assertThat(outcome.errorCode).isEqualTo("HTTP_503")
-            assertThat(outcome.errorClass).isEqualTo("NETWORK")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 
@@ -221,8 +206,6 @@ class KtorRepositoryStatusValidationTest {
             assertThat(outcome.commandId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("CONNECT_REFUSED")
-            assertThat(outcome.errorClass).isEqualTo("NETWORK")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_SDK")
         }
     }
 
@@ -237,8 +220,6 @@ class KtorRepositoryStatusValidationTest {
         val outcomes = repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
-        assertThat(outcomes.single().errorClass).isEqualTo("NETWORK")
-        assertThat(outcomes.single().errorOrigin).isEqualTo("C2_SDK")
     }
 
     @Test
@@ -266,8 +247,6 @@ class KtorRepositoryStatusValidationTest {
         )
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("TIMEOUT")
-        assertThat(outcomes.single().errorClass).isEqualTo("NETWORK")
-        assertThat(outcomes.single().errorOrigin).isEqualTo("C2_SDK")
     }
 
     // --------------------------------------------------------------------------
@@ -283,8 +262,6 @@ class KtorRepositoryStatusValidationTest {
         outcomes.forEach { outcome ->
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("UNEXPECTED_HTTP_302")
-            assertThat(outcome.errorClass).isEqualTo("UNKNOWN")
-            assertThat(outcome.errorOrigin).isEqualTo("C2_GATEWAY")
         }
     }
 

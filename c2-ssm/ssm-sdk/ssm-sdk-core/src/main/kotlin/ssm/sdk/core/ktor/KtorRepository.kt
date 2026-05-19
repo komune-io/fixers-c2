@@ -214,32 +214,24 @@ class KtorRepository(
 				outcome = "Rejected",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
-				errorClass = "AUTH",
-				errorOrigin = "C2_GATEWAY",
 			)
 			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
 				commandIds = commandIds,
 				outcome = "Rejected",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
-				errorClass = "INPUT",
-				errorOrigin = "C2_GATEWAY",
 			)
 			statusValue in SERVER_ERROR_RANGE -> synthesiseOutcomes(
 				commandIds = commandIds,
 				outcome = "Transient",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
-				errorClass = "NETWORK",
-				errorOrigin = "C2_GATEWAY",
 			)
 			else -> synthesiseOutcomes(
 				commandIds = commandIds,
 				outcome = "Indeterminate",
 				errorCode = "UNEXPECTED_HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
-				errorClass = "UNKNOWN",
-				errorOrigin = "C2_GATEWAY",
 			)
 		}
 	}
@@ -258,8 +250,6 @@ class KtorRepository(
 			outcome = "Indeterminate",
 			errorCode = code,
 			errorMessage = e.message,
-			errorClass = "NETWORK",
-			errorOrigin = "C2_SDK",
 		)
 	}
 
@@ -268,16 +258,12 @@ class KtorRepository(
 		outcome: String,
 		errorCode: String,
 		errorMessage: String?,
-		errorClass: String = "UNKNOWN",
-		errorOrigin: String = "UNKNOWN",
 	): List<CommandOutcome> = commandIds.map { commandId ->
 		CommandOutcome(
 			outcome = outcome,
 			commandId = commandId,
 			errorCode = errorCode,
 			errorMessage = errorMessage,
-			errorClass = errorClass,
-			errorOrigin = errorOrigin,
 		)
 	}
 

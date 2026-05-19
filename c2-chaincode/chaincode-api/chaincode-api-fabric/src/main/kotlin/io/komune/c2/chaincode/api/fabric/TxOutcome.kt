@@ -21,21 +21,18 @@ sealed interface TxOutcome {
         override val commandId: String,
         val errorCode: String,
         val errorMessage: String,
-        val errorClass: String = "UNKNOWN",
     ) : TxOutcome
 
     data class Transient(
         override val commandId: String,
         val errorCode: String,
         val errorMessage: String,
-        val errorClass: String = "UNKNOWN",
     ) : TxOutcome
 
     data class Indeterminate(
         override val commandId: String,
         val errorCode: String,
         val errorMessage: String,
-        val errorClass: String = "UNKNOWN",
     ) : TxOutcome
 
     data class Conflict(
@@ -44,7 +41,6 @@ sealed interface TxOutcome {
         val errorMessage: String,
         val transactionId: String? = null,
         val blockNumber: Long? = null,
-        val errorClass: String = "UNKNOWN",
     ) : TxOutcome
 }
 
@@ -74,28 +70,24 @@ object TxValidationCodeMapper {
                 errorMessage = "validation: $statusCodeName",
                 transactionId = transactionId,
                 blockNumber = blockNumber,
-                errorClass = "STATE",
             )
         "ENDORSEMENT_POLICY_FAILURE" ->
             TxOutcome.Rejected(
                 commandId = commandId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
-                errorClass = "BUSINESS",
             )
         "UNAUTHORISED" ->
             TxOutcome.Rejected(
                 commandId = commandId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
-                errorClass = "AUTH",
             )
         "TARGET_CHAIN_NOT_FOUND" ->
             TxOutcome.Rejected(
                 commandId = commandId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
-                errorClass = "INFRA",
             )
         "BAD_RWSET", "BAD_CHANNEL_HEADER",
         "BAD_HEADER_EXTENSION", "INVALID_CONFIG_TRANSACTION", "MARSHAL_TX_ERROR",
@@ -108,14 +100,12 @@ object TxValidationCodeMapper {
                 commandId = commandId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
-                errorClass = "INPUT",
             )
         else ->
             TxOutcome.Indeterminate(
                 commandId = commandId,
                 errorCode = statusCodeName,
                 errorMessage = "unknown validation code: $statusCodeName",
-                errorClass = "UNKNOWN",
             )
     }
 
