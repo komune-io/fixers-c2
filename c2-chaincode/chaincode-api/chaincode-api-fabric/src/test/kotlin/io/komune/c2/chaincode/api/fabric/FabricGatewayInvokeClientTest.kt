@@ -101,8 +101,8 @@ class FabricGatewayInvokeClientTest {
         )
 
         assertThat(outcomes).hasSize(2)
-        assertThat((outcomes[0] as TxOutcome.Transient).commandId).isEqualTo("cmd-1")
-        assertThat((outcomes[1] as TxOutcome.Transient).commandId).isEqualTo("cmd-2")
+        assertThat((outcomes[0] as TxOutcome.Transient).msgId).isEqualTo("cmd-1")
+        assertThat((outcomes[1] as TxOutcome.Transient).msgId).isEqualTo("cmd-2")
     }
 
     @Test

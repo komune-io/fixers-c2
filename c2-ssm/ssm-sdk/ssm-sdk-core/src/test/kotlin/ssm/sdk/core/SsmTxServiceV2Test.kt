@@ -107,7 +107,7 @@ class SsmTxServiceV2Test {
      */
     private fun committedJson(commandIds: List<String>): String {
         val items = commandIds.joinToString(",\n") { id ->
-            """{"outcome":"Committed","commandId":"$id","transactionId":"tx-$id","blockNumber":42}"""
+            """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":42}"""
         }
         return "[$items]"
     }
@@ -118,11 +118,11 @@ class SsmTxServiceV2Test {
     private fun mixedOutcomesJson(commandIds: List<String>): String {
         val items = commandIds.mapIndexed { i, id ->
             when (i % 5) {
-                0 -> """{"outcome":"Committed","commandId":"$id","transactionId":"tx-$id","blockNumber":$i}"""
-                1 -> """{"outcome":"Rejected","commandId":"$id","errorCode":"ERR","errorMessage":"rejected"}"""
-                2 -> """{"outcome":"Transient","commandId":"$id","errorCode":"RETRY","errorMessage":"transient"}"""
-                3 -> """{"outcome":"Indeterminate","commandId":"$id","errorCode":"X","errorMessage":"u"}"""
-                else -> """{"outcome":"Conflict","commandId":"$id","errorCode":"MVCC","errorMessage":"conflict"}"""
+                0 -> """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":$i}"""
+                1 -> """{"outcome":"Rejected","msgId":"$id","errorCode":"ERR","errorMessage":"rejected"}"""
+                2 -> """{"outcome":"Transient","msgId":"$id","errorCode":"RETRY","errorMessage":"transient"}"""
+                3 -> """{"outcome":"Indeterminate","msgId":"$id","errorCode":"X","errorMessage":"u"}"""
+                else -> """{"outcome":"Conflict","msgId":"$id","errorCode":"MVCC","errorMessage":"conflict"}"""
             }
         }.joinToString(",\n")
         return "[$items]"
@@ -152,7 +152,7 @@ class SsmTxServiceV2Test {
 
         val commands = ids.map { id ->
             SsmStartCommandV2(
-                commandId = id,
+                msgId = id,
                 session = SsmSession(
                     ssm = "test-ssm",
                     session = "session-$id",
@@ -172,7 +172,7 @@ class SsmTxServiceV2Test {
         // Outcomes are returned verbatim (one per input)
         assertThat(outcomes).hasSize(ids.size)
         // commandIds in outcomes match input order
-        assertThat(outcomes.map { it.commandId }).isEqualTo(ids)
+        assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
         // All Committed in this scripted response
         outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
     }
@@ -185,7 +185,7 @@ class SsmTxServiceV2Test {
 
         val commands = ids.map { id ->
             SsmStartCommandV2(
-                commandId = id,
+                msgId = id,
                 session = SsmSession("test-ssm", "session-$id", mapOf("admin" to "Admin"), "{}", mapOf()),
                 chaincodeUri = chaincodeUri,
                 signerName = "admin",
@@ -226,7 +226,7 @@ class SsmTxServiceV2Test {
 
         val commands = ids.map { id ->
             SsmPerformCommandV2(
-                commandId = id,
+                msgId = id,
                 action = "Validate",
                 context = SsmContext(session = "session-$id", public = "{}", private = mapOf(), iteration = 1),
                 chaincodeUri = chaincodeUri,
@@ -238,7 +238,7 @@ class SsmTxServiceV2Test {
 
         assertThat(capturedBody).hasSize(1)
         assertThat(outcomes).hasSize(ids.size)
-        assertThat(outcomes.map { it.commandId }).isEqualTo(ids)
+        assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
         outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
     }
 
@@ -250,7 +250,7 @@ class SsmTxServiceV2Test {
 
         val commands = ids.map { id ->
             SsmPerformCommandV2(
-                commandId = id,
+                msgId = id,
                 action = "Perform",
                 context = SsmContext("session-$id", "{}", 0, mapOf()),
                 chaincodeUri = chaincodeUri,

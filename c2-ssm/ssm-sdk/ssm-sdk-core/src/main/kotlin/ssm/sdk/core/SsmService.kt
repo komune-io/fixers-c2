@@ -68,26 +68,26 @@ class SsmService(
 	 *
 	 * The returned list is NOT guaranteed to preserve the input command order;
 	 * signing failures are emitted before invoke outcomes. Callers must key
-	 * results by [CommandOutcome.commandId], never by position.
+	 * results by [CommandOutcome.msgId], never by position.
 	 */
 	suspend fun invokeAllV2(
 		cmds: List<SsmCmd>,
-		commandIds: List<String>,
+		msgIds: List<String>,
 	): List<CommandOutcome> {
-		require(commandIds.size == cmds.size) {
-			"commandIds.size=${commandIds.size} must match cmds.size=${cmds.size}"
+		require(msgIds.size == cmds.size) {
+			"commandIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
 		}
 
 		data class SignResult(
-			val commandId: String,
+			val msgId: String,
 			val signed: SsmCmdSigned?,
 			val failure: CommandOutcome?,
 		)
 
-		val signResults = cmds.zip(commandIds).map { (cmd, commandId) ->
+		val signResults = cmds.zip(msgIds).map { (cmd, msgId) ->
 			runCatching { ssmCmdSigner.sign(cmd) }.fold(
 				onSuccess = { signed ->
-					SignResult(commandId = commandId, signed = signed, failure = null)
+					SignResult(msgId = msgId, signed = signed, failure = null)
 				},
 				onFailure = { e ->
 					// sign() is non-suspending today so CancellationException is not a live risk,
@@ -95,11 +95,11 @@ class SsmService(
 					// becomes a suspend fun in the future.
 					if (e is kotlinx.coroutines.CancellationException) throw e
 					SignResult(
-						commandId = commandId,
+						msgId = msgId,
 						signed = null,
 						failure = CommandOutcome(
 							outcome = "Rejected",
-							commandId = commandId,
+							msgId = msgId,
 							errorCode = "SIGN_FAILED",
 							errorMessage = e.message,
 						),
@@ -110,12 +110,12 @@ class SsmService(
 
 		val signFailures = signResults.mapNotNull { it.failure }
 		val successSigned = signResults.mapNotNull { it.signed }
-		val successCommandIds = signResults.filter { it.signed != null }.map { it.commandId }
+		val successMsgIds = signResults.filter { it.signed != null }.map { it.msgId }
 
 		val invokeOutcomes = if (successSigned.isEmpty()) {
 			emptyList()
 		} else {
-			ssmRequester.invokeAllV2(successSigned, successCommandIds)
+			ssmRequester.invokeAllV2(successSigned, successMsgIds)
 		}
 
 		return signFailures + invokeOutcomes

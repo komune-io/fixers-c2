@@ -97,7 +97,7 @@ class SsmServiceSigningResilienceTest {
 
     private fun committedJson(commandIds: List<String>): String {
         val items = commandIds.joinToString(",\n") { id ->
-            """{"outcome":"Committed","commandId":"$id","transactionId":"tx-$id","blockNumber":1}"""
+            """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":1}"""
         }
         return "[$items]"
     }
@@ -115,12 +115,12 @@ class SsmServiceSigningResilienceTest {
 
         val outcomes: List<CommandOutcome> = service.invokeAllV2(
             cmds = cmds,
-            commandIds = commandIds,
+            msgIds = commandIds,
         )
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
-        assertThat(outcomes.map { it.commandId }).isEqualTo(commandIds)
+        assertThat(outcomes.map { it.msgId }).isEqualTo(commandIds)
     }
 
     // --------------------------------------------------------------------------
@@ -143,15 +143,15 @@ class SsmServiceSigningResilienceTest {
 
         val outcomes: List<CommandOutcome> = service.invokeAllV2(
             cmds = cmds,
-            commandIds = commandIds,
+            msgIds = commandIds,
         )
 
         assertThat(outcomes).hasSize(commandIds.size)
 
-        val good = outcomes.first { it.commandId == "cmd-good-1" }
+        val good = outcomes.first { it.msgId == "cmd-good-1" }
         assertThat(good.outcome).isEqualTo("Committed")
 
-        val failed = outcomes.first { it.commandId == "cmd-good-2" }
+        val failed = outcomes.first { it.msgId == "cmd-good-2" }
         assertThat(failed.outcome).isEqualTo("Rejected")
         assertThat(failed.errorCode).isEqualTo("SIGN_FAILED")
         assertThat(failed.errorMessage).contains("Key not found for agent: bad-agent")
@@ -171,12 +171,12 @@ class SsmServiceSigningResilienceTest {
 
         val outcomes: List<CommandOutcome> = service.invokeAllV2(
             cmds = cmds,
-            commandIds = commandIds,
+            msgIds = commandIds,
         )
 
         assertThat(outcomes).hasSize(2)
         val failedOutcome = outcomes.first { it.outcome == "Rejected" }
-        assertThat(failedOutcome.commandId).isEqualTo("first-cmd")
+        assertThat(failedOutcome.msgId).isEqualTo("first-cmd")
         assertThat(failedOutcome.errorCode).isEqualTo("SIGN_FAILED")
     }
 
@@ -194,7 +194,7 @@ class SsmServiceSigningResilienceTest {
 
         val outcomes: List<CommandOutcome> = service.invokeAllV2(
             cmds = cmds,
-            commandIds = commandIds,
+            msgIds = commandIds,
         )
 
         assertThat(outcomes).hasSize(commandIds.size)
@@ -202,7 +202,7 @@ class SsmServiceSigningResilienceTest {
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("SIGN_FAILED")
         }
-        assertThat(outcomes.map { it.commandId }).containsExactlyInAnyOrderElementsOf(commandIds)
+        assertThat(outcomes.map { it.msgId }).containsExactlyInAnyOrderElementsOf(commandIds)
     }
 
     // --------------------------------------------------------------------------
@@ -224,14 +224,14 @@ class SsmServiceSigningResilienceTest {
 
         val outcomes: List<CommandOutcome> = service.invokeAllV2(
             cmds = cmds,
-            commandIds = commandIds,
+            msgIds = commandIds,
         )
 
         assertThat(outcomes).hasSize(3)
-        assertThat(outcomes.map { it.commandId })
+        assertThat(outcomes.map { it.msgId })
             .containsExactlyInAnyOrderElementsOf(commandIds)
 
-        val bad = outcomes.first { it.commandId == "bad-1" }
+        val bad = outcomes.first { it.msgId == "bad-1" }
         assertThat(bad.outcome).isEqualTo("Rejected")
         assertThat(bad.errorCode).isEqualTo("SIGN_FAILED")
     }

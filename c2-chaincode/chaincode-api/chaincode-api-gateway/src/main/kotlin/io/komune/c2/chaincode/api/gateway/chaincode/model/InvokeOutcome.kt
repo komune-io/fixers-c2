@@ -8,7 +8,7 @@ package io.komune.c2.chaincode.api.gateway.chaincode.model
  */
 data class InvokeOutcome(
     val outcome: String, // "Committed" | "Rejected" | "Transient" | "Indeterminate" | "Conflict"
-    val commandId: String,
+    val msgId: String,
     val transactionId: String? = null,
     val blockNumber: Long? = null,
     val errorCode: String? = null,

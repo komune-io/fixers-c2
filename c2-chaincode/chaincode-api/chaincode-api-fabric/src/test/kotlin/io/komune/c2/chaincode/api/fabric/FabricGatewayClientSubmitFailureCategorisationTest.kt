@@ -32,11 +32,11 @@ class FabricGatewayClientSubmitFailureCategorisationTest {
             Status.UNAVAILABLE.withDescription("peer not reachable")
         )
 
-        val outcome = client.mapSubmitFailure(exception, commandId = "cmd-42")
+        val outcome = client.mapSubmitFailure(exception, msgId = "cmd-42")
 
         assertThat(outcome).isInstanceOf(TxOutcome.Transient::class.java)
         val transient = outcome as TxOutcome.Transient
-        assertThat(transient.commandId).isEqualTo("cmd-42")
+        assertThat(transient.msgId).isEqualTo("cmd-42")
         assertThat(transient.errorCode).isEqualTo("GRPC_UNAVAILABLE")
     }
 
@@ -44,11 +44,11 @@ class FabricGatewayClientSubmitFailureCategorisationTest {
     fun `non-gRPC IllegalStateException during submit stays Indeterminate with SUBMIT_FAILED code`() {
         val exception = IllegalStateException("unexpected internal state")
 
-        val outcome = client.mapSubmitFailure(exception, commandId = "cmd-99")
+        val outcome = client.mapSubmitFailure(exception, msgId = "cmd-99")
 
         assertThat(outcome).isInstanceOf(TxOutcome.Indeterminate::class.java)
         val indeterminate = outcome as TxOutcome.Indeterminate
-        assertThat(indeterminate.commandId).isEqualTo("cmd-99")
+        assertThat(indeterminate.msgId).isEqualTo("cmd-99")
         assertThat(indeterminate.errorCode).isEqualTo("SUBMIT_FAILED")
         assertThat(indeterminate.errorMessage).contains("unexpected internal state")
     }

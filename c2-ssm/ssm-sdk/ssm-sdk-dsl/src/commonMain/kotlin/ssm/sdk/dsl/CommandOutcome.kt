@@ -7,7 +7,7 @@ package ssm.sdk.dsl
  */
 data class CommandOutcome(
     val outcome: String, // "Committed" | "Rejected" | "Transient" | "Indeterminate" | "Conflict"
-    val commandId: String,
+    val msgId: String,
     val transactionId: String? = null,
     val blockNumber: Long? = null,
     val errorCode: String? = null,

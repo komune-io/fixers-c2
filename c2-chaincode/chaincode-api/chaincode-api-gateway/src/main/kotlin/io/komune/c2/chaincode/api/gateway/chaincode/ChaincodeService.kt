@@ -113,35 +113,35 @@ class ChaincodeService(
 		channelId: ChannelId,
 		chainCodeId: ChaincodeId,
 		invokeArgs: List<InvokeArgs>,
-		commandIds: List<String>,
+		msgIds: List<String>,
 	): List<InvokeOutcome> {
 		return fabricGatewayClient.invoke(
 			channelId = channelId,
 			chaincodeId = chainCodeId,
 			invokeArgsList = invokeArgs,
-			commandIds = commandIds,
+			commandIds = msgIds,
 		).map { it.toWire() }
 	}
 
 	private fun TxOutcome.toWire(): InvokeOutcome = when (this) {
 		is TxOutcome.Committed -> InvokeOutcome(
-			outcome = "Committed", commandId = commandId,
+			outcome = "Committed", msgId = msgId,
 			transactionId = transactionId, blockNumber = blockNumber, payload = payload,
 		)
 		is TxOutcome.Rejected -> InvokeOutcome(
-			outcome = "Rejected", commandId = commandId,
+			outcome = "Rejected", msgId = msgId,
 			errorCode = errorCode, errorMessage = errorMessage,
 		)
 		is TxOutcome.Transient -> InvokeOutcome(
-			outcome = "Transient", commandId = commandId,
+			outcome = "Transient", msgId = msgId,
 			errorCode = errorCode, errorMessage = errorMessage,
 		)
 		is TxOutcome.Indeterminate -> InvokeOutcome(
-			outcome = "Indeterminate", commandId = commandId,
+			outcome = "Indeterminate", msgId = msgId,
 			errorCode = errorCode, errorMessage = errorMessage,
 		)
 		is TxOutcome.Conflict -> InvokeOutcome(
-			outcome = "Conflict", commandId = commandId,
+			outcome = "Conflict", msgId = msgId,
 			errorCode = errorCode, errorMessage = errorMessage,
 			transactionId = transactionId, blockNumber = blockNumber,
 		)
@@ -153,11 +153,11 @@ class ChaincodeService(
 				runCatching {
 					val pair = chaincodeConfiguration.getChannelChaincodePair(params.request.channelid, params.request.chaincodeid)
 					val invokeArgs = InvokeArgs(params.request.fcn, params.request.args.toList())
-					doInvokeV2(pair.channelId, pair.chainCodeId, listOf(invokeArgs), listOf(params.commandId)).first()
+					doInvokeV2(pair.channelId, pair.chainCodeId, listOf(invokeArgs), listOf(params.msgId)).first()
 				}.getOrElse { e ->
 					InvokeOutcome(
 						outcome = "Rejected",
-						commandId = params.commandId,
+						msgId = params.msgId,
 						errorCode = "GATEWAY_EXCEPTION",
 						errorMessage = e.message ?: e::class.simpleName.orEmpty(),
 					)

@@ -81,30 +81,30 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
             channelId: ChannelId,
             chainCodeId: ChaincodeId,
             invokeArgs: List<InvokeArgs>,
-            commandIds: List<String>,
+            msgIds: List<String>,
         ): List<InvokeOutcome> {
             return scriptedOutcomes.map { it.toWirePublic() }
         }
 
         private fun TxOutcome.toWirePublic(): InvokeOutcome = when (this) {
             is TxOutcome.Committed -> InvokeOutcome(
-                outcome = "Committed", commandId = commandId,
+                outcome = "Committed", msgId = msgId,
                 transactionId = transactionId, blockNumber = blockNumber, payload = payload,
             )
             is TxOutcome.Rejected -> InvokeOutcome(
-                outcome = "Rejected", commandId = commandId,
+                outcome = "Rejected", msgId = msgId,
                 errorCode = errorCode, errorMessage = errorMessage,
             )
             is TxOutcome.Transient -> InvokeOutcome(
-                outcome = "Transient", commandId = commandId,
+                outcome = "Transient", msgId = msgId,
                 errorCode = errorCode, errorMessage = errorMessage,
             )
             is TxOutcome.Indeterminate -> InvokeOutcome(
-                outcome = "Indeterminate", commandId = commandId,
+                outcome = "Indeterminate", msgId = msgId,
                 errorCode = errorCode, errorMessage = errorMessage,
             )
             is TxOutcome.Conflict -> InvokeOutcome(
-                outcome = "Conflict", commandId = commandId,
+                outcome = "Conflict", msgId = msgId,
                 errorCode = errorCode, errorMessage = errorMessage,
                 transactionId = transactionId, blockNumber = blockNumber,
             )
@@ -142,8 +142,8 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     private fun baseUrl() = UriComponentsBuilder.fromUriString("http://localhost:$port")
 
     /** A minimal valid InvokeRequestV2 pointing at the sandbox/ex02 chaincode. */
-    private fun makeRequest(commandId: String) = InvokeRequestV2(
-        commandId = commandId,
+    private fun makeRequest(msgId: String) = InvokeRequestV2(
+        msgId = msgId,
         request = InvokeRequest(
             channelid = "sandbox",
             chaincodeid = "ex02",
@@ -175,7 +175,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Test
     fun `POST invoke-v2 returns Committed item with transactionId blockNumber payload`() {
         testConfig.scriptedOutcomes += TxOutcome.Committed(
-            commandId = "cmd-1",
+            msgId = "cmd-1",
             transactionId = "tx-abc",
             blockNumber = 42L,
             payload = "{}",
@@ -186,7 +186,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Committed")
-        assertThat(item.commandId).isEqualTo("cmd-1")
+        assertThat(item.msgId).isEqualTo("cmd-1")
         assertThat(item.transactionId).isEqualTo("tx-abc")
         assertThat(item.blockNumber).isEqualTo(42L)
         assertThat(item.payload).isEqualTo("{}")
@@ -197,7 +197,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Test
     fun `POST invoke-v2 returns Rejected item with errorCode errorMessage commandId only`() {
         testConfig.scriptedOutcomes += TxOutcome.Rejected(
-            commandId = "cmd-rej",
+            msgId = "cmd-rej",
             errorCode = "ENDORSE_FAILED",
             errorMessage = "endorsement failed",
         )
@@ -207,7 +207,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Rejected")
-        assertThat(item.commandId).isEqualTo("cmd-rej")
+        assertThat(item.msgId).isEqualTo("cmd-rej")
         assertThat(item.errorCode).isEqualTo("ENDORSE_FAILED")
         assertThat(item.errorMessage).isEqualTo("endorsement failed")
         assertThat(item.transactionId).isNull()
@@ -217,7 +217,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Test
     fun `POST invoke-v2 returns Transient item with errorCode errorMessage commandId only`() {
         testConfig.scriptedOutcomes += TxOutcome.Transient(
-            commandId = "cmd-tr",
+            msgId = "cmd-tr",
             errorCode = "GRPC_UNAVAILABLE",
             errorMessage = "peer unreachable",
         )
@@ -227,7 +227,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Transient")
-        assertThat(item.commandId).isEqualTo("cmd-tr")
+        assertThat(item.msgId).isEqualTo("cmd-tr")
         assertThat(item.errorCode).isEqualTo("GRPC_UNAVAILABLE")
         assertThat(item.errorMessage).isEqualTo("peer unreachable")
         assertThat(item.transactionId).isNull()
@@ -237,7 +237,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Test
     fun `POST invoke-v2 returns Indeterminate item with errorCode errorMessage commandId only`() {
         testConfig.scriptedOutcomes += TxOutcome.Indeterminate(
-            commandId = "cmd-ind",
+            msgId = "cmd-ind",
             errorCode = "SUBMIT_FAILED",
             errorMessage = "orderer timeout",
         )
@@ -247,7 +247,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Indeterminate")
-        assertThat(item.commandId).isEqualTo("cmd-ind")
+        assertThat(item.msgId).isEqualTo("cmd-ind")
         assertThat(item.errorCode).isEqualTo("SUBMIT_FAILED")
         assertThat(item.errorMessage).isEqualTo("orderer timeout")
         assertThat(item.transactionId).isNull()
@@ -257,7 +257,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Test
     fun `POST invoke-v2 returns Conflict item with transactionId blockNumber AND errorCode errorMessage`() {
         testConfig.scriptedOutcomes += TxOutcome.Conflict(
-            commandId = "cmd-cf",
+            msgId = "cmd-cf",
             errorCode = "MVCC_READ_CONFLICT",
             errorMessage = "conflict on key session-xyz",
             transactionId = "tx-conflict",
@@ -269,7 +269,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Conflict")
-        assertThat(item.commandId).isEqualTo("cmd-cf")
+        assertThat(item.msgId).isEqualTo("cmd-cf")
         assertThat(item.errorCode).isEqualTo("MVCC_READ_CONFLICT")
         assertThat(item.errorMessage).isEqualTo("conflict on key session-xyz")
         assertThat(item.transactionId).isEqualTo("tx-conflict")
@@ -282,7 +282,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         // getChannelChaincodePair throws InvokeException for unknown channel/chaincode,
         // which is caught and becomes a GATEWAY_EXCEPTION Rejected outcome.
         val badRequest = InvokeRequestV2(
-            commandId = "cmd-exc",
+            msgId = "cmd-exc",
             request = InvokeRequest(
                 channelid = "invalid_channel",
                 chaincodeid = "invalid_cc",
@@ -303,7 +303,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
         assertThat(item.outcome).isEqualTo("Rejected")
-        assertThat(item.commandId).isEqualTo("cmd-exc")
+        assertThat(item.msgId).isEqualTo("cmd-exc")
         assertThat(item.errorCode).isEqualTo("GATEWAY_EXCEPTION")
         assertThat(item.errorMessage).isNotEmpty()
     }

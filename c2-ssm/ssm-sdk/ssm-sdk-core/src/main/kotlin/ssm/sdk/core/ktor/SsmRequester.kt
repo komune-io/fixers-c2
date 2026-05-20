@@ -165,16 +165,16 @@ class SsmRequester(
 	@Throws(Exception::class)
 	suspend fun invokeAllV2(
 		cmds: List<SsmCmdSigned>,
-		commandIds: List<String>,
+		msgIds: List<String>,
 	): List<CommandOutcome> {
-		require(commandIds.size == cmds.size) {
-			"commandIds.size=${commandIds.size} must match cmds.size=${cmds.size}"
+		require(msgIds.size == cmds.size) {
+			"commandIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
 		}
 		val total = cmds.size
 		cmds.logger("Invoke[v2]", total) { it.chaincodeUri }
 
 		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
-		return coopRepository.invokeV2(args, commandIds)
+		return coopRepository.invokeV2(args, msgIds)
 	}
 
 	private fun <R> String.handleResponse(transform: (String) -> R): R = try {

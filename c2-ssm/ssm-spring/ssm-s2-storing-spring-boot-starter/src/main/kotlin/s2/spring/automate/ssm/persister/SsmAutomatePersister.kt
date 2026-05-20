@@ -120,7 +120,7 @@ ENTITY : WithS2Id<ID> {
 			val entity = ctx.entity
 			val automate = ctx.automateContext.automate
 			SsmStartCommandV2(
-				commandId = "start:${entity.s2Id()}",
+				msgId = "start:${entity.s2Id()}",
 				session = SsmSession(
 					ssm = automate.name,
 					session = entity.s2Id().toString(),
@@ -134,7 +134,7 @@ ENTITY : WithS2Id<ID> {
 		}
 
 		val outcomes = ssmSessionStartFunctionV2.invoke(v2Commands.asFlow()).toList()
-		val byId = outcomes.associateBy { it.commandId }
+		val byId = outcomes.associateBy { it.msgId }
 
 		collectedContexts.forEach { ctx ->
 			val cid = "start:${ctx.entity.s2Id()}"
@@ -169,7 +169,7 @@ ENTITY : WithS2Id<ID> {
 							sessionId = context.sessionId,
 							iteration = 0,
 							failure = PersistOutcome.Rejected(
-								commandId = commandIdFor(context),
+								msgId = commandIdFor(context),
 								error = s2error(
 									code = "NO_LOGS",
 									description = "No logs for session ${session.sessionName}",
@@ -186,7 +186,7 @@ ENTITY : WithS2Id<ID> {
 						sessionId = miss.sessionId,
 						iteration = 0,
 						failure = PersistOutcome.Rejected(
-							commandId = commandIdFor(miss),
+							msgId = commandIdFor(miss),
 							error = s2error(
 								code = "SESSION_NOT_FOUND",
 								description = "Session ${miss.sessionId} not on chaincode",
@@ -284,7 +284,7 @@ ENTITY : WithS2Id<ID> {
 			val withEventAsAction = sr.transitionContext.automateContext.automate.withResultAsAction
 			val action = sr.transitionContext.event?.takeIf { withEventAsAction } ?: sr.transitionContext.msg
 			SsmPerformCommandV2(
-				commandId = "${sr.sessionId}:${sr.iteration + 1}",
+				msgId = "${sr.sessionId}:${sr.iteration + 1}",
 				action = action::class.simpleName!!,
 				context = SsmContext(
 					session = entity.s2Id().toString(),
@@ -298,7 +298,7 @@ ENTITY : WithS2Id<ID> {
 		}
 
 		val outcomes = ssmSessionPerformActionFunctionV2.invoke(v2Commands.asFlow()).toList()
-		val byId = outcomes.associateBy { it.commandId }
+		val byId = outcomes.associateBy { it.msgId }
 
 		good.forEach { sr ->
 			val cid = "${sr.sessionId}:${sr.iteration + 1}"
@@ -307,53 +307,55 @@ ENTITY : WithS2Id<ID> {
 		}
 	}
 
-	private fun <E> toPersistOutcome(commandId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
+	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
 		if (outcome == null) {
 			return PersistOutcome.Indeterminate(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = "MISSING_OUTCOME",
-					description = "No CommandOutcome returned for $commandId",
+					description = "No CommandOutcome returned for $msgId",
 				),
 			)
 		}
 		return when (outcome.outcome) {
 			"Committed" -> PersistOutcome.Success(
-				commandId = commandId,
+				msgId = msgId,
 				event = event,
-				transactionId = outcome.transactionId.orEmpty(),
-				blockNumber = outcome.blockNumber ?: 0L,
+				metadata = buildMap {
+					outcome.transactionId?.let { put("transactionId", it) }
+					outcome.blockNumber?.let { put("blockNumber", it.toString()) }
+				},
 			)
 			"Rejected" -> PersistOutcome.Rejected(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = outcome.errorCode.orEmpty(),
 					description = outcome.errorMessage.orEmpty(),
 				),
 			)
 			"Transient" -> PersistOutcome.Transient(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = outcome.errorCode.orEmpty(),
 					description = outcome.errorMessage.orEmpty(),
 				),
 			)
 			"Indeterminate" -> PersistOutcome.Indeterminate(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = outcome.errorCode.orEmpty(),
 					description = outcome.errorMessage.orEmpty(),
 				),
 			)
 			"Conflict" -> PersistOutcome.Conflict(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = outcome.errorCode.orEmpty(),
 					description = outcome.errorMessage.orEmpty(),
 				),
 			)
 			else -> PersistOutcome.Indeterminate(
-				commandId = commandId,
+				msgId = msgId,
 				error = s2error(
 					code = "UNKNOWN_OUTCOME",
 					description = outcome.outcome,

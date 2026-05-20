@@ -74,13 +74,13 @@ class SsmRequesterV2Test {
             [
               {
                 "outcome": "Committed",
-                "commandId": "cmd-1",
+                "msgId": "cmd-1",
                 "transactionId": "tx-abc123",
                 "blockNumber": 42
               },
               {
                 "outcome": "Rejected",
-                "commandId": "cmd-2",
+                "msgId": "cmd-2",
                 "errorCode": "MVCC_READ_CONFLICT",
                 "errorMessage": "conflict on key session-xyz"
               }
@@ -101,14 +101,14 @@ class SsmRequesterV2Test {
 
         val first = outcomes[0]
         assertThat(first.outcome).isEqualTo("Committed")
-        assertThat(first.commandId).isEqualTo("cmd-1")
+        assertThat(first.msgId).isEqualTo("cmd-1")
         assertThat(first.transactionId).isEqualTo("tx-abc123")
         assertThat(first.blockNumber).isEqualTo(42L)
         assertThat(first.isSuccess).isTrue()
 
         val second = outcomes[1]
         assertThat(second.outcome).isEqualTo("Rejected")
-        assertThat(second.commandId).isEqualTo("cmd-2")
+        assertThat(second.msgId).isEqualTo("cmd-2")
         assertThat(second.errorCode).isEqualTo("MVCC_READ_CONFLICT")
         assertThat(second.errorMessage).isEqualTo("conflict on key session-xyz")
         assertThat(second.isPermanent).isTrue()
@@ -134,7 +134,7 @@ class SsmRequesterV2Test {
             [
               {
                 "outcome": "Transient",
-                "commandId": "cmd-retry"
+                "msgId": "cmd-retry"
               }
             ]
         """.trimIndent()

@@ -15,7 +15,7 @@ class FabricGatewayClientValidationCategorisationTest {
         codeName: String, expectedClass: String, expectedErrorCode: String,
     ) {
         val outcome = TxValidationCodeMapper.toOutcome(
-            commandId = "cmd-1",
+            msgId = "cmd-1",
             statusCodeName = codeName,
             transactionId = "tx-1",
             blockNumber = 42L,

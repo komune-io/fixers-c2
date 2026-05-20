@@ -173,6 +173,7 @@ class SsmAutomatePersisterTest {
 		val from: TestState = object : TestState { override val position = entity.status }
 		return TransitionAppliedContext(
 			automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
+			msgId = entity.id,
 			from = from,
 			msg = TestCommand(id = entity.id),
 			event = TestEvt(id = entity.id),
@@ -186,6 +187,7 @@ class SsmAutomatePersisterTest {
 		val from: TestState = object : TestState { override val position = entity.status }
 		return TransitionAppliedContext(
 			automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
+			msgId = entity.id,
 			from = from,
 			msg = TestCommand(id = entity.id),
 			event = TestEvt(id = entity.id),
@@ -200,18 +202,18 @@ class SsmAutomatePersisterTest {
 		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
 			F2Function { commands ->
 				commands.map { cmd ->
-					if (cmd.commandId.contains("id-3")) {
+					if (cmd.msgId.contains("id-3")) {
 						CommandOutcome(
 							outcome = "Rejected",
-							commandId = cmd.commandId,
+							msgId = cmd.msgId,
 							errorCode = "MVCC_READ_CONFLICT",
 							errorMessage = "stale read",
 						)
 					} else {
 						CommandOutcome(
 							outcome = "Committed",
-							commandId = cmd.commandId,
-							transactionId = "tx-${cmd.commandId}",
+							msgId = cmd.msgId,
+							transactionId = "tx-${cmd.msgId}",
 							blockNumber = 100L,
 						)
 					}
@@ -253,7 +255,7 @@ class SsmAutomatePersisterTest {
 		assertThat(outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()).hasSize(2)
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
 		assertThat(rejected.error.type).isEqualTo("MVCC_READ_CONFLICT")
-		assertThat(rejected.commandId).contains("id-3")
+		assertThat(rejected.msgId).contains("id-3")
 	}
 
 	@Test
@@ -264,11 +266,11 @@ class SsmAutomatePersisterTest {
 		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
 			F2Function { commands ->
 				commands.map { cmd ->
-					performCommandsSeen.add(cmd.commandId)
+					performCommandsSeen.add(cmd.msgId)
 					CommandOutcome(
 						outcome = "Committed",
-						commandId = cmd.commandId,
-						transactionId = "tx-${cmd.commandId}",
+						msgId = cmd.msgId,
+						transactionId = "tx-${cmd.msgId}",
 						blockNumber = 1L,
 					)
 				}
@@ -319,11 +321,11 @@ class SsmAutomatePersisterTest {
 
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
 		assertThat(rejected.error.type).isEqualTo("SESSION_NOT_FOUND")
-		assertThat(rejected.commandId).contains("sess-2")
+		assertThat(rejected.msgId).contains("sess-2")
 
 		val committed = outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()
 		assertThat(committed).hasSize(2)
-		assertThat(committed.map { it.commandId }).noneMatch { it.contains("sess-2") }
+		assertThat(committed.map { it.msgId }).noneMatch { it.contains("sess-2") }
 
 		// Critical: the missing-session item must NOT have reached the chaincode call
 		assertThat(performCommandsSeen).hasSize(2)

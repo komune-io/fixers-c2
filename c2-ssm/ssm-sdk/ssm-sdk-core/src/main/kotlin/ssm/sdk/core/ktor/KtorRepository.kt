@@ -172,14 +172,14 @@ class KtorRepository(
 
 	suspend fun invokeV2(
 		invokeArgs: List<InvokeRequest>,
-		commandIds: List<String>,
+		msgIds: List<String>,
 	): List<CommandOutcome> {
-		require(invokeArgs.size == commandIds.size) {
-			"commandIds.size=${commandIds.size} must match invokeArgs.size=${invokeArgs.size}"
+		require(invokeArgs.size == msgIds.size) {
+			"commandIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
 		}
-		val body = invokeArgs.zip(commandIds).map { (req, cid) ->
+		val body = invokeArgs.zip(msgIds).map { (req, cid) ->
 			mapOf(
-				"commandId" to cid,
+				"msgId" to cid,
 				"request" to mapOf(
 					CMD_PROPS to req.cmd.name,
 					FCN_PROPS to req.fcn,
@@ -195,40 +195,40 @@ class KtorRepository(
 				contentType(ContentType.Application.Json)
 				setBody(body)
 			}
-			mapHttpResponse(response, commandIds)
+			mapHttpResponse(response, msgIds)
 		}.getOrElse { e ->
 			if (e is kotlinx.coroutines.CancellationException) throw e
-			mapNetworkError(e, commandIds)
+			mapNetworkError(e, msgIds)
 		}
 	}
 
 	private suspend fun mapHttpResponse(
 		response: io.ktor.client.statement.HttpResponse,
-		commandIds: List<String>,
+		msgIds: List<String>,
 	): List<CommandOutcome> {
 		val statusValue = response.status.value
 		return when {
 			response.status.isSuccess() -> JsonUtils.toObject(response.bodyAsText())
 			statusValue == 401 || statusValue == 403 -> synthesiseOutcomes(
-				commandIds = commandIds,
+				msgIds = msgIds,
 				outcome = "Rejected",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
-				commandIds = commandIds,
+				msgIds = msgIds,
 				outcome = "Rejected",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			statusValue in SERVER_ERROR_RANGE -> synthesiseOutcomes(
-				commandIds = commandIds,
+				msgIds = msgIds,
 				outcome = "Transient",
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			else -> synthesiseOutcomes(
-				commandIds = commandIds,
+				msgIds = msgIds,
 				outcome = "Indeterminate",
 				errorCode = "UNEXPECTED_HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
@@ -236,7 +236,7 @@ class KtorRepository(
 		}
 	}
 
-	private fun mapNetworkError(e: Throwable, commandIds: List<String>): List<CommandOutcome> {
+	private fun mapNetworkError(e: Throwable, msgIds: List<String>): List<CommandOutcome> {
 		val code = when (e) {
 			is io.ktor.client.plugins.HttpRequestTimeoutException,
 			is io.ktor.client.network.sockets.ConnectTimeoutException,
@@ -244,9 +244,9 @@ class KtorRepository(
 			is java.net.ConnectException -> "CONNECT_REFUSED"
 			else -> "TRANSPORT_ERROR"
 		}
-		logger.warn("invokeV2 network error ({}) for commandIds={}: {}", code, commandIds, e.message)
+		logger.warn("invokeV2 network error ({}) for msgIds={}: {}", code, msgIds, e.message)
 		return synthesiseOutcomes(
-			commandIds = commandIds,
+			msgIds = msgIds,
 			outcome = "Indeterminate",
 			errorCode = code,
 			errorMessage = e.message,
@@ -254,14 +254,14 @@ class KtorRepository(
 	}
 
 	private fun synthesiseOutcomes(
-		commandIds: List<String>,
+		msgIds: List<String>,
 		outcome: String,
 		errorCode: String,
 		errorMessage: String?,
-	): List<CommandOutcome> = commandIds.map { commandId ->
+	): List<CommandOutcome> = msgIds.map { msgId ->
 		CommandOutcome(
 			outcome = outcome,
-			commandId = commandId,
+			msgId = msgId,
 			errorCode = errorCode,
 			errorMessage = errorMessage,
 		)

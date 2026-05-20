@@ -85,6 +85,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     ): InitTransitionAppliedContext<TestState, String, IterableEntity, TestEvt, S2Automate> =
         InitTransitionAppliedContext(
             automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
+            msgId = "start:${entity.id}",
             msg = TestInitCommand(entityId = entity.id),
             event = TestEvt(id = entity.id),
             entity = entity,
@@ -107,11 +108,11 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                     scriptedOutcomes.getOrElse(i) {
                         CommandOutcome(
                             outcome = "Rejected",
-                            commandId = cmd.commandId,
+                            msgId = cmd.msgId,
                             errorCode = "NO_SCRIPTED_OUTCOME",
                             errorMessage = "no scripted outcome for index $i",
                         )
-                    }.copy(commandId = cmd.commandId)
+                    }.copy(msgId = cmd.msgId)
                 }.asFlow()
             }
 
@@ -148,7 +149,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes maps Committed outcomes correctly`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Committed", commandId = "", transactionId = "tx-123", blockNumber = 42L),
+            CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-123", blockNumber = 42L),
         ))
         val ctx = makeInitTransitionContext(IterableEntity("entity-1", 1, 0))
 
@@ -156,8 +157,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
 
         assertThat(outcomes).hasSize(1)
         val committed = outcomes.single() as PersistOutcome.Success<TestEvt>
-        assertThat(committed.transactionId).isEqualTo("tx-123")
-        assertThat(committed.blockNumber).isEqualTo(42L)
+        assertThat(committed.metadata["transactionId"]).isEqualTo("tx-123")
+        assertThat(committed.metadata["blockNumber"]).isEqualTo("42")
         assertThat(committed.event.id).isEqualTo("entity-1")
     }
 
@@ -166,7 +167,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Rejected",
-                commandId = "",
+                msgId = "",
                 errorCode = "ENDORSE_FAILED",
                 errorMessage = "endorsement failed",
             ),
@@ -186,7 +187,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Transient",
-                commandId = "",
+                msgId = "",
                 errorCode = "GRPC_UNAVAILABLE",
                 errorMessage = "peer down",
             ),
@@ -206,7 +207,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Indeterminate",
-                commandId = "",
+                msgId = "",
                 errorCode = "SUBMIT_FAILED",
                 errorMessage = "orderer timeout",
             ),
@@ -226,7 +227,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Conflict",
-                commandId = "",
+                msgId = "",
                 errorCode = "MVCC_READ_CONFLICT",
                 errorMessage = "conflict",
             ),
@@ -244,8 +245,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     @Test
     fun `persistInitWithOutcomes preserves commandId per input`() = runTest {
         val persister = buildPersister(listOf(
-            CommandOutcome(outcome = "Committed", commandId = "", transactionId = "tx-A", blockNumber = 1L),
-            CommandOutcome(outcome = "Rejected",  commandId = "", errorCode = "ERR", errorMessage = "err"),
+            CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-A", blockNumber = 1L),
+            CommandOutcome(outcome = "Rejected",  msgId = "", errorCode = "ERR", errorMessage = "err"),
         ))
         val ctx1 = makeInitTransitionContext(IterableEntity("entity-A", 1, 0))
         val ctx2 = makeInitTransitionContext(IterableEntity("entity-B", 1, 0))
@@ -253,19 +254,19 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx1, ctx2)).toList()
 
         assertThat(outcomes).hasSize(2)
-        // commandId is "start:<entityId>" (set by SsmAutomatePersister.persistInitWithOutcomes)
-        assertThat(outcomes[0].commandId).isEqualTo("start:entity-A")
-        assertThat(outcomes[1].commandId).isEqualTo("start:entity-B")
+        // msgId is "start:<entityId>" (set by SsmAutomatePersister.persistInitWithOutcomes)
+        assertThat(outcomes[0].msgId).isEqualTo("start:entity-A")
+        assertThat(outcomes[1].msgId).isEqualTo("start:entity-B")
     }
 
     @Test
     fun `persistInitWithOutcomes emits one outcome per input`() = runTest {
         val scripted = listOf(
-            CommandOutcome(outcome = "Committed",     commandId = "", transactionId = "tx-1", blockNumber = 1L),
-            CommandOutcome(outcome = "Rejected",      commandId = "", errorCode = "E", errorMessage = "m"),
-            CommandOutcome(outcome = "Transient",     commandId = "", errorCode = "T", errorMessage = "m"),
-            CommandOutcome(outcome = "Indeterminate", commandId = "", errorCode = "I", errorMessage = "m"),
-            CommandOutcome(outcome = "Conflict",      commandId = "", errorCode = "C", errorMessage = "m"),
+            CommandOutcome(outcome = "Committed",     msgId = "", transactionId = "tx-1", blockNumber = 1L),
+            CommandOutcome(outcome = "Rejected",      msgId = "", errorCode = "E", errorMessage = "m"),
+            CommandOutcome(outcome = "Transient",     msgId = "", errorCode = "T", errorMessage = "m"),
+            CommandOutcome(outcome = "Indeterminate", msgId = "", errorCode = "I", errorMessage = "m"),
+            CommandOutcome(outcome = "Conflict",      msgId = "", errorCode = "C", errorMessage = "m"),
         )
         val persister = buildPersister(scripted)
         val contexts = scripted.mapIndexed { i, _ ->

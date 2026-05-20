@@ -130,7 +130,7 @@ class SsmClientV2ItTest {
 
         val commands = listOf(
             SsmStartCommandV2(
-                commandId = commandId,
+                msgId = commandId,
                 session = session,
                 chaincodeUri = chaincodeUri,
                 signerName = signerAdmin.name,
@@ -141,7 +141,7 @@ class SsmClientV2ItTest {
         assertThat(outcomes).hasSize(1)
         val outcome = outcomes[0]
         assertThat(outcome.outcome).isEqualTo("Committed")
-        assertThat(outcome.commandId).isEqualTo(commandId)
+        assertThat(outcome.msgId).isEqualTo(commandId)
         assertThat(outcome.transactionId).isNotNull.isNotEmpty
         assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
 
@@ -167,7 +167,7 @@ class SsmClientV2ItTest {
         val context = SsmContext(sessionName, "Selling via v2", 0, emptyMap())
         val commands = listOf(
             SsmPerformCommandV2(
-                commandId = commandId,
+                msgId = commandId,
                 action = "Sell",
                 context = context,
                 chaincodeUri = chaincodeUri,
@@ -179,7 +179,7 @@ class SsmClientV2ItTest {
         assertThat(outcomes).hasSize(1)
         val outcome = outcomes[0]
         assertThat(outcome.outcome).isEqualTo("Committed")
-        assertThat(outcome.commandId).isEqualTo(commandId)
+        assertThat(outcome.msgId).isEqualTo(commandId)
         assertThat(outcome.transactionId).isNotNull.isNotEmpty
         assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
 
@@ -205,13 +205,13 @@ class SsmClientV2ItTest {
 
         val commands = listOf(
             SsmStartCommandV2(
-                commandId = commandId1,
+                msgId = commandId1,
                 session = SsmSession(ssmName, sessionName1, roles, "Batch start 1", emptyMap()),
                 chaincodeUri = chaincodeUri,
                 signerName = signerAdmin.name,
             ),
             SsmStartCommandV2(
-                commandId = commandId2,
+                msgId = commandId2,
                 session = SsmSession(ssmName, sessionName2, roles, "Batch start 2", emptyMap()),
                 chaincodeUri = chaincodeUri,
                 signerName = signerAdmin.name,
@@ -222,7 +222,7 @@ class SsmClientV2ItTest {
         assertThat(outcomes).hasSize(2)
         outcomes.forEachIndexed { index, outcome ->
             assertThat(outcome.outcome).isEqualTo("Committed")
-            assertThat(outcome.commandId).isEqualTo(commands[index].commandId)
+            assertThat(outcome.msgId).isEqualTo(commands[index].msgId)
             assertThat(outcome.transactionId).isNotNull.isNotEmpty
             assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
         }
@@ -246,14 +246,14 @@ class SsmClientV2ItTest {
 
         val commands = listOf(
             SsmPerformCommandV2(
-                commandId = commandId1,
+                msgId = commandId1,
                 action = "Sell",
                 context = SsmContext(sessionName1, "Selling batch 1 via v2", 0, emptyMap()),
                 chaincodeUri = chaincodeUri,
                 signerName = signerUser2.name,
             ),
             SsmPerformCommandV2(
-                commandId = commandId2,
+                msgId = commandId2,
                 action = "Sell",
                 context = SsmContext(sessionName2, "Selling batch 2 via v2", 0, emptyMap()),
                 chaincodeUri = chaincodeUri,
@@ -265,7 +265,7 @@ class SsmClientV2ItTest {
         assertThat(outcomes).hasSize(2)
         outcomes.forEachIndexed { index, outcome ->
             assertThat(outcome.outcome).isEqualTo("Committed")
-            assertThat(outcome.commandId).isEqualTo(commands[index].commandId)
+            assertThat(outcome.msgId).isEqualTo(commands[index].msgId)
             assertThat(outcome.transactionId).isNotNull.isNotEmpty
             assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
         }

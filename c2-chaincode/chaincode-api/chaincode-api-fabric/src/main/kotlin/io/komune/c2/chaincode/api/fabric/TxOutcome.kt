@@ -8,35 +8,35 @@ import org.hyperledger.fabric.protos.peer.TxValidationCode
  * structured per-item information instead of cancelling siblings.
  */
 sealed interface TxOutcome {
-    val commandId: String
+    val msgId: String
 
     data class Committed(
-        override val commandId: String,
+        override val msgId: String,
         val transactionId: String,
         val blockNumber: Long,
         val payload: String,
     ) : TxOutcome
 
     data class Rejected(
-        override val commandId: String,
+        override val msgId: String,
         val errorCode: String,
         val errorMessage: String,
     ) : TxOutcome
 
     data class Transient(
-        override val commandId: String,
+        override val msgId: String,
         val errorCode: String,
         val errorMessage: String,
     ) : TxOutcome
 
     data class Indeterminate(
-        override val commandId: String,
+        override val msgId: String,
         val errorCode: String,
         val errorMessage: String,
     ) : TxOutcome
 
     data class Conflict(
-        override val commandId: String,
+        override val msgId: String,
         val errorCode: String,
         val errorMessage: String,
         val transactionId: String? = null,
@@ -57,7 +57,7 @@ object TxValidationCodeMapper {
      * Indeterminate — unknown future code; operator investigation required.
      */
     fun toOutcome(
-        commandId: String,
+        msgId: String,
         statusCodeName: String,
         transactionId: String?,
         blockNumber: Long?,
@@ -65,7 +65,7 @@ object TxValidationCodeMapper {
         "MVCC_READ_CONFLICT", "PHANTOM_READ_CONFLICT", "INVALID_OTHER_REASON",
         "DUPLICATE_TXID", "INVALID_WRITESET" ->
             TxOutcome.Conflict(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
                 transactionId = transactionId,
@@ -73,19 +73,19 @@ object TxValidationCodeMapper {
             )
         "ENDORSEMENT_POLICY_FAILURE" ->
             TxOutcome.Rejected(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
             )
         "UNAUTHORISED" ->
             TxOutcome.Rejected(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
             )
         "TARGET_CHAIN_NOT_FOUND" ->
             TxOutcome.Rejected(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
             )
@@ -97,13 +97,13 @@ object TxValidationCodeMapper {
         "CHAINCODE_VERSION_CONFLICT", "BAD_RESPONSE_PAYLOAD", "ILLEGAL_WRITESET",
         "INVALID_CHAINCODE" ->
             TxOutcome.Rejected(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "validation: $statusCodeName",
             )
         else ->
             TxOutcome.Indeterminate(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = statusCodeName,
                 errorMessage = "unknown validation code: $statusCodeName",
             )
@@ -114,15 +114,15 @@ object TxValidationCodeMapper {
      * available (e.g. TxValidationCodeMapperTest). Delegates to the string form.
      */
     fun toOutcome(
-        commandId: String,
+        msgId: String,
         transactionId: String,
         blockNumber: Long,
         code: TxValidationCode,
     ): TxOutcome = if (code == TxValidationCode.VALID) {
-        TxOutcome.Committed(commandId, transactionId, blockNumber, payload = "")
+        TxOutcome.Committed(msgId, transactionId, blockNumber, payload = "")
     } else {
         toOutcome(
-            commandId = commandId,
+            msgId = msgId,
             statusCodeName = code.name,
             transactionId = transactionId,
             blockNumber = blockNumber,

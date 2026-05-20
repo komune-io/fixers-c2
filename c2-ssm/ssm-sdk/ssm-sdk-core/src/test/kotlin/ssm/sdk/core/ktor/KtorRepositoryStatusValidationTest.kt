@@ -93,8 +93,8 @@ class KtorRepositoryStatusValidationTest {
     fun `invokeV2 on 200 deserializes body as CommandOutcome list`(): Unit = runBlocking {
         val responseJson = """
             [
-              {"outcome":"Committed","commandId":"cmd-1","transactionId":"tx-abc","blockNumber":10},
-              {"outcome":"Rejected","commandId":"cmd-2","errorCode":"MVCC_READ_CONFLICT"}
+              {"outcome":"Committed","msgId":"cmd-1","transactionId":"tx-abc","blockNumber":10},
+              {"outcome":"Rejected","msgId":"cmd-2","errorCode":"MVCC_READ_CONFLICT"}
             ]
         """.trimIndent()
 
@@ -102,10 +102,10 @@ class KtorRepositoryStatusValidationTest {
         val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(2)
-        assertThat(outcomes[0].commandId).isEqualTo("cmd-1")
+        assertThat(outcomes[0].msgId).isEqualTo("cmd-1")
         assertThat(outcomes[0].outcome).isEqualTo("Committed")
         assertThat(outcomes[0].transactionId).isEqualTo("tx-abc")
-        assertThat(outcomes[1].commandId).isEqualTo("cmd-2")
+        assertThat(outcomes[1].msgId).isEqualTo("cmd-2")
         assertThat(outcomes[1].outcome).isEqualTo("Rejected")
         assertThat(outcomes[1].errorCode).isEqualTo("MVCC_READ_CONFLICT")
     }
@@ -121,7 +121,7 @@ class KtorRepositoryStatusValidationTest {
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
-            assertThat(outcome.commandId).isEqualTo(commandIds[i])
+            assertThat(outcome.msgId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Rejected")
             assertThat(outcome.errorCode).isEqualTo("HTTP_400")
         }
@@ -174,7 +174,7 @@ class KtorRepositoryStatusValidationTest {
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
-            assertThat(outcome.commandId).isEqualTo(commandIds[i])
+            assertThat(outcome.msgId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Transient")
             assertThat(outcome.errorCode).isEqualTo("HTTP_500")
         }
@@ -203,7 +203,7 @@ class KtorRepositoryStatusValidationTest {
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
-            assertThat(outcome.commandId).isEqualTo(commandIds[i])
+            assertThat(outcome.msgId).isEqualTo(commandIds[i])
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("CONNECT_REFUSED")
         }
@@ -243,7 +243,7 @@ class KtorRepositoryStatusValidationTest {
         )
         val outcomes = repo.invokeV2(
             invokeArgs = listOf(sampleInvokeArgs.first()),
-            commandIds = listOf("cmd-1"),
+            msgIds = listOf("cmd-1"),
         )
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("TIMEOUT")
@@ -284,7 +284,7 @@ class KtorRepositoryStatusValidationTest {
         val repo = buildRepository(HttpStatusCode.BadRequest, "bad")
         val outcomes = repo.invokeV2(args, ids)
 
-        assertThat(outcomes.map { it.commandId }).isEqualTo(ids)
+        assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
     }
 
     // --------------------------------------------------------------------------

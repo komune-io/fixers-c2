@@ -6,14 +6,14 @@ import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 
 data class SsmStartCommandV2(
-    val commandId: String,
+    val msgId: String,
     val session: SsmSession,
     val chaincodeUri: ChaincodeUri,
     val signerName: AgentName,
 )
 
 data class SsmPerformCommandV2(
-    val commandId: String,
+    val msgId: String,
     val action: String,
     val context: SsmContext,
     val chaincodeUri: ChaincodeUri,

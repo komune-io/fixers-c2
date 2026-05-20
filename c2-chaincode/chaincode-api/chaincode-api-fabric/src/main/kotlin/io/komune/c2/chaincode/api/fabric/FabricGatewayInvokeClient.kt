@@ -66,12 +66,12 @@ class FabricGatewayClient(
         val start = currentTimeMillis()
 
         val contracts = fabricGatewayBuilder.contracts(channelId, chaincodeId)
-        val results = invokeArgsList.zip(commandIds).map { (args, commandId) ->
+        val results = invokeArgsList.zip(commandIds).map { (args, msgId) ->
             async(parallelIO) {
-                runCatching { contracts.random().commitTransaction(channelId, chaincodeId, args, commandId) }
+                runCatching { contracts.random().commitTransaction(channelId, chaincodeId, args, msgId) }
                     .getOrElse { e ->
                         TxOutcome.Transient(
-                            commandId = commandId,
+                            msgId = msgId,
                             errorCode = "UNEXPECTED",
                             errorMessage = e.message ?: e::class.simpleName.orEmpty(),
                         )
@@ -88,7 +88,7 @@ class FabricGatewayClient(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-        commandId: String,
+        msgId: String,
     ): TxOutcome {
         val endorsed = try {
             newProposal(invokeArgs.function)
@@ -97,13 +97,13 @@ class FabricGatewayClient(
                 .endorse()
         } catch (e: EndorseException) {
             return TxOutcome.Rejected(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = "ENDORSE_FAILED",
                 errorMessage = extractErrorMessage(e),
             )
         } catch (e: io.grpc.StatusRuntimeException) {
             return TxOutcome.Transient(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = "GRPC_${e.status.code.name}",
                 errorMessage = e.message ?: "gRPC failure",
             )
@@ -113,7 +113,7 @@ class FabricGatewayClient(
         val submitted = try {
             endorsed.submitAsync()
         } catch (e: Exception) {
-            return mapSubmitFailure(e, commandId)
+            return mapSubmitFailure(e, msgId)
         }
 
         val status = submitted.status
@@ -123,14 +123,14 @@ class FabricGatewayClient(
                 endorsed.transactionId, channelId, chaincodeId, status.blockNumber
             )
             TxOutcome.Committed(
-                commandId = commandId,
+                msgId = msgId,
                 transactionId = endorsed.transactionId,
                 blockNumber = status.blockNumber,
                 payload = String(endorsed.result),
             )
         } else {
             TxValidationCodeMapper.toOutcome(
-                commandId = commandId,
+                msgId = msgId,
                 statusCodeName = status.code.name,
                 transactionId = endorsed.transactionId,
                 blockNumber = status.blockNumber,
@@ -147,16 +147,16 @@ class FabricGatewayClient(
      * - Any other [Exception] → [TxOutcome.Indeterminate] with code "SUBMIT_FAILED".
      *   The transaction fate is unknown; operator investigation is required.
      */
-    internal fun mapSubmitFailure(e: Exception, commandId: String): TxOutcome {
+    internal fun mapSubmitFailure(e: Exception, msgId: String): TxOutcome {
         if (e is CancellationException) throw e
         return when (e) {
             is io.grpc.StatusRuntimeException -> TxOutcome.Transient(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = "GRPC_${e.status.code.name}",
                 errorMessage = e.message ?: "gRPC submit failure",
             )
             else -> TxOutcome.Indeterminate(
-                commandId = commandId,
+                msgId = msgId,
                 errorCode = "SUBMIT_FAILED",
                 errorMessage = e.message ?: "submit failed",
             )

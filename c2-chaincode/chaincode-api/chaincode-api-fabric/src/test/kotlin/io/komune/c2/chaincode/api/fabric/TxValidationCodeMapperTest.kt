@@ -9,7 +9,7 @@ class TxValidationCodeMapperTest {
     @Test
     fun `VALID maps to Committed`() {
         val outcome = TxValidationCodeMapper.toOutcome(
-            commandId = "c1",
+            msgId = "c1",
             transactionId = "tx1",
             blockNumber = 42L,
             code = TxValidationCode.VALID,
