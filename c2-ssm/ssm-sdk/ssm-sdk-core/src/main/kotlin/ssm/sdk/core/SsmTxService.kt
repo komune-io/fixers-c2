@@ -1,6 +1,8 @@
 package ssm.sdk.core
 
 import f2.dsl.fnc.operators.batch
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import kotlinx.coroutines.flow.Flow
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.config.SsmBatchProperties
@@ -10,16 +12,17 @@ import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.command.SsmCreateCommand
 import ssm.sdk.core.command.SsmPerformCommand
+import ssm.sdk.core.command.SsmPerformCommandV2
 import ssm.sdk.core.command.SsmStartCommand
+import ssm.sdk.core.command.SsmStartCommandV2
 import ssm.sdk.core.command.UserRegisterCommand
+import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.core.invoke.command.CreateCmd
 import ssm.sdk.core.invoke.command.PerformCmd
 import ssm.sdk.core.invoke.command.RegisterCmd
 import ssm.sdk.core.invoke.command.StartCmd
-import ssm.sdk.dsl.InvokeReturn
 import ssm.sdk.dsl.SsmCmd
 
 @Suppress("TooManyFunctions")
@@ -83,6 +86,26 @@ class SsmTxService(
 		}
 	}
 
+	fun sendStartV2(commands: Flow<SsmStartCommandV2>): Flow<CommandOutcome> =
+		commands.batch(batch.toBatch(), ::sendStartV2)
+
+	fun sendPerformV2(commands: Flow<SsmPerformCommandV2>): Flow<CommandOutcome> =
+		commands.batch(batch.toBatch(), ::sendPerformV2)
+
+	suspend fun sendStartV2(commands: List<SsmStartCommandV2>): List<CommandOutcome> {
+		logger.info("Start[v2] ${commands.size} session(s)")
+		val cmds = commands.map { start(it.session, it.chaincodeUri, it.signerName) }
+		val ids = commands.map { it.msgId }
+		return ssmService.invokeAllV2(cmds, ids)
+	}
+
+	suspend fun sendPerformV2(commands: List<SsmPerformCommandV2>): List<CommandOutcome> {
+		logger.info("Perform[v2] ${commands.size} action(s)")
+		val cmds = commands.map { perform(it.action, it.context, it.chaincodeUri, it.signerName) }
+		val ids = commands.map { it.msgId }
+		return ssmService.invokeAllV2(cmds, ids)
+	}
+
 
 	suspend fun sendRegisterUser(chaincodeUri: ChaincodeUri, agent: Agent, signerName: AgentName): InvokeReturn {
 		return sendRegisterUser(
@@ -109,7 +132,7 @@ class SsmTxService(
 	}
 
 	suspend fun sendPerform(
-		chaincodeUri: ChaincodeUri, action: String, context: SsmContext, signerName: AgentName
+        chaincodeUri: ChaincodeUri, action: String, context: SsmContext, signerName: AgentName
 	): InvokeReturn {
 		return ssmService.signAndSend {
 			perform(action, context, chaincodeUri, signerName)

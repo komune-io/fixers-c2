@@ -14,8 +14,8 @@ import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
 import s2.spring.automate.executor.S2AutomateExecutorSpring
 import s2.spring.automate.ssm.S2SsmConfigurerAdapter
 import ssm.chaincode.dsl.model.Agent
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.from
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.from
 import ssm.sdk.sign.extention.loadFromFile
 
 @Configuration

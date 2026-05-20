@@ -1,6 +1,5 @@
 package ssm.couchdb.client
 
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import ssm.couchdb.client.test.DataTest
 
@@ -17,7 +16,7 @@ internal class SsmCouchDbClientTest {
 	}
 
 	@Test
-	fun `explore ssmCouchDb getChanges return type`() = runBlocking {
+	suspend fun `explore ssmCouchDb getChanges return type`() {
 		val allChanges = DataTest.ssmCouchDbClient.getSsmChanges(
 			dbName = DataTest.dbSsmName, ssmName = DataTest.ssmName, sessionName = null
 		)

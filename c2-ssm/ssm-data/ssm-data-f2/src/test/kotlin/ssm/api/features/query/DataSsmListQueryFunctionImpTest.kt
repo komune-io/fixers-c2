@@ -1,7 +1,6 @@
 package ssm.api.features.query
 
 import f2.dsl.fnc.invoke
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -18,7 +17,7 @@ class DataSsmListQueryFunctionImpTest {
 
 	@Disabled
 	@Test
-	fun `must return result`() = runBlocking<Unit> {
+	suspend fun `must return result`() {
 		val response = function.invoke(DataSsmListQuery(emptyList()))
 		Assertions.assertThat(response.items).hasSize(2)
 	}

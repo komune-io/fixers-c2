@@ -2,16 +2,16 @@ package ssm.api.features.query.internal
 
 import f2.dsl.fnc.F2Function
 import f2.dsl.fnc.operators.flattenConcurrently
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.Transaction
+import io.komune.c2.chaincode.dsl.TransactionId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
-import ssm.chaincode.dsl.blockchain.Transaction
-import ssm.chaincode.dsl.blockchain.TransactionId
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmSessionState
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.SsmUri
 import ssm.chaincode.dsl.model.uri.asChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQuery

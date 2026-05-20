@@ -15,9 +15,11 @@ import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
 import s2.automate.core.persist.AutomatePersister
+import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2State
 import s2.dsl.automate.model.WithS2Id
+import s2.dsl.automate.s2error
 import s2.dsl.automate.model.WithS2Iteration
 import s2.dsl.automate.model.WithS2State
 import ssm.chaincode.dsl.model.Agent
@@ -28,6 +30,11 @@ import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQuery
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2
+import ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2
+import ssm.sdk.core.command.SsmPerformCommandV2
+import ssm.sdk.core.command.SsmStartCommandV2
+import ssm.sdk.dsl.CommandOutcome
 import ssm.tx.dsl.features.ssm.SsmSessionPerformActionCommand
 import ssm.tx.dsl.features.ssm.SsmSessionStartCommand
 import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
@@ -37,6 +44,8 @@ import tools.jackson.databind.ObjectMapper
 class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
 	internal var ssmSessionStartFunction: SsmTxSessionStartFunction,
 	internal var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction,
+	internal var ssmSessionStartFunctionV2: SsmTxSessionStartFunctionV2,
+	internal var ssmSessionPerformActionFunctionV2: SsmTxSessionPerformActionFunctionV2,
 	internal var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
 
 	internal var chaincodeUri: ChaincodeUri,
@@ -102,36 +111,96 @@ ENTITY : WithS2Id<ID> {
 		}
 	}
 
+	override suspend fun persistInitWithOutcomes(
+		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+	): Flow<PersistOutcome<EVENT>> = flow {
+		val collectedContexts = transitionContexts.toList()
+
+		val v2Commands = collectedContexts.map { ctx ->
+			val entity = ctx.entity
+			val automate = ctx.automateContext.automate
+			SsmStartCommandV2(
+				msgId = "start:${entity.s2Id()}",
+				session = SsmSession(
+					ssm = automate.name,
+					session = entity.s2Id().toString(),
+					roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
+					public = objectMapper.writeValueAsString(entity),
+					private = mapOf(),
+				),
+				signerName = agentSigner.name,
+				chaincodeUri = chaincodeUri,
+			)
+		}
+
+		val outcomes = ssmSessionStartFunctionV2.invoke(v2Commands.asFlow()).toList()
+		val byId = outcomes.associateBy { it.msgId }
+
+		collectedContexts.forEach { ctx ->
+			val cid = "start:${ctx.entity.s2Id()}"
+			emit(toPersistOutcome(cid, ctx.event, byId[cid]))
+		}
+	}
+
 	private fun getIterations(
 		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
 	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> {
-		return if(WithS2Iteration::class.java.isAssignableFrom(entityType)) {
+		return if (WithS2Iteration::class.java.isAssignableFrom(entityType)) {
 			query.map {
 				val entity = it.transitionContext.entity as WithS2Iteration
 				val iteration = entity.s2Iteration()
 				GetSessionResult(
 					transitionContext = it.transitionContext,
 					sessionId = it.sessionId,
-					iteration = iteration
+					iteration = iteration,
 				)
 			}
 		} else {
 			query.batchFlow(batch.asBatch()) { list ->
 				val bySession = list.associateBy { it.sessionId }
-				getSessions(list).map { session ->
-					val context = bySession[session.sessionName]
-					?: throw IllegalStateException("No context found for session ${session.sessionName}")
-					val iteration = session.logs.maxOfOrNull { it.state.iteration }
-						?: throw IllegalStateException("No logs found for session ${session.sessionName}")
-
+				val sessions = getSessions(list).toList()
+				val foundIds = sessions.map { it.sessionName }.toSet()
+				val happy = sessions.map { session ->
+					val context = bySession.getValue(session.sessionName)
+					val iteration = session.logs.maxOfOrNull { it.state.iteration } ?: -1
+					if (iteration < 0) {
+						GetSessionResult(
+							transitionContext = context.transitionContext,
+							sessionId = context.sessionId,
+							iteration = 0,
+							failure = PersistOutcome.Rejected(
+								msgId = commandIdFor(context),
+								error = s2error(
+									code = "NO_LOGS",
+									description = "No logs for session ${session.sessionName}",
+								),
+							),
+						)
+					} else {
+						GetSessionResult(context.transitionContext, context.sessionId, iteration)
+					}
+				}
+				val missing = list.filterNot { it.sessionId in foundIds }.map { miss ->
 					GetSessionResult(
-						transitionContext = context.transitionContext,
-						sessionId = context.sessionId,
-						iteration = iteration
+						transitionContext = miss.transitionContext,
+						sessionId = miss.sessionId,
+						iteration = 0,
+						failure = PersistOutcome.Rejected(
+							msgId = commandIdFor(miss),
+							error = s2error(
+								code = "SESSION_NOT_FOUND",
+								description = "Session ${miss.sessionId} not on chaincode",
+							),
+						),
 					)
 				}
+				(happy + missing).asFlow()
 			}
 		}
+	}
+
+	private fun commandIdFor(query: GetSessionQuery<STATE, ID, ENTITY, EVENT>): String {
+		return "${query.sessionId}:lookup"
 	}
 
 	private suspend fun getSessions(
@@ -168,7 +237,7 @@ ENTITY : WithS2Id<ID> {
 			GetSessionQuery(transitionContext, sessionName)
 		}.let {
 			getIterations(it.asFlow())
-		}.map { (transitionContext, _,iteration) ->
+		}.map { (transitionContext, _, iteration) ->
 
 			val entity = transitionContext.entity
 
@@ -193,6 +262,107 @@ ENTITY : WithS2Id<ID> {
 			emit(e.event)
 		}
 	}
+
+	override suspend fun persistWithOutcomes(
+		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+	): Flow<PersistOutcome<EVENT>> = flow {
+		val collectedContexts = transitionContexts.toList()
+
+		val sessionResults: List<GetSessionResult<STATE, ID, ENTITY, EVENT>> = collectedContexts.map {
+			val sessionName = it.entity.s2Id().toString()
+			GetSessionQuery(it, sessionName)
+		}.let { getIterations(it.asFlow()) }.toList()
+
+		sessionResults.filter { it.failure != null }.forEach { failed ->
+			@Suppress("UNCHECKED_CAST")
+			emit(failed.failure!! as PersistOutcome<EVENT>)
+		}
+
+		val good = sessionResults.filter { it.failure == null }
+		val v2Commands = good.map { sr ->
+			val entity = sr.transitionContext.entity
+			val withEventAsAction = sr.transitionContext.automateContext.automate.withResultAsAction
+			val action = sr.transitionContext.event?.takeIf { withEventAsAction } ?: sr.transitionContext.msg
+			SsmPerformCommandV2(
+				msgId = "${sr.sessionId}:${sr.iteration + 1}",
+				action = action::class.simpleName!!,
+				context = SsmContext(
+					session = entity.s2Id().toString(),
+					public = objectMapper.writeValueAsString(entity),
+					private = mapOf(),
+					iteration = sr.iteration,
+				),
+				signerName = agentSigner.name,
+				chaincodeUri = chaincodeUri,
+			)
+		}
+
+		val outcomes = ssmSessionPerformActionFunctionV2.invoke(v2Commands.asFlow()).toList()
+		val byId = outcomes.associateBy { it.msgId }
+
+		good.forEach { sr ->
+			val cid = "${sr.sessionId}:${sr.iteration + 1}"
+			@Suppress("UNCHECKED_CAST")
+			emit(toPersistOutcome(cid, sr.transitionContext.event as EVENT, byId[cid]))
+		}
+	}
+
+	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
+		if (outcome == null) {
+			return PersistOutcome.Indeterminate(
+				msgId = msgId,
+				error = s2error(
+					code = "MISSING_OUTCOME",
+					description = "No CommandOutcome returned for $msgId",
+				),
+			)
+		}
+		return when (outcome.outcome) {
+			"Committed" -> PersistOutcome.Success(
+				msgId = msgId,
+				event = event,
+				metadata = buildMap {
+					outcome.transactionId?.let { put("transactionId", it) }
+					outcome.blockNumber?.let { put("blockNumber", it.toString()) }
+				},
+			)
+			"Rejected" -> PersistOutcome.Rejected(
+				msgId = msgId,
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
+			)
+			"Transient" -> PersistOutcome.Transient(
+				msgId = msgId,
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
+			)
+			"Indeterminate" -> PersistOutcome.Indeterminate(
+				msgId = msgId,
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
+			)
+			"Conflict" -> PersistOutcome.Conflict(
+				msgId = msgId,
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
+			)
+			else -> PersistOutcome.Indeterminate(
+				msgId = msgId,
+				error = s2error(
+					code = "UNKNOWN_OUTCOME",
+					description = outcome.outcome,
+				),
+			)
+		}
+	}
 }
 
 data class GetSessionQuery<STATE, ID, ENTITY, EVENT>(
@@ -211,7 +381,8 @@ data class GetAutomateSessionQuery(
 data class GetSessionResult<STATE, ID, ENTITY, EVENT>(
 	val transitionContext: TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
 	val sessionId: SessionName,
-	val iteration: Int
+	val iteration: Int,
+	val failure: PersistOutcome.Rejected<EVENT>? = null,
 ) where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,

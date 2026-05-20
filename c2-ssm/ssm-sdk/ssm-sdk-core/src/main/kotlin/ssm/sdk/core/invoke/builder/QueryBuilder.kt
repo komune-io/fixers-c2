@@ -1,7 +1,7 @@
 package ssm.sdk.core.invoke.builder
 
+import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import ssm.sdk.core.invoke.query.SsmQueryName
-import ssm.sdk.dsl.InvokeArgs
 
 interface HasQueryName {
 	val queryName: SsmQueryName
@@ -21,7 +21,10 @@ interface HasList: HasQueryName {
 	}
 
 	fun listArgs(): InvokeArgs {
-		return InvokeArgs(LIST_FUNCTION, listOf(queryName.value))
+		return InvokeArgs(
+			function = LIST_FUNCTION,
+			values = listOf(queryName.value)
+		)
 	}
 }
 

@@ -1,91 +1,169 @@
 package io.komune.c2.chaincode.api.gateway.chaincode
 
-import io.komune.c2.chaincode.api.fabric.model.InvokeArgs
-import io.komune.c2.chaincode.api.fabric.utils.InvokeArgsUtils
-import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainService
-import io.komune.c2.chaincode.api.gateway.chaincode.model.Cmd
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeParams
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeReturn
-import io.komune.c2.chaincode.api.gateway.config.ChainCodeId
-import io.komune.c2.chaincode.api.gateway.config.ChannelId
-import io.komune.c2.chaincode.api.gateway.config.FabricClientBuilder
-import io.komune.c2.chaincode.api.gateway.config.FabricClientProvider
-import io.komune.c2.chaincode.api.gateway.config.HeraclesConfigProps
-import java.util.concurrent.CompletableFuture
+import io.komune.c2.chaincode.api.config.C2ChaincodeConfiguration
+import io.komune.c2.chaincode.api.config.utils.JsonUtils
+import io.komune.c2.chaincode.dsl.ChaincodeId
+import io.komune.c2.chaincode.dsl.ChannelId
+import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
+import io.komune.c2.chaincode.dsl.invoke.InvokeArgsUtils
+import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
+import io.komune.c2.chaincode.api.fabric.TxOutcome
+import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainServiceI
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
+import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestV2
+import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.future.asDeferred
+import kotlinx.coroutines.supervisorScope
 import org.springframework.stereotype.Service
+import tools.jackson.databind.JsonNode
 
 @Service
 class ChaincodeService(
-	val blockchainService: BlockchainService,
-	val coopConfigProps: HeraclesConfigProps,
-	val fabricClientProvider: FabricClientProvider,
-	val fabricClientBuilder: FabricClientBuilder,
+	val fabricGatewayClient: FabricGatewayClient,
+	val blockchainService: BlockchainServiceI,
+	private val chaincodeConfiguration: C2ChaincodeConfiguration,
 ) {
 
-	fun execute(args: InvokeParams): CompletableFuture<String> {
-		val chainCodePair = coopConfigProps.getChannelChaincodePair(args.channelid, args.chaincodeid)
-		val invokeArgs = InvokeArgs(args.fcn, args.args.iterator())
+	suspend fun execute(args: InvokeRequest): JsonNode {
+		val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(args.channelid, args.chaincodeid)
+		val invokeArgs = args.toInvokeArgs()
 		return when (args.cmd) {
-			Cmd.invoke -> doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
-				.thenApply { it.toJson() }
-			Cmd.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+			InvokeRequestType.invoke -> JsonUtils.valueToTree(
+				doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+			)
+			InvokeRequestType.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
 		}
 	}
 
-	suspend fun execute(args: List<InvokeParams>): List<Any> {
-		val futureList = args.map { params ->
-			val chainCodePair = coopConfigProps.getChannelChaincodePair(params.channelid, params.chaincodeid)
-			val invokeArgs = InvokeArgs(params.fcn, params.args.iterator())
-			when (params.cmd) {
-				Cmd.invoke -> doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs).asDeferred()
-				Cmd.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs).asDeferred()
+	suspend fun execute(args: List<InvokeRequest>): List<JsonNode> = supervisorScope {
+		args.map { params ->
+			async {
+				val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(
+					params.channelid, params.chaincodeid
+				)
+				val invokeArgs = InvokeArgs(params.fcn, params.args.toList())
+				when (params.cmd) {
+					InvokeRequestType.invoke -> JsonUtils.valueToTree(
+						doInvoke(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+					)
+					InvokeRequestType.query -> doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, invokeArgs)
+				}
+			}
+		}.awaitAll()
+	}
+
+	private suspend fun doQuery(
+        channelId: ChannelId,
+        chainCodeId: ChaincodeId,
+        invokeArgs: InvokeArgs,
+	): JsonNode {
+		val raw = if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
+			blockchainService.query(channelId, invokeArgs)
+		} else {
+			doQueryChaincode(channelId, chainCodeId, invokeArgs)
+		}
+		return JsonUtils.toNode(raw)
+	}
+
+	private suspend fun doQueryChaincode(
+        channelId: ChannelId,
+        chainCodeId: ChaincodeId,
+        invokeArgs: InvokeArgs,
+	): String {
+		return fabricGatewayClient.query(
+			channelId = channelId,
+			chaincodeId = chainCodeId,
+			invokeArgsList = listOf(invokeArgs)
+		).first()
+	}
+
+	private suspend fun doInvoke(
+        channelId: ChannelId,
+        chainCodeId: ChaincodeId,
+        invokeArgs: InvokeArgs,
+	): InvokeReturn {
+		return doInvoke(channelId, chainCodeId, listOf(invokeArgs)).first()
+	}
+
+	suspend fun doInvoke(
+        channelId: ChannelId,
+        chainCodeId: ChaincodeId,
+        invokeArgs: List<InvokeArgs>,
+	): List<InvokeReturn> {
+		return fabricGatewayClient.invoke(
+			channelId = channelId,
+			chaincodeId = chainCodeId,
+			invokeArgsList = invokeArgs
+		).map { outcome ->
+			when (outcome) {
+				is TxOutcome.Committed -> InvokeReturn("SUCCESS", "", outcome.transactionId)
+				is TxOutcome.Rejected -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Transient -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Indeterminate -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
+				is TxOutcome.Conflict -> InvokeReturn("ERROR", "${outcome.errorCode}: ${outcome.errorMessage}", "")
 			}
 		}
-		return futureList.awaitAll()
 	}
 
-	private fun doQuery(
-        channelId: ChannelId,
-        chainCodeId: ChainCodeId?,
-        invokeArgs: InvokeArgs,
-	): CompletableFuture<String> {
-		if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
-			return CompletableFuture.completedFuture(
-				blockchainService.query(channelId, invokeArgs)
-			)
-		}
-
-		return doQueryChaincode(channelId, chainCodeId, invokeArgs)
+	suspend fun doInvokeV2(
+		channelId: ChannelId,
+		chainCodeId: ChaincodeId,
+		invokeArgs: List<InvokeArgs>,
+		msgIds: List<String>,
+	): List<InvokeOutcome> {
+		return fabricGatewayClient.invoke(
+			channelId = channelId,
+			chaincodeId = chainCodeId,
+			invokeArgsList = invokeArgs,
+			commandIds = msgIds,
+		).map { it.toWire() }
 	}
 
-	private fun doQueryChaincode(
-        channelId: ChannelId,
-        chainCodeId: ChainCodeId?,
-        invokeArgs: InvokeArgs,
-	): CompletableFuture<String> {
-		val client = fabricClientProvider.get(channelId)
-		val channelConfig = fabricClientBuilder.getChannelConfig(channelId)
-		val fabricChainCodeClient = fabricClientBuilder.getFabricChainCodeClient(channelId)
-		return CompletableFuture.completedFuture(
-			fabricChainCodeClient
-				.query(channelConfig.endorsers, client, channelId, chainCodeId, invokeArgs)
-				.ifBlank { null }
+	private fun TxOutcome.toWire(): InvokeOutcome = when (this) {
+		is TxOutcome.Committed -> InvokeOutcome(
+			outcome = "Committed", msgId = msgId,
+			transactionId = transactionId, blockNumber = blockNumber, payload = payload,
+		)
+		is TxOutcome.Rejected -> InvokeOutcome(
+			outcome = "Rejected", msgId = msgId,
+			errorCode = errorCode, errorMessage = errorMessage,
+		)
+		is TxOutcome.Transient -> InvokeOutcome(
+			outcome = "Transient", msgId = msgId,
+			errorCode = errorCode, errorMessage = errorMessage,
+		)
+		is TxOutcome.Indeterminate -> InvokeOutcome(
+			outcome = "Indeterminate", msgId = msgId,
+			errorCode = errorCode, errorMessage = errorMessage,
+		)
+		is TxOutcome.Conflict -> InvokeOutcome(
+			outcome = "Conflict", msgId = msgId,
+			errorCode = errorCode, errorMessage = errorMessage,
+			transactionId = transactionId, blockNumber = blockNumber,
 		)
 	}
 
-	private fun doInvoke(
-        channelId: ChannelId,
-        chainCodeId: ChainCodeId,
-        invokeArgs: InvokeArgs,
-	): CompletableFuture<InvokeReturn> {
-		val client = fabricClientProvider.get(channelId)
-		val channelConfig = fabricClientBuilder.getChannelConfig(channelId)
-		val fabricChainCodeClient = fabricClientBuilder.getFabricChainCodeClient(channelId)
-		val future = fabricChainCodeClient.invoke(channelConfig.endorsers, client, channelId, chainCodeId, invokeArgs)
-		return future.thenApply {
-			InvokeReturn("SUCCESS", "", it.transactionID)
-		}
+	suspend fun executeV2(args: List<InvokeRequestV2>): List<InvokeOutcome> = supervisorScope {
+		args.map { params ->
+			async {
+				runCatching {
+					val pair = chaincodeConfiguration.getChannelChaincodePair(params.request.channelid, params.request.chaincodeid)
+					val invokeArgs = InvokeArgs(params.request.fcn, params.request.args.toList())
+					doInvokeV2(pair.channelId, pair.chainCodeId, listOf(invokeArgs), listOf(params.msgId)).first()
+				}.getOrElse { e ->
+					InvokeOutcome(
+						outcome = "Rejected",
+						msgId = params.msgId,
+						errorCode = "GATEWAY_EXCEPTION",
+						errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+					)
+				}
+			}
+		}.awaitAll()
 	}
+
 }

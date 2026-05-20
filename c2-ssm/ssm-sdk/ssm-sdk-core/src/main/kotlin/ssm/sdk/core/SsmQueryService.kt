@@ -1,9 +1,10 @@
 package ssm.sdk.core
 
-import ssm.chaincode.dsl.blockchain.Block
-import ssm.chaincode.dsl.blockchain.BlockId
-import ssm.chaincode.dsl.blockchain.Transaction
-import ssm.chaincode.dsl.blockchain.TransactionId
+import io.komune.c2.chaincode.dsl.Block
+import io.komune.c2.chaincode.dsl.BlockId
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.Transaction
+import io.komune.c2.chaincode.dsl.TransactionId
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SessionName
@@ -11,7 +12,6 @@ import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmName
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.invoke.query.AdminQuery
 import ssm.sdk.core.invoke.query.AgentQuery
 import ssm.sdk.core.invoke.query.BlockQuery
@@ -21,7 +21,6 @@ import ssm.sdk.core.invoke.query.SsmQuery
 import ssm.sdk.core.invoke.query.TransactionQuery
 import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
-import ssm.sdk.json.JsonUtils
 import tools.jackson.core.type.TypeReference
 
 @Suppress("TooManyFunctions")
@@ -66,8 +65,14 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return ssmRequester.logger(chaincodeUri, sessionName, query, object : TypeReference<List<SsmSessionStateLog>>() {})
 	}
 
+
 	override suspend fun listSession(chaincodeUri: ChaincodeUri): List<String> {
 		val query = SessionQuery()
+		return ssmRequester.list(chaincodeUri, query, String::class.java)
+	}
+
+	override suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<String> {
+		val query = TransactionQuery()
 		return ssmRequester.list(chaincodeUri, query, String::class.java)
 	}
 
@@ -76,9 +81,14 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return ssmRequester.query(chaincodeUri, txId, query, Transaction::class.java)
 	}
 
+	override suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<Int>  {
+		val query = BlockQuery()
+		return ssmRequester.list(chaincodeUri, query, Int::class.java)
+	}
+
 	override suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block? {
 		val query = BlockQuery()
-		return ssmRequester.query(chaincodeUri, blockId, query, Block::class.java)
+		return ssmRequester.query(chaincodeUri, blockId.toString(), query, Block::class.java)
 	}
 
 	override suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent> {
@@ -113,11 +123,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
-		}.map { item ->
-			item?.let { JsonUtils.toObject(it, SsmSessionState::class.java) }
+			ssmRequester.query(it, object : TypeReference<List<SsmSessionState?>>() {})
 		}
-
 	}
 
 	override suspend fun getTransactions(queries: List<GetTransactionQuery>): List<Transaction?> {
@@ -125,17 +132,14 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.txId, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String?>>() {})
-		}.map { item ->
-			item?.let { JsonUtils.toObject(it, Transaction::class.java) }
+			ssmRequester.query(it, object : TypeReference<List<Transaction?>>() {})
 		}
-
 	}
 
 	override suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block> {
 		val query = BlockQuery()
 		return queries.map {
-			SsmApiQuery(it.chaincodeUri, it.blockId, query)
+			SsmApiQuery(it.chaincodeUri, it.blockId.toString(), query)
 		}.let {
 			ssmRequester.query(it, object : TypeReference<List<Block>>() {})
 		}
@@ -147,10 +151,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<String>>() {})
-		}.map { item ->
-			item.let { JsonUtils.toObject(it, object : TypeReference<List<SsmSessionStateLog>>() {}) }
+			ssmRequester.query(it, object : TypeReference<List<List<SsmSessionStateLog>>>() {})
 		}
-
 	}
 }
