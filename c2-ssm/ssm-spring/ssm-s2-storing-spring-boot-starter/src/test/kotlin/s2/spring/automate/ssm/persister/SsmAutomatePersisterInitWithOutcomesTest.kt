@@ -177,8 +177,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
 
         assertThat(outcomes).hasSize(1)
         val rejected = outcomes.single() as PersistOutcome.Rejected<TestEvt>
-        assertThat(rejected.errorCode).isEqualTo("ENDORSE_FAILED")
-        assertThat(rejected.errorMessage).isEqualTo("endorsement failed")
+        assertThat(rejected.error.type).isEqualTo("ENDORSE_FAILED")
+        assertThat(rejected.error.description).isEqualTo("endorsement failed")
     }
 
     @Test
@@ -197,8 +197,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
 
         assertThat(outcomes).hasSize(1)
         val transient = outcomes.single() as PersistOutcome.Transient<TestEvt>
-        assertThat(transient.errorCode).isEqualTo("GRPC_UNAVAILABLE")
-        assertThat(transient.errorMessage).isEqualTo("peer down")
+        assertThat(transient.error.type).isEqualTo("GRPC_UNAVAILABLE")
+        assertThat(transient.error.description).isEqualTo("peer down")
     }
 
     @Test
@@ -217,8 +217,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
 
         assertThat(outcomes).hasSize(1)
         val indeterminate = outcomes.single() as PersistOutcome.Indeterminate<TestEvt>
-        assertThat(indeterminate.errorCode).isEqualTo("SUBMIT_FAILED")
-        assertThat(indeterminate.errorMessage).isEqualTo("orderer timeout")
+        assertThat(indeterminate.error.type).isEqualTo("SUBMIT_FAILED")
+        assertThat(indeterminate.error.description).isEqualTo("orderer timeout")
     }
 
     @Test
@@ -237,8 +237,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
 
         assertThat(outcomes).hasSize(1)
         val conflict = outcomes.single() as PersistOutcome.Conflict<TestEvt>
-        assertThat(conflict.errorCode).isEqualTo("MVCC_READ_CONFLICT")
-        assertThat(conflict.errorMessage).isEqualTo("conflict")
+        assertThat(conflict.error.type).isEqualTo("MVCC_READ_CONFLICT")
+        assertThat(conflict.error.description).isEqualTo("conflict")
     }
 
     @Test

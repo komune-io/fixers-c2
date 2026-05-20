@@ -252,7 +252,7 @@ class SsmAutomatePersisterTest {
 		assertThat(outcomes).hasSize(3)
 		assertThat(outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()).hasSize(2)
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
-		assertThat(rejected.errorCode).isEqualTo("MVCC_READ_CONFLICT")
+		assertThat(rejected.error.type).isEqualTo("MVCC_READ_CONFLICT")
 		assertThat(rejected.commandId).contains("id-3")
 	}
 
@@ -318,7 +318,7 @@ class SsmAutomatePersisterTest {
 		assertThat(outcomes).hasSize(3)
 
 		val rejected = outcomes.filterIsInstance<PersistOutcome.Rejected<TestEvt>>().single()
-		assertThat(rejected.errorCode).isEqualTo("SESSION_NOT_FOUND")
+		assertThat(rejected.error.type).isEqualTo("SESSION_NOT_FOUND")
 		assertThat(rejected.commandId).contains("sess-2")
 
 		val committed = outcomes.filterIsInstance<PersistOutcome.Success<TestEvt>>()

@@ -19,6 +19,7 @@ import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2State
 import s2.dsl.automate.model.WithS2Id
+import s2.dsl.automate.s2error
 import s2.dsl.automate.model.WithS2Iteration
 import s2.dsl.automate.model.WithS2State
 import ssm.chaincode.dsl.model.Agent
@@ -169,8 +170,10 @@ ENTITY : WithS2Id<ID> {
 							iteration = 0,
 							failure = PersistOutcome.Rejected(
 								commandId = commandIdFor(context),
-								errorCode = "NO_LOGS",
-								errorMessage = "No logs for session ${session.sessionName}",
+								error = s2error(
+									code = "NO_LOGS",
+									description = "No logs for session ${session.sessionName}",
+								),
 							),
 						)
 					} else {
@@ -184,8 +187,10 @@ ENTITY : WithS2Id<ID> {
 						iteration = 0,
 						failure = PersistOutcome.Rejected(
 							commandId = commandIdFor(miss),
-							errorCode = "SESSION_NOT_FOUND",
-							errorMessage = "Session ${miss.sessionId} not on chaincode",
+							error = s2error(
+								code = "SESSION_NOT_FOUND",
+								description = "Session ${miss.sessionId} not on chaincode",
+							),
 						),
 					)
 				}
@@ -306,8 +311,10 @@ ENTITY : WithS2Id<ID> {
 		if (outcome == null) {
 			return PersistOutcome.Indeterminate(
 				commandId = commandId,
-				errorCode = "MISSING_OUTCOME",
-				errorMessage = "No CommandOutcome returned for $commandId",
+				error = s2error(
+					code = "MISSING_OUTCOME",
+					description = "No CommandOutcome returned for $commandId",
+				),
 			)
 		}
 		return when (outcome.outcome) {
@@ -319,28 +326,38 @@ ENTITY : WithS2Id<ID> {
 			)
 			"Rejected" -> PersistOutcome.Rejected(
 				commandId = commandId,
-				errorCode = outcome.errorCode.orEmpty(),
-				errorMessage = outcome.errorMessage.orEmpty(),
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
 			)
 			"Transient" -> PersistOutcome.Transient(
 				commandId = commandId,
-				errorCode = outcome.errorCode.orEmpty(),
-				errorMessage = outcome.errorMessage.orEmpty(),
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
 			)
 			"Indeterminate" -> PersistOutcome.Indeterminate(
 				commandId = commandId,
-				errorCode = outcome.errorCode.orEmpty(),
-				errorMessage = outcome.errorMessage.orEmpty(),
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
 			)
 			"Conflict" -> PersistOutcome.Conflict(
 				commandId = commandId,
-				errorCode = outcome.errorCode.orEmpty(),
-				errorMessage = outcome.errorMessage.orEmpty(),
+				error = s2error(
+					code = outcome.errorCode.orEmpty(),
+					description = outcome.errorMessage.orEmpty(),
+				),
 			)
 			else -> PersistOutcome.Indeterminate(
 				commandId = commandId,
-				errorCode = "UNKNOWN_OUTCOME",
-				errorMessage = outcome.outcome,
+				error = s2error(
+					code = "UNKNOWN_OUTCOME",
+					description = outcome.outcome,
+				),
 			)
 		}
 	}
