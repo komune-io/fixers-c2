@@ -5,7 +5,7 @@ import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
 import io.komune.c2.chaincode.api.fabric.TxOutcome
 import io.komune.c2.chaincode.api.gateway.ChaincodeApiGatewayApplication
 import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestV2
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestEnvelope
 import io.komune.c2.chaincode.api.config.C2ChaincodeConfiguration
 import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainServiceI
 import io.komune.c2.chaincode.dsl.ChaincodeId
@@ -141,8 +141,8 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
 
     private fun baseUrl() = UriComponentsBuilder.fromUriString("http://localhost:$port")
 
-    /** A minimal valid InvokeRequestV2 pointing at the sandbox/ex02 chaincode. */
-    private fun makeRequest(msgId: String) = InvokeRequestV2(
+    /** A minimal valid InvokeRequestEnvelope pointing at the sandbox/ex02 chaincode. */
+    private fun makeRequest(msgId: String) = InvokeRequestEnvelope(
         msgId = msgId,
         request = InvokeRequest(
             channelid = "sandbox",
@@ -158,7 +158,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         testConfig.scriptedOutcomes.clear()
     }
 
-    private fun post(vararg requests: InvokeRequestV2): List<InvokeOutcome> {
+    private fun post(vararg requests: InvokeRequestEnvelope): List<InvokeOutcome> {
         val uri = baseUrl().path("invoke/v2").build().toUri()
         val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
         val entity = HttpEntity(requests.toList(), headers)
@@ -281,7 +281,7 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
         // ChaincodeService.executeV2 has runCatching wrapping the whole operation.
         // getChannelChaincodePair throws InvokeException for unknown channel/chaincode,
         // which is caught and becomes a GATEWAY_EXCEPTION Rejected outcome.
-        val badRequest = InvokeRequestV2(
+        val badRequest = InvokeRequestEnvelope(
             msgId = "cmd-exc",
             request = InvokeRequest(
                 channelid = "invalid_channel",

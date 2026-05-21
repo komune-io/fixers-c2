@@ -14,7 +14,7 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
 import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestV2
+import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestEnvelope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
@@ -147,7 +147,7 @@ class ChaincodeService(
 		)
 	}
 
-	suspend fun executeV2(args: List<InvokeRequestV2>): List<InvokeOutcome> = supervisorScope {
+	suspend fun executeV2(args: List<InvokeRequestEnvelope>): List<InvokeOutcome> = supervisorScope {
 		args.map { params ->
 			async {
 				runCatching {
