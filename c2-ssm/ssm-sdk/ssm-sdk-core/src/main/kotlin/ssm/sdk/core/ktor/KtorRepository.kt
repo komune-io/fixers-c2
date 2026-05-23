@@ -1,7 +1,8 @@
 package ssm.sdk.core.ktor
 
+import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
+import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
-import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -15,7 +16,6 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.path
@@ -27,17 +27,22 @@ import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
-
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+import java.util.UUID
 
 class KtorRepository(
 	private val baseUrl: String,
 	private val timeout: Long,
 	private val authCredentials: AuthCredentials?,
+	private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 	client: HttpClient? = null,
 ) {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"
+		const val INVOKE_PATH = "/invoke"
+		const val DEFAULT_CLOUDEVENTS_SOURCE = "/io.komune.c2/sdk"
 		val CMD_PROPS = InvokeRequest::cmd.name
 		val CHANNEL_ID_PROPS = InvokeRequest::channelid.name
 		val CHAINCODE_ID_PROPS = InvokeRequest::chaincodeid.name
@@ -98,99 +103,22 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
+	/**
+	 * Submits a batch of invocations to the gateway's CloudEvents-shaped `/invoke` endpoint.
+	 *
+	 * Producers MUST ensure `(cloudEventsSource, msgId)` pairs are unique per
+	 * CloudEvents 1.0 §3.1.1 — the gateway treats `msgId` as the CE `id` attribute.
+	 */
 	suspend fun invoke(
-		cmd: InvokeRequestType,
-		fcn: String,
-		args: List<String>,
-		channelId: ChannelId?,
-		chaincodeId: ChaincodeId?,
-	): String {
-		return invoke(InvokeRequest(
-			channelid = channelId,
-			chaincodeid = chaincodeId,
-			cmd = cmd,
-			args = args.toTypedArray(),
-			fcn = fcn
-		))
-	}
-
-	suspend fun invoke(
-		invokeArgs: InvokeRequest
-	): String {
-		//TODO CLEAN THAT With json convertions
-		val body = mapOf(
-			CMD_PROPS to invokeArgs.cmd.name,
-			FCN_PROPS to invokeArgs.fcn,
-			ARGS_PROPS to invokeArgs.args,
-			CHANNEL_ID_PROPS to invokeArgs.channelid,
-			CHAINCODE_ID_PROPS to invokeArgs.chaincodeid,
-		)
-		return client.post(baseUrl) {
-			addAuth()
-			contentType(ContentType.Application.Json)
-			setBody(body)
-		}.bodyAsText()
-	}
-
-	suspend fun invoke(
-		invokeArgs: List<InvokeRequest>
-	): String {
-		val body = invokeArgs.map { invokeArg ->
-			mapOf(
-				CMD_PROPS to invokeArg.cmd.name,
-				FCN_PROPS to invokeArg.fcn,
-				ARGS_PROPS to invokeArg.args,
-				CHANNEL_ID_PROPS to invokeArg.channelid,
-				CHAINCODE_ID_PROPS to invokeArg.chaincodeid,
-			)
-		}
-		return client.post("$baseUrl/invoke") {
-			addAuth()
-			contentType(ContentType.Application.Json)
-			setBody(body)
-		}.bodyAsText()
-	}
-
-	suspend fun invokeF2(
-		invokeArgs: List<InvokeRequest>
-	): String {
-		val body = invokeArgs.map { invokeArg ->
-			mapOf(
-				CMD_PROPS to invokeArg.cmd.name,
-				FCN_PROPS to invokeArg.fcn,
-				ARGS_PROPS to invokeArg.args,
-				CHANNEL_ID_PROPS to invokeArg.channelid,
-				CHAINCODE_ID_PROPS to invokeArg.chaincodeid,
-			)
-		}
-		return client.post("$baseUrl/invokeF2") {
-			addAuth()
-			contentType(ContentType.Application.Json)
-			setBody(body)
-		}.bodyAsText()
-	}
-
-	suspend fun invokeV2(
 		invokeArgs: List<InvokeRequest>,
 		msgIds: List<String>,
 	): List<CommandOutcome> {
 		require(invokeArgs.size == msgIds.size) {
-			"commandIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
+			"msgIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
 		}
-		val body = invokeArgs.zip(msgIds).map { (req, cid) ->
-			mapOf(
-				"msgId" to cid,
-				"request" to mapOf(
-					CMD_PROPS to req.cmd.name,
-					FCN_PROPS to req.fcn,
-					ARGS_PROPS to req.args,
-					CHANNEL_ID_PROPS to req.channelid,
-					CHAINCODE_ID_PROPS to req.chaincodeid,
-				),
-			)
-		}
+		val body = invokeArgs.zip(msgIds).map { (req, msgId) -> buildEnvelope(msgId, req) }
 		return runCatching {
-			val response = client.post("$baseUrl/invoke/v2") {
+			val response = client.post("$baseUrl$INVOKE_PATH") {
 				addAuth()
 				contentType(ContentType.Application.Json)
 				setBody(body)
@@ -202,38 +130,60 @@ class KtorRepository(
 		}
 	}
 
+	private fun buildEnvelope(msgId: String, req: InvokeRequest): InvokeEnvelope<InvokeRequest> =
+		InvokeEnvelope(
+			id = msgId,
+			type = InvokeType.Request.GENERIC,
+			source = cloudEventsSource,
+			time = OffsetDateTime.now(ZoneOffset.UTC).toString(),
+			data = req,
+		)
+
 	private suspend fun mapHttpResponse(
 		response: io.ktor.client.statement.HttpResponse,
 		msgIds: List<String>,
 	): List<CommandOutcome> {
 		val statusValue = response.status.value
 		return when {
-			response.status.isSuccess() -> JsonUtils.toObject(response.bodyAsText())
-			statusValue == 401 || statusValue == 403 -> synthesiseOutcomes(
+			response.status.isSuccess() -> decodeOutcomes(response.bodyAsText(), msgIds)
+			statusValue == HTTP_UNAUTHORIZED || statusValue == HTTP_FORBIDDEN -> synthesiseOutcomes(
 				msgIds = msgIds,
-				outcome = "Rejected",
+				outcome = OUTCOME_REJECTED,
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
 				msgIds = msgIds,
-				outcome = "Rejected",
+				outcome = OUTCOME_REJECTED,
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			statusValue in SERVER_ERROR_RANGE -> synthesiseOutcomes(
 				msgIds = msgIds,
-				outcome = "Transient",
+				outcome = OUTCOME_TRANSIENT,
 				errorCode = "HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 			else -> synthesiseOutcomes(
 				msgIds = msgIds,
-				outcome = "Indeterminate",
+				outcome = OUTCOME_INDETERMINATE,
 				errorCode = "UNEXPECTED_HTTP_$statusValue",
 				errorMessage = response.bodyAsText(),
 			)
 		}
+	}
+
+	private fun decodeOutcomes(body: String, msgIds: List<String>): List<CommandOutcome> {
+		val envelopes: List<InvokeEnvelope<OutcomeWire>> = JsonUtils.toObject(body)
+		return envelopes.map { it.toCommandOutcome() }
+			.also { decoded ->
+				if (decoded.size != msgIds.size) {
+					logger.warn(
+						"invoke response size mismatch: expected={}, got={} (msgIds={})",
+						msgIds.size, decoded.size, msgIds,
+					)
+				}
+			}
 	}
 
 	private fun mapNetworkError(e: Throwable, msgIds: List<String>): List<CommandOutcome> {
@@ -244,10 +194,10 @@ class KtorRepository(
 			is java.net.ConnectException -> "CONNECT_REFUSED"
 			else -> "TRANSPORT_ERROR"
 		}
-		logger.warn("invokeV2 network error ({}) for msgIds={}: {}", code, msgIds, e.message)
+		logger.warn("invoke network error ({}) for msgIds={}: {}", code, msgIds, e.message)
 		return synthesiseOutcomes(
 			msgIds = msgIds,
-			outcome = "Indeterminate",
+			outcome = OUTCOME_INDETERMINATE,
 			errorCode = code,
 			errorMessage = e.message,
 		)
@@ -273,5 +223,42 @@ class KtorRepository(
 			else -> return
 		}
 	}
+}
 
+private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
+private const val OUTCOME_REJECTED = "Rejected"
+private const val OUTCOME_TRANSIENT = "Transient"
+private const val OUTCOME_INDETERMINATE = "Indeterminate"
+
+/**
+ * Wire shape of the gateway's `OutcomeData` (CE `data` field).
+ * Locally redeclared because the gateway type lives in the Spring app, not in a shared module.
+ */
+internal data class OutcomeWire(
+	val transactionId: String? = null,
+	val blockNumber: Long? = null,
+	val payload: String? = null,
+	val errorCode: String? = null,
+	val errorMessage: String? = null,
+)
+
+internal fun InvokeEnvelope<OutcomeWire>.toCommandOutcome(): CommandOutcome {
+	val outcomeStr = when (type) {
+		InvokeType.Outcome.COMMITTED -> "Committed"
+		InvokeType.Outcome.REJECTED -> "Rejected"
+		InvokeType.Outcome.TRANSIENT -> "Transient"
+		InvokeType.Outcome.INDETERMINATE -> "Indeterminate"
+		InvokeType.Outcome.CONFLICT -> "Conflict"
+		else -> error("Unknown CloudEvent outcome type: $type")
+	}
+	return CommandOutcome(
+		outcome = outcomeStr,
+		msgId = subject ?: error("CloudEvent response is missing subject (request id correlation)"),
+		transactionId = data.transactionId,
+		blockNumber = data.blockNumber,
+		errorCode = data.errorCode,
+		errorMessage = data.errorMessage,
+		payload = data.payload,
+	)
 }

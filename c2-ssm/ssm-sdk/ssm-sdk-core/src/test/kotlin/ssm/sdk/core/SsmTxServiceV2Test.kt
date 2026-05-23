@@ -101,28 +101,39 @@ class SsmTxServiceV2Test {
     private fun buildTxService(service: SsmService): SsmTxService =
         SsmTxService(service, SsmBatchProperties())
 
-    /**
-     * Build a scripted JSON array of CommandOutcome items, one per commandId.
-     * All are Committed for simplicity unless otherwise scripted.
-     */
+    private fun ceEnvelope(subject: String, type: String, data: String): String = """
+        {
+          "specversion":"1.0",
+          "id":"resp-$subject",
+          "source":"/io.komune.c2/gateway",
+          "type":"$type",
+          "subject":"$subject",
+          "time":"2026-05-22T10:30:01Z",
+          "datacontenttype":"application/json",
+          "data":$data
+        }
+    """.trimIndent()
+
     private fun committedJson(commandIds: List<String>): String {
         val items = commandIds.joinToString(",\n") { id ->
-            """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":42}"""
+            ceEnvelope(id, "io.komune.c2.invoke.outcome.committed", """{"transactionId":"tx-$id","blockNumber":42}""")
         }
         return "[$items]"
     }
 
-    /**
-     * Build a scripted JSON array mixing all 5 outcome categories.
-     */
     private fun mixedOutcomesJson(commandIds: List<String>): String {
         val items = commandIds.mapIndexed { i, id ->
             when (i % 5) {
-                0 -> """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":$i}"""
-                1 -> """{"outcome":"Rejected","msgId":"$id","errorCode":"ERR","errorMessage":"rejected"}"""
-                2 -> """{"outcome":"Transient","msgId":"$id","errorCode":"RETRY","errorMessage":"transient"}"""
-                3 -> """{"outcome":"Indeterminate","msgId":"$id","errorCode":"X","errorMessage":"u"}"""
-                else -> """{"outcome":"Conflict","msgId":"$id","errorCode":"MVCC","errorMessage":"conflict"}"""
+                0 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.committed",
+                    """{"transactionId":"tx-$id","blockNumber":$i}""")
+                1 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.rejected",
+                    """{"errorCode":"ERR","errorMessage":"rejected"}""")
+                2 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.transient",
+                    """{"errorCode":"RETRY","errorMessage":"transient"}""")
+                3 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.indeterminate",
+                    """{"errorCode":"X","errorMessage":"u"}""")
+                else -> ceEnvelope(id, "io.komune.c2.invoke.outcome.conflict",
+                    """{"errorCode":"MVCC","errorMessage":"conflict"}""")
             }
         }.joinToString(",\n")
         return "[$items]"
@@ -146,7 +157,7 @@ class SsmTxServiceV2Test {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client)
+        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 
@@ -220,7 +231,7 @@ class SsmTxServiceV2Test {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client)
+        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 

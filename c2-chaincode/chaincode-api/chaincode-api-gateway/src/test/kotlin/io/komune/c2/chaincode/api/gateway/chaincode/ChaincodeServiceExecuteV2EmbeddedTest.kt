@@ -1,16 +1,14 @@
 package io.komune.c2.chaincode.api.gateway.chaincode
 
-import io.komune.c2.chaincode.api.fabric.FabricGatewayBuilder
+import io.komune.c2.chaincode.api.config.C2ChaincodeConfiguration
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
 import io.komune.c2.chaincode.api.fabric.TxOutcome
 import io.komune.c2.chaincode.api.gateway.ChaincodeApiGatewayApplication
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestEnvelope
-import io.komune.c2.chaincode.api.config.C2ChaincodeConfiguration
 import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainServiceI
-import io.komune.c2.chaincode.dsl.ChaincodeId
-import io.komune.c2.chaincode.dsl.ChannelId
-import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
+import io.komune.c2.chaincode.api.gateway.chaincode.model.OutcomeData
+import io.komune.c2.chaincode.api.gateway.config.CloudEventsProperties
+import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
+import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import org.assertj.core.api.Assertions.assertThat
@@ -22,33 +20,23 @@ import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.util.UriComponentsBuilder
 
 /**
- * Embedded-Spring integration test for POST /invoke/v2.
+ * Embedded-Spring integration test for `POST /invoke` (CloudEvents 1.0 structured-mode batch).
  *
- * The real FabricGatewayClient is replaced via a FabricGatewayBuilder subclass
- * whose contracts() are never actually called; instead we inject a custom
- * ChaincodeService that uses a FabricGatewayClient with a scripted stub
- * FabricGatewayBuilder. Since FabricGatewayClient is final, we control its
- * behavior by wrapping ChaincodeService directly with a @Primary bean backed
- * by a stub FabricGatewayClient that uses a scripted FabricGatewayBuilder.
- *
- * The FabricGatewayBuilder stub overrides contracts() to return a stub Contract
- * that always completes transactions synchronously, allowing us to simulate all
- * 5 TxOutcome variants. For the GATEWAY_EXCEPTION test we use an invalid
- * channel/chaincode id so getChannelChaincodePair() throws before reaching Fabric.
- *
- * The real doInvokeV2 / toWire mapping is exercised end-to-end via HTTP.
+ * Strategy: a [ScriptedChaincodeService] subclass overrides the protected `runInvoke` hook
+ * to return scripted (type, OutcomeData) pairs computed via the production [toWire] mapping.
+ * This exercises the real CloudEvents envelope construction (id, source, subject, time)
+ * end-to-end over HTTP without needing a live Fabric backend. All 5 [TxOutcome] variants
+ * plus the gateway-exception path are covered.
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(
@@ -58,62 +46,27 @@ import org.springframework.web.util.UriComponentsBuilder
 @AutoConfigureTestRestTemplate
 class ChaincodeServiceExecuteV2EmbeddedTest {
 
-    // ---------------------------------------------------------------------------
-    // Scripted FabricGatewayBuilder: returns scripted TxOutcome per commandId
-    // ---------------------------------------------------------------------------
-
-    /**
-     * Holds scripted per-commandId outcomes. ChaincodeService.doInvokeV2 calls
-     * fabricGatewayClient.invoke(channelId, chaincodeId, invokeArgsList, commandIds).
-     * We intercept that by providing a FabricGatewayClient constructed with a builder
-     * whose invoke is controlled through a shared mutable slot.
-     *
-     * Since FabricGatewayClient is final, we wrap the whole ChaincodeService as a
-     * @Primary @Bean in TestConfig.
-     */
     class ScriptedChaincodeService(
         fabricGatewayClient: FabricGatewayClient,
         blockchainService: BlockchainServiceI,
         chaincodeConfiguration: C2ChaincodeConfiguration,
-        private val scriptedOutcomes: MutableList<TxOutcome>,
-    ) : ChaincodeService(fabricGatewayClient, blockchainService, chaincodeConfiguration) {
-        override suspend fun doInvokeV2(
-            channelId: ChannelId,
-            chainCodeId: ChaincodeId,
-            invokeArgs: List<InvokeArgs>,
-            msgIds: List<String>,
-        ): List<InvokeOutcome> {
-            return scriptedOutcomes.map { it.toWirePublic() }
-        }
+        cloudEventsProperties: CloudEventsProperties,
+        private val scriptedOutcomes: ArrayDeque<TxOutcome>,
+        private val raiseException: () -> Throwable? = { null },
+    ) : ChaincodeService(fabricGatewayClient, blockchainService, chaincodeConfiguration, cloudEventsProperties) {
 
-        private fun TxOutcome.toWirePublic(): InvokeOutcome = when (this) {
-            is TxOutcome.Committed -> InvokeOutcome(
-                outcome = "Committed", msgId = msgId,
-                transactionId = transactionId, blockNumber = blockNumber, payload = payload,
-            )
-            is TxOutcome.Rejected -> InvokeOutcome(
-                outcome = "Rejected", msgId = msgId,
-                errorCode = errorCode, errorMessage = errorMessage,
-            )
-            is TxOutcome.Transient -> InvokeOutcome(
-                outcome = "Transient", msgId = msgId,
-                errorCode = errorCode, errorMessage = errorMessage,
-            )
-            is TxOutcome.Indeterminate -> InvokeOutcome(
-                outcome = "Indeterminate", msgId = msgId,
-                errorCode = errorCode, errorMessage = errorMessage,
-            )
-            is TxOutcome.Conflict -> InvokeOutcome(
-                outcome = "Conflict", msgId = msgId,
-                errorCode = errorCode, errorMessage = errorMessage,
-                transactionId = transactionId, blockNumber = blockNumber,
-            )
+        override suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
+            raiseException()?.let { throw it }
+            val next = scriptedOutcomes.removeFirstOrNull()
+                ?: error("no scripted TxOutcome available for envelope id=${envelope.id}")
+            return next.toWire()
         }
     }
 
     @TestConfiguration
     class TestConfig {
-        val scriptedOutcomes: MutableList<TxOutcome> = mutableListOf()
+        val scriptedOutcomes: ArrayDeque<TxOutcome> = ArrayDeque()
+        var raiseException: () -> Throwable? = { null }
 
         @Bean
         @Primary
@@ -121,16 +74,14 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
             fabricGatewayClient: FabricGatewayClient,
             blockchainService: BlockchainServiceI,
             chaincodeConfiguration: C2ChaincodeConfiguration,
+            cloudEventsProperties: CloudEventsProperties,
         ): ChaincodeService = ScriptedChaincodeService(
-            fabricGatewayClient, blockchainService, chaincodeConfiguration, scriptedOutcomes,
+            fabricGatewayClient, blockchainService, chaincodeConfiguration, cloudEventsProperties,
+            scriptedOutcomes, { raiseException() },
         )
     }
 
-    // ---------------------------------------------------------------------------
-    // Test wiring
-    // ---------------------------------------------------------------------------
-
-    @LocalServerPort
+    @org.springframework.boot.test.web.server.LocalServerPort
     var port: Int = 0
 
     @Autowired
@@ -139,12 +90,16 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @Autowired
     lateinit var testConfig: TestConfig
 
+    @Autowired
+    lateinit var cloudEventsProperties: CloudEventsProperties
+
     private fun baseUrl() = UriComponentsBuilder.fromUriString("http://localhost:$port")
 
-    /** A minimal valid InvokeRequestEnvelope pointing at the sandbox/ex02 chaincode. */
-    private fun makeRequest(msgId: String) = InvokeRequestEnvelope(
-        msgId = msgId,
-        request = InvokeRequest(
+    private fun makeRequest(msgId: String) = InvokeEnvelope(
+        id = msgId,
+        type = InvokeType.Request.GENERIC,
+        source = "/test-client",
+        data = InvokeRequest(
             channelid = "sandbox",
             chaincodeid = "ex02",
             cmd = InvokeRequestType.invoke,
@@ -156,106 +111,92 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
     @BeforeEach
     fun resetStub() {
         testConfig.scriptedOutcomes.clear()
+        testConfig.raiseException = { null }
     }
 
-    private fun post(vararg requests: InvokeRequestEnvelope): List<InvokeOutcome> {
-        val uri = baseUrl().path("invoke/v2").build().toUri()
+    private fun post(vararg requests: InvokeEnvelope<InvokeRequest>): List<InvokeEnvelope<OutcomeData>> {
+        val uri = baseUrl().path("invoke").build().toUri()
         val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
         val entity = HttpEntity(requests.toList(), headers)
-        val typeRef = object : ParameterizedTypeReference<List<InvokeOutcome>>() {}
-        val response = restTemplate.exchange(uri, HttpMethod.POST, entity, typeRef)
+        val typeRef = object : ParameterizedTypeReference<List<InvokeEnvelope<OutcomeData>>>() {}
+        val response = restTemplate.exchange(uri, org.springframework.http.HttpMethod.POST, entity, typeRef)
         assertThat(response.statusCode.value()).isEqualTo(200)
         return response.body!!
     }
 
-    // ---------------------------------------------------------------------------
-    // Tests
-    // ---------------------------------------------------------------------------
+    private fun assertCommonCeAttrs(item: InvokeEnvelope<OutcomeData>, expectedSubject: String) {
+        assertThat(item.specversion).isEqualTo("1.0")
+        assertThat(item.source).isEqualTo(cloudEventsProperties.source)
+        assertThat(item.subject).isEqualTo(expectedSubject)
+        assertThat(item.id).isNotBlank()
+        assertThat(item.time).isNotNull()
+        assertThat(item.datacontenttype).isEqualTo("application/json")
+    }
 
     @Test
-    fun `POST invoke-v2 returns Committed item with transactionId blockNumber payload`() {
+    fun `Committed item carries committed type and transactionId blockNumber payload`() {
         testConfig.scriptedOutcomes += TxOutcome.Committed(
-            msgId = "cmd-1",
-            transactionId = "tx-abc",
-            blockNumber = 42L,
-            payload = "{}",
+            msgId = "cmd-1", transactionId = "tx-abc", blockNumber = 42L, payload = "{}",
         )
 
         val outcomes = post(makeRequest("cmd-1"))
 
         assertThat(outcomes).hasSize(1)
         val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Committed")
-        assertThat(item.msgId).isEqualTo("cmd-1")
-        assertThat(item.transactionId).isEqualTo("tx-abc")
-        assertThat(item.blockNumber).isEqualTo(42L)
-        assertThat(item.payload).isEqualTo("{}")
-        assertThat(item.errorCode).isNull()
-        assertThat(item.errorMessage).isNull()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-1")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.COMMITTED)
+        assertThat(item.data.transactionId).isEqualTo("tx-abc")
+        assertThat(item.data.blockNumber).isEqualTo(42L)
+        assertThat(item.data.payload).isEqualTo("{}")
+        assertThat(item.data.errorCode).isNull()
+        assertThat(item.data.errorMessage).isNull()
     }
 
     @Test
-    fun `POST invoke-v2 returns Rejected item with errorCode errorMessage commandId only`() {
+    fun `Rejected item carries rejected type and errorCode errorMessage`() {
         testConfig.scriptedOutcomes += TxOutcome.Rejected(
-            msgId = "cmd-rej",
-            errorCode = "ENDORSE_FAILED",
-            errorMessage = "endorsement failed",
+            msgId = "cmd-rej", errorCode = "ENDORSE_FAILED", errorMessage = "endorsement failed",
         )
 
         val outcomes = post(makeRequest("cmd-rej"))
 
-        assertThat(outcomes).hasSize(1)
-        val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Rejected")
-        assertThat(item.msgId).isEqualTo("cmd-rej")
-        assertThat(item.errorCode).isEqualTo("ENDORSE_FAILED")
-        assertThat(item.errorMessage).isEqualTo("endorsement failed")
-        assertThat(item.transactionId).isNull()
-        assertThat(item.blockNumber).isNull()
+        val item = outcomes.single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-rej")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.REJECTED)
+        assertThat(item.data.errorCode).isEqualTo("ENDORSE_FAILED")
+        assertThat(item.data.errorMessage).isEqualTo("endorsement failed")
+        assertThat(item.data.transactionId).isNull()
+        assertThat(item.data.blockNumber).isNull()
     }
 
     @Test
-    fun `POST invoke-v2 returns Transient item with errorCode errorMessage commandId only`() {
+    fun `Transient item carries transient type and errorCode errorMessage`() {
         testConfig.scriptedOutcomes += TxOutcome.Transient(
-            msgId = "cmd-tr",
-            errorCode = "GRPC_UNAVAILABLE",
-            errorMessage = "peer unreachable",
+            msgId = "cmd-tr", errorCode = "GRPC_UNAVAILABLE", errorMessage = "peer unreachable",
         )
 
-        val outcomes = post(makeRequest("cmd-tr"))
-
-        assertThat(outcomes).hasSize(1)
-        val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Transient")
-        assertThat(item.msgId).isEqualTo("cmd-tr")
-        assertThat(item.errorCode).isEqualTo("GRPC_UNAVAILABLE")
-        assertThat(item.errorMessage).isEqualTo("peer unreachable")
-        assertThat(item.transactionId).isNull()
-        assertThat(item.blockNumber).isNull()
+        val item = post(makeRequest("cmd-tr")).single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-tr")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.TRANSIENT)
+        assertThat(item.data.errorCode).isEqualTo("GRPC_UNAVAILABLE")
+        assertThat(item.data.errorMessage).isEqualTo("peer unreachable")
     }
 
     @Test
-    fun `POST invoke-v2 returns Indeterminate item with errorCode errorMessage commandId only`() {
+    fun `Indeterminate item carries indeterminate type and errorCode errorMessage`() {
         testConfig.scriptedOutcomes += TxOutcome.Indeterminate(
-            msgId = "cmd-ind",
-            errorCode = "SUBMIT_FAILED",
-            errorMessage = "orderer timeout",
+            msgId = "cmd-ind", errorCode = "SUBMIT_FAILED", errorMessage = "orderer timeout",
         )
 
-        val outcomes = post(makeRequest("cmd-ind"))
-
-        assertThat(outcomes).hasSize(1)
-        val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Indeterminate")
-        assertThat(item.msgId).isEqualTo("cmd-ind")
-        assertThat(item.errorCode).isEqualTo("SUBMIT_FAILED")
-        assertThat(item.errorMessage).isEqualTo("orderer timeout")
-        assertThat(item.transactionId).isNull()
-        assertThat(item.blockNumber).isNull()
+        val item = post(makeRequest("cmd-ind")).single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-ind")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.INDETERMINATE)
+        assertThat(item.data.errorCode).isEqualTo("SUBMIT_FAILED")
+        assertThat(item.data.errorMessage).isEqualTo("orderer timeout")
     }
 
     @Test
-    fun `POST invoke-v2 returns Conflict item with transactionId blockNumber AND errorCode errorMessage`() {
+    fun `Conflict item carries conflict type with transactionId blockNumber AND errorCode errorMessage`() {
         testConfig.scriptedOutcomes += TxOutcome.Conflict(
             msgId = "cmd-cf",
             errorCode = "MVCC_READ_CONFLICT",
@@ -264,47 +205,23 @@ class ChaincodeServiceExecuteV2EmbeddedTest {
             blockNumber = 7L,
         )
 
-        val outcomes = post(makeRequest("cmd-cf"))
-
-        assertThat(outcomes).hasSize(1)
-        val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Conflict")
-        assertThat(item.msgId).isEqualTo("cmd-cf")
-        assertThat(item.errorCode).isEqualTo("MVCC_READ_CONFLICT")
-        assertThat(item.errorMessage).isEqualTo("conflict on key session-xyz")
-        assertThat(item.transactionId).isEqualTo("tx-conflict")
-        assertThat(item.blockNumber).isEqualTo(7L)
+        val item = post(makeRequest("cmd-cf")).single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-cf")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.CONFLICT)
+        assertThat(item.data.errorCode).isEqualTo("MVCC_READ_CONFLICT")
+        assertThat(item.data.errorMessage).isEqualTo("conflict on key session-xyz")
+        assertThat(item.data.transactionId).isEqualTo("tx-conflict")
+        assertThat(item.data.blockNumber).isEqualTo(7L)
     }
 
     @Test
-    fun `POST invoke-v2 wraps gateway exception as Rejected with GATEWAY_EXCEPTION code`() {
-        // ChaincodeService.executeV2 has runCatching wrapping the whole operation.
-        // getChannelChaincodePair throws InvokeException for unknown channel/chaincode,
-        // which is caught and becomes a GATEWAY_EXCEPTION Rejected outcome.
-        val badRequest = InvokeRequestEnvelope(
-            msgId = "cmd-exc",
-            request = InvokeRequest(
-                channelid = "invalid_channel",
-                chaincodeid = "invalid_cc",
-                cmd = InvokeRequestType.invoke,
-                fcn = "invoke",
-                args = arrayOf("a"),
-            ),
-        )
+    fun `gateway exception is wrapped as Rejected with GATEWAY_EXCEPTION code`() {
+        testConfig.raiseException = { IllegalStateException("simulated gateway failure") }
 
-        val uri = baseUrl().path("invoke/v2").build().toUri()
-        val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
-        val entity = HttpEntity(listOf(badRequest), headers)
-        val typeRef = object : ParameterizedTypeReference<List<InvokeOutcome>>() {}
-        val response = restTemplate.exchange(uri, HttpMethod.POST, entity, typeRef)
-
-        assertThat(response.statusCode.value()).isEqualTo(200)
-        val outcomes = response.body!!
-        assertThat(outcomes).hasSize(1)
-        val item = outcomes[0]
-        assertThat(item.outcome).isEqualTo("Rejected")
-        assertThat(item.msgId).isEqualTo("cmd-exc")
-        assertThat(item.errorCode).isEqualTo("GATEWAY_EXCEPTION")
-        assertThat(item.errorMessage).isNotEmpty()
+        val item = post(makeRequest("cmd-exc")).single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-exc")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.REJECTED)
+        assertThat(item.data.errorCode).isEqualTo("GATEWAY_EXCEPTION")
+        assertThat(item.data.errorMessage).isEqualTo("simulated gateway failure")
     }
 }

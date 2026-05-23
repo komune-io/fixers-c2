@@ -97,7 +97,18 @@ class SsmServiceSigningResilienceTest {
 
     private fun committedJson(commandIds: List<String>): String {
         val items = commandIds.joinToString(",\n") { id ->
-            """{"outcome":"Committed","msgId":"$id","transactionId":"tx-$id","blockNumber":1}"""
+            """
+                {
+                  "specversion":"1.0",
+                  "id":"resp-$id",
+                  "source":"/io.komune.c2/gateway",
+                  "type":"io.komune.c2.invoke.outcome.committed",
+                  "subject":"$id",
+                  "time":"2026-05-22T10:30:01Z",
+                  "datacontenttype":"application/json",
+                  "data":{"transactionId":"tx-$id","blockNumber":1}
+                }
+            """.trimIndent()
         }
         return "[$items]"
     }

@@ -115,7 +115,7 @@ class SsmService(
 		val invokeOutcomes = if (successSigned.isEmpty()) {
 			emptyList()
 		} else {
-			ssmRequester.invokeAllV2(successSigned, successMsgIds)
+			ssmRequester.invokeAll(successSigned, successMsgIds)
 		}
 
 		return signFailures + invokeOutcomes

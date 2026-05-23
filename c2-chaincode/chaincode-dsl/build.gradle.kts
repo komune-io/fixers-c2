@@ -5,4 +5,5 @@ plugins {
 }
 
 dependencies {
+	commonMainApi(libs.f2.dsl.cqrs)
 }

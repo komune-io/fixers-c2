@@ -90,16 +90,34 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on 200 deserializes body as CommandOutcome list`(): Unit = runBlocking {
+    fun `invoke on 200 deserializes CloudEvents body as CommandOutcome list`(): Unit = runBlocking {
         val responseJson = """
             [
-              {"outcome":"Committed","msgId":"cmd-1","transactionId":"tx-abc","blockNumber":10},
-              {"outcome":"Rejected","msgId":"cmd-2","errorCode":"MVCC_READ_CONFLICT"}
+              {
+                "specversion":"1.0",
+                "id":"resp-1",
+                "source":"/io.komune.c2/gateway",
+                "type":"io.komune.c2.invoke.outcome.committed",
+                "subject":"cmd-1",
+                "time":"2026-05-22T10:30:01Z",
+                "datacontenttype":"application/json",
+                "data":{"transactionId":"tx-abc","blockNumber":10}
+              },
+              {
+                "specversion":"1.0",
+                "id":"resp-2",
+                "source":"/io.komune.c2/gateway",
+                "type":"io.komune.c2.invoke.outcome.rejected",
+                "subject":"cmd-2",
+                "time":"2026-05-22T10:30:01Z",
+                "datacontenttype":"application/json",
+                "data":{"errorCode":"MVCC_READ_CONFLICT"}
+              }
             ]
         """.trimIndent()
 
         val repo = buildRepository(HttpStatusCode.OK, responseJson)
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(2)
         assertThat(outcomes[0].msgId).isEqualTo("cmd-1")
@@ -115,9 +133,9 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on 400 synthesises N×Rejected outcomes`(): Unit = runBlocking {
+    fun `invoke on 400 synthesises N×Rejected outcomes`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.BadRequest, """{"error":"bad request"}""")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
@@ -128,9 +146,9 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invokeV2 on 401 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    fun `invoke on 401 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.Unauthorized, "Unauthorized")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { outcome ->
@@ -140,9 +158,9 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invokeV2 on 403 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    fun `invoke on 403 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.Forbidden, "Forbidden")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { outcome ->
@@ -152,9 +170,9 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invokeV2 on 404 synthesises N×Rejected outcomes with INPUT errorClass`(): Unit = runBlocking {
+    fun `invoke on 404 synthesises N×Rejected outcomes with INPUT errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.NotFound, "Not Found")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { outcome ->
@@ -168,9 +186,9 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on 500 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
+    fun `invoke on 500 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.InternalServerError, "Internal Server Error")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
@@ -181,9 +199,9 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invokeV2 on 503 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
+    fun `invoke on 503 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.ServiceUnavailable, "Service Unavailable")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { outcome ->
@@ -197,9 +215,9 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on network error synthesises N×Indeterminate outcomes`(): Unit = runBlocking {
+    fun `invoke on network error synthesises N×Indeterminate outcomes`(): Unit = runBlocking {
         val repo = buildNetworkErrorRepository()
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEachIndexed { i, outcome ->
@@ -217,7 +235,7 @@ class KtorRepositoryStatusValidationTest {
         val mockEngine = MockEngine { _ -> throw java.net.ConnectException("Connection refused") }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
         val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
-        val outcomes = repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+        val outcomes = repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
     }
@@ -241,7 +259,7 @@ class KtorRepositoryStatusValidationTest {
             authCredentials = null,
             client = client,
         )
-        val outcomes = repo.invokeV2(
+        val outcomes = repo.invoke(
             invokeArgs = listOf(sampleInvokeArgs.first()),
             msgIds = listOf("cmd-1"),
         )
@@ -254,9 +272,9 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 on unexpected status synthesises N×Indeterminate with UNEXPECTED_HTTP code`(): Unit = runBlocking {
+    fun `invoke on unexpected status synthesises N×Indeterminate with UNEXPECTED_HTTP code`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.fromValue(302), "Redirect")
-        val outcomes: List<CommandOutcome> = repo.invokeV2(sampleInvokeArgs, commandIds)
+        val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
         assertThat(outcomes).hasSize(commandIds.size)
         outcomes.forEach { outcome ->
@@ -282,7 +300,7 @@ class KtorRepositoryStatusValidationTest {
             )
         }
         val repo = buildRepository(HttpStatusCode.BadRequest, "bad")
-        val outcomes = repo.invokeV2(args, ids)
+        val outcomes = repo.invoke(args, ids)
 
         assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
     }
@@ -297,7 +315,7 @@ class KtorRepositoryStatusValidationTest {
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
         val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
         org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
-            repo.invokeV2(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+            repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         }
     }
 }

@@ -4,17 +4,20 @@ import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.InvokeReturn
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 import ssm.sdk.core.invoke.builder.HasGet
 import ssm.sdk.core.invoke.builder.HasList
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.InvokeException
 import ssm.sdk.dsl.SsmCmdSigned
-import ssm.sdk.dsl.buildArgs
 import ssm.sdk.dsl.buildCommandArgs
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JsonUtils
 import tools.jackson.core.type.TypeReference
+import java.util.UUID
 
 class SsmRequester(
 	private val jsonConverter: JSONConverter,
@@ -73,32 +76,29 @@ class SsmRequester(
 		)
 	}
 
-	suspend fun <T> query(queries: List<SsmApiQuery>, type: TypeReference<List<T>>): List<T> {
+	/**
+	 * Batched query helper. Each [SsmApiQuery] is dispatched in parallel to the gateway's
+	 * GET `/` query endpoint and the results are collected in input order.
+	 *
+	 * Replaces the prior V1 batched-query-via-POST-/invoke shape. CloudEvents-shape
+	 * `/invoke` is for write transactions only; query routing stays on GET `/`.
+	 */
+	suspend fun <T> query(queries: List<SsmApiQuery>, type: TypeReference<List<T>>): List<T> = coroutineScope {
 		val total = queries.size
-		queries.logger("Query", total, { it.chaincodeUri })
-		val args = queries.mapIndexed { index, query ->
-			val args = query.query.queryArgs(query.value)
-			val invokeArgs = InvokeRequest(
-				cmd = InvokeRequestType.query,
-				channelid = query.chaincodeUri.channelId,
-				chaincodeid = query.chaincodeUri.chaincodeId,
-				fcn = args.function,
-				args = args.values.toTypedArray()
-			)
-			logger.debug(
-				"Invoke[${index+1}/$total] the blockchain in channel[{}:{}] with command[{}] with args:{}",
-				query.chaincodeUri.channelId,
-				query.chaincodeUri.chaincodeId,
-				invokeArgs.fcn,
-				invokeArgs,
-			)
-			invokeArgs
-		}
-		return coopRepository.invoke(
-			args
-		).handleResponse {
-			JsonUtils.toObject(it, type)
-		}
+		queries.logger("Query", total) { it.chaincodeUri }
+		val raws: List<String> = queries.map { query ->
+			async {
+				val args = query.query.queryArgs(query.value)
+				coopRepository.query(
+					cmd = InvokeRequestType.query.name,
+					fcn = args.function,
+					args = args.values,
+					channelId = query.chaincodeUri.channelId,
+					chaincodeId = query.chaincodeUri.chaincodeId,
+				)
+			}
+		}.awaitAll()
+		raws.flatMap { raw -> raw.handleResponse { JsonUtils.toObject<List<T>>(it, type) } }
 	}
 
 	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
@@ -118,71 +118,63 @@ class SsmRequester(
 		}
 	}
 
+	/**
+	 * Single-command invoke convenience facade. Synthesizes a UUID msgId because the
+	 * caller doesn't supply correlation; converts the V2 [CommandOutcome] back into
+	 * the legacy [InvokeReturn] SUCCESS/ERROR shape so call sites that haven't
+	 * migrated to per-item outcomes keep working.
+	 */
 	@Throws(Exception::class)
 	suspend operator fun invoke(cmdSigned: SsmCmdSigned): InvokeReturn {
-		val invokeArgs = cmdSigned.buildArgs()
 		logger.info(
-			"Invoke[single] the blockchain in channel[{}]  with command[{}] with args:{}",
+			"Invoke[single] the blockchain in channel[{}] with chaincode[{}]",
+			cmdSigned.chaincodeUri.channelId,
 			cmdSigned.chaincodeUri.chaincodeId,
-			invokeArgs.function,
-			invokeArgs
 		)
-		return coopRepository.invoke(
-			cmd = InvokeRequestType.invoke,
-			fcn = invokeArgs.function,
-			args = invokeArgs.values,
-			channelId = cmdSigned.chaincodeUri.channelId,
-			chaincodeId = cmdSigned.chaincodeUri.chaincodeId,
-		).handleResponse {
-			jsonConverter.toCompletableObject(InvokeReturn::class.java, it)!!
-		}
+		return invokeAll(listOf(cmdSigned), listOf(UUID.randomUUID().toString())).first().toInvokeReturn()
 	}
 
+	/** Batched convenience facade — same shimming as the single-arg form. */
 	@Throws(Exception::class)
 	suspend operator fun invoke(cmds: List<SsmCmdSigned>): List<InvokeReturn> {
 		val total = cmds.size
-		cmds.logger("Invoke", total, { it.chaincodeUri })
-
-		val args = cmds.mapIndexed { index, cmd ->
-			val invokeArgs = cmd.buildCommandArgs(InvokeRequestType.invoke)
-			logger.debug(
-				"Invoke[${index+1}/$total] the blockchain in channel[{}:{}] with command[{}] with args:{}",
-				cmd.chaincodeUri.channelId,
-				cmd.chaincodeUri.chaincodeId,
-				invokeArgs.fcn,
-				invokeArgs,
-			)
-			invokeArgs
-		}
-
-		return coopRepository.invoke(
-			args
-		).handleResponse {
-			JsonUtils.toObject<List<InvokeReturn>>(it)
-		}
+		cmds.logger("Invoke", total) { it.chaincodeUri }
+		val msgIds = cmds.map { UUID.randomUUID().toString() }
+		return invokeAll(cmds, msgIds).map { it.toInvokeReturn() }
 	}
 
 	@Throws(Exception::class)
-	suspend fun invokeAllV2(
+	suspend fun invokeAll(
 		cmds: List<SsmCmdSigned>,
 		msgIds: List<String>,
 	): List<CommandOutcome> {
 		require(msgIds.size == cmds.size) {
-			"commandIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
+			"msgIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
 		}
 		val total = cmds.size
 		cmds.logger("Invoke[v2]", total) { it.chaincodeUri }
 
 		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
-		return coopRepository.invokeV2(args, msgIds)
+		return coopRepository.invoke(args, msgIds)
 	}
 
 	private fun <R> String.handleResponse(transform: (String) -> R): R = try {
 		transform(this)
 	} catch (e: Exception) {
-		val excerpt = this.take(200).ifBlank { "<empty>" }
+		val excerpt = this.take(HANDLE_RESPONSE_EXCERPT_LIMIT).ifBlank { "<empty>" }
 		throw InvokeException("Error parsing response: $excerpt", e)
 	}
+
+	companion object {
+		private const val HANDLE_RESPONSE_EXCERPT_LIMIT = 200
+	}
+}
+
+private fun CommandOutcome.toInvokeReturn(): InvokeReturn = if (outcome == "Committed") {
+	InvokeReturn(status = "SUCCESS", info = "", transactionId = transactionId.orEmpty())
+} else {
+	val info = listOfNotNull(errorCode, errorMessage).joinToString(": ")
+	InvokeReturn(status = "ERROR", info = info, transactionId = "")
 }
 
 data class SsmApiQuery(

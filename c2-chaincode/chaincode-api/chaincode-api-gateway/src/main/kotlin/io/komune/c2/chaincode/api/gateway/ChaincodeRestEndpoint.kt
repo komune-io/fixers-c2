@@ -1,22 +1,21 @@
 package io.komune.c2.chaincode.api.gateway
 
+import io.komune.c2.chaincode.api.gateway.chaincode.ChaincodeService
+import io.komune.c2.chaincode.api.gateway.chaincode.model.OutcomeData
 import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
-import io.komune.c2.chaincode.api.gateway.chaincode.ChaincodeService
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeOutcome
-import io.komune.c2.chaincode.api.gateway.chaincode.model.InvokeRequestEnvelope
-import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import org.slf4j.LoggerFactory
-import tools.jackson.databind.JsonNode
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import tools.jackson.databind.JsonNode
 
 @RestController
 @RequestMapping("/", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -26,6 +25,7 @@ class ChaincodeRestEndpoint(
 	companion object {
 		const val CHANNEL_ID_URL_PARAM = "channelid"
 		const val CHAINCODE_ID_URL_PARAM = "chaincodeid"
+		const val CLOUDEVENTS_BATCH_JSON = "application/cloudevents-batch+json"
 	}
 	private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -37,40 +37,18 @@ class ChaincodeRestEndpoint(
 		fcn: String,
 		args: Array<String>
 	): JsonNode {
-		logger.debug("Querying chaincode $cmd")
-		return chaincodeService.execute(InvokeRequest(channel, chaincode, cmd, fcn, args))
+		logger.debug("Querying chaincode {}", cmd)
+		return chaincodeService.query(InvokeRequest(channel, chaincode, cmd, fcn, args))
 	}
 
-	@PostMapping(consumes = [MediaType.APPLICATION_FORM_URLENCODED_VALUE])
+	@PostMapping(
+		path = ["invoke"],
+		consumes = [MediaType.APPLICATION_JSON_VALUE, CLOUDEVENTS_BATCH_JSON],
+	)
 	suspend fun invoke(
-		@ModelAttribute args: InvokeRequest
-	): JsonNode {
-		logger.debug("Invoking chaincode ${args.cmd}")
+		@RequestBody args: List<InvokeEnvelope<InvokeRequest>>,
+	): List<InvokeEnvelope<OutcomeData>> {
+		logger.debug("Invoking chaincode {} items", args.size)
 		return chaincodeService.execute(args)
 	}
-
-	@PostMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
-	suspend fun invokeJson(
-		@RequestBody args: InvokeRequest
-	): JsonNode {
-		logger.debug("Invoking chaincode ${args.cmd}")
-		return chaincodeService.execute(args)
-	}
-
-	@PostMapping(path = ["invoke"], consumes = [MediaType.APPLICATION_JSON_VALUE])
-	suspend fun invokeJson(
-		@RequestBody args: List<InvokeRequest>
-	): List<JsonNode> {
-		logger.debug("Invoking chaincode ${args.size} items")
-		return chaincodeService.execute(args)
-	}
-
-	@PostMapping(path = ["invoke/v2"], consumes = [MediaType.APPLICATION_JSON_VALUE])
-	suspend fun invokeV2(
-		@RequestBody args: List<InvokeRequestEnvelope>,
-	): List<InvokeOutcome> {
-		logger.debug("Invoking chaincode v2 ${args.size} items")
-		return chaincodeService.executeV2(args)
-	}
-
 }

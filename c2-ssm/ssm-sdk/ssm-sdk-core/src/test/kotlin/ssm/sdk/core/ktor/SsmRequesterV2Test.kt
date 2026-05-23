@@ -22,12 +22,11 @@ import ssm.sdk.dsl.isRetryable
 import ssm.sdk.dsl.isSuccess
 import ssm.sdk.dsl.isPermanent
 import ssm.sdk.json.JSONConverterObjectMapper
-import ssm.sdk.json.JsonUtils
 
 class SsmRequesterV2Test {
 
     private fun buildMockRequester(responseBody: String): SsmRequester {
-        val mockEngine = MockEngine { request ->
+        val mockEngine = MockEngine { _ ->
             respond(
                 content = responseBody,
                 status = HttpStatusCode.OK,
@@ -68,24 +67,34 @@ class SsmRequesterV2Test {
         )
     }
 
+    private fun ceItem(
+        subject: String,
+        type: String,
+        data: String,
+    ): String = """
+        {
+          "specversion":"1.0",
+          "id":"resp-$subject",
+          "source":"/io.komune.c2/gateway",
+          "type":"$type",
+          "subject":"$subject",
+          "time":"2026-05-22T10:30:01Z",
+          "datacontenttype":"application/json",
+          "data":$data
+        }
+    """.trimIndent()
+
     @Test
-    fun `invokeAllV2 deserializes mixed outcomes without throwing`(): Unit = runBlocking {
-        val responseJson = """
-            [
-              {
-                "outcome": "Committed",
-                "msgId": "cmd-1",
-                "transactionId": "tx-abc123",
-                "blockNumber": 42
-              },
-              {
-                "outcome": "Rejected",
-                "msgId": "cmd-2",
-                "errorCode": "MVCC_READ_CONFLICT",
-                "errorMessage": "conflict on key session-xyz"
-              }
-            ]
-        """.trimIndent()
+    fun `invokeAll deserializes mixed CE outcomes without throwing`(): Unit = runBlocking {
+        val responseJson = "[" + ceItem(
+            subject = "cmd-1",
+            type = "io.komune.c2.invoke.outcome.committed",
+            data = """{"transactionId":"tx-abc123","blockNumber":42}""",
+        ) + "," + ceItem(
+            subject = "cmd-2",
+            type = "io.komune.c2.invoke.outcome.rejected",
+            data = """{"errorCode":"MVCC_READ_CONFLICT","errorMessage":"conflict on key session-xyz"}""",
+        ) + "]"
 
         val requester = buildMockRequester(responseJson)
         val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
@@ -95,7 +104,7 @@ class SsmRequesterV2Test {
         )
         val commandIds = listOf("cmd-1", "cmd-2")
 
-        val outcomes: List<CommandOutcome> = requester.invokeAllV2(cmds, commandIds)
+        val outcomes: List<CommandOutcome> = requester.invokeAll(cmds, commandIds)
 
         assertThat(outcomes).hasSize(2)
 
@@ -116,35 +125,32 @@ class SsmRequesterV2Test {
     }
 
     @Test
-    fun `invokeAllV2 size-mismatch guard fires before any HTTP call`() {
+    fun `invokeAll size-mismatch guard fires before any HTTP call`() {
         val requester = buildMockRequester("[]")
         val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
         val cmds = listOf(buildSignedCmd(chaincodeUri))
-        val commandIds = listOf("cmd-1", "cmd-2") // size mismatch: 1 cmd vs 2 ids
+        val commandIds = listOf("cmd-1", "cmd-2")
 
         assertThatThrownBy {
-            runBlocking { requester.invokeAllV2(cmds, commandIds) }
+            runBlocking { requester.invokeAll(cmds, commandIds) }
         }.isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessageContaining("commandIds.size=2 must match cmds.size=1")
+            .hasMessageContaining("msgIds.size=2 must match cmds.size=1")
     }
 
     @Test
-    fun `invokeAllV2 handles Transient outcome with isRetryable predicate`(): Unit = runBlocking {
-        val responseJson = """
-            [
-              {
-                "outcome": "Transient",
-                "msgId": "cmd-retry"
-              }
-            ]
-        """.trimIndent()
+    fun `invokeAll handles Transient outcome with isRetryable predicate`(): Unit = runBlocking {
+        val responseJson = "[" + ceItem(
+            subject = "cmd-retry",
+            type = "io.komune.c2.invoke.outcome.transient",
+            data = "{}",
+        ) + "]"
 
         val requester = buildMockRequester(responseJson)
         val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
         val cmds = listOf(buildSignedCmd(chaincodeUri))
         val commandIds = listOf("cmd-retry")
 
-        val outcomes = requester.invokeAllV2(cmds, commandIds)
+        val outcomes = requester.invokeAll(cmds, commandIds)
 
         assertThat(outcomes).hasSize(1)
         val outcome = outcomes[0]
