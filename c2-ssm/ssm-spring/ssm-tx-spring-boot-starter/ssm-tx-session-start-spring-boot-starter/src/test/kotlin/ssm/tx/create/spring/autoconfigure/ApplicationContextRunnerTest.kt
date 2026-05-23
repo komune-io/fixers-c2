@@ -3,9 +3,13 @@ package ssm.tx.create.spring.autoconfigure
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.cloud.function.context.FunctionCatalog
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import ssm.bdd.config.SsmBddConfig
 import ssm.bdd.spring.autoconfigure.ApplicationContextBuilder
 import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
+import ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionImpl
+import ssm.sdk.core.SsmTxService
 import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 import ssm.tx.session.start.spring.autoconfigure.SsmSessionStartAutoConfiguration
 
@@ -31,6 +35,27 @@ class ApplicationContextRunnerTest {
 		)
 		assertThat(context.getBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)).isNotNull
 		assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+	}
+
+	@Test
+	fun `user-supplied SsmTxSessionStartFunctionImpl bean suppresses the autoconfig default`() {
+		ApplicationContextRunnerBuilder()
+			.buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+			.withUserConfiguration(CustomStartConfig::class.java)
+			.run { context ->
+				assertThat(context).hasBean("customStartFunction")
+				assertThat(context).doesNotHaveBean(
+					SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name
+				)
+				assertThat(context).hasSingleBean(SsmTxSessionStartFunctionImpl::class.java)
+			}
+	}
+
+	@Configuration
+	open class CustomStartConfig {
+		@Bean
+		open fun customStartFunction(ssmTxService: SsmTxService): SsmTxSessionStartFunctionImpl =
+			SsmTxSessionStartFunctionImpl(ssmTxService)
 	}
 
 

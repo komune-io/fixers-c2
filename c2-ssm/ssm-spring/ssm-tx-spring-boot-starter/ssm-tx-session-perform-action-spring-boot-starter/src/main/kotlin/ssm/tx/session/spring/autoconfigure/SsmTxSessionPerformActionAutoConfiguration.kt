@@ -12,7 +12,7 @@ import ssm.sdk.core.SsmTxService
 class SsmTxSessionPerformActionAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(name = ["ssmTxSessionPerformActionFunction"])
+	@ConditionalOnMissingBean(SsmTxSessionPerformActionFunctionImpl::class)
 	@ConditionalOnBean(SsmTxService::class)
 	fun ssmTxSessionPerformActionFunction(
 		ssmTxService: SsmTxService,
