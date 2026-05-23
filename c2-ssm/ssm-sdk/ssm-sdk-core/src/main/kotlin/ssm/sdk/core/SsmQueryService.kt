@@ -96,8 +96,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.username, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<Agent>>() {})
-		}
+			ssmRequester.queryEach(it, object : TypeReference<Agent?>() {})
+		}.filterNotNull()
 	}
 
 	override suspend fun getAgents(queries: List<GetAgentQuery>): List<Agent> {
@@ -105,9 +105,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.agentName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<Agent>>() {})
-		}
-
+			ssmRequester.queryEach(it, object : TypeReference<Agent?>() {})
+		}.filterNotNull()
 	}
 
 	override suspend fun getSsms(queries: List<GetSsmQuery>): List<Ssm> {
@@ -115,15 +114,16 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.name, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<Ssm>>() {})
-		}
+			ssmRequester.queryEach(it, object : TypeReference<Ssm?>() {})
+		}.filterNotNull()
 	}
+
 	override suspend fun getSessions(queries: List<GetSessionQuery>): List<SsmSessionState?> {
 		val query = SessionQuery()
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<SsmSessionState?>>() {})
+			ssmRequester.queryEach(it, object : TypeReference<SsmSessionState?>() {})
 		}
 	}
 
@@ -132,7 +132,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.txId, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<Transaction?>>() {})
+			ssmRequester.queryEach(it, object : TypeReference<Transaction?>() {})
 		}
 	}
 
@@ -141,9 +141,8 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.blockId.toString(), query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<Block>>() {})
-		}
-
+			ssmRequester.queryEach(it, object : TypeReference<Block?>() {})
+		}.filterNotNull()
 	}
 
 	override suspend fun getLogs(queries: List<GetLogQuery>): List<List<SsmSessionStateLog>> {
@@ -151,7 +150,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return queries.map {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
 		}.let {
-			ssmRequester.query(it, object : TypeReference<List<List<SsmSessionStateLog>>>() {})
+			ssmRequester.queryEachList(it, object : TypeReference<List<SsmSessionStateLog>>() {})
 		}
 	}
 }

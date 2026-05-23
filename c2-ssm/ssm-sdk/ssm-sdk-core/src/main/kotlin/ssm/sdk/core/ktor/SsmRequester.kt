@@ -1,7 +1,6 @@
 package ssm.sdk.core.ktor
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
-import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -75,13 +74,26 @@ class SsmRequester(
 	}
 
 	/**
-	 * Batched query helper. Each [SsmApiQuery] is dispatched in parallel to the gateway's
-	 * GET `/` query endpoint and the results are collected in input order.
+	 * Per-query helper. Dispatches one parallel GET per [SsmApiQuery] and decodes each
+	 * response as [T] (typically nullable for single-item lookups). Returns one element
+	 * per input query, in input order — no flatten.
 	 */
-	suspend fun <T> query(queries: List<SsmApiQuery>, type: TypeReference<List<T>>): List<T> = coroutineScope {
-		val total = queries.size
-		queries.logger("Query", total) { it.chaincodeUri }
-		val raws: List<String> = queries.map { query ->
+	suspend fun <T> queryEach(queries: List<SsmApiQuery>, clazz: TypeReference<T>): List<T> =
+		queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
+
+	/**
+	 * Per-query helper for queries whose chaincode response is itself a JSON array.
+	 * Dispatches one parallel GET per [SsmApiQuery] and decodes each response as
+	 * `List<T>`. Returns one inner list per input query, in input order — no flatten.
+	 */
+	suspend fun <T> queryEachList(
+		queries: List<SsmApiQuery>,
+		clazz: TypeReference<List<T>>,
+	): List<List<T>> = queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
+
+	private suspend fun List<SsmApiQuery>.fetchEach(): List<String> = coroutineScope {
+		logger("Query", size) { it.chaincodeUri }
+		map { query ->
 			async {
 				val args = query.query.queryArgs(query.value)
 				coopRepository.query(
@@ -93,7 +105,6 @@ class SsmRequester(
 				)
 			}
 		}.awaitAll()
-		raws.flatMap { raw -> raw.handleResponse { JsonUtils.toObject<List<T>>(it, type) } }
 	}
 
 	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
