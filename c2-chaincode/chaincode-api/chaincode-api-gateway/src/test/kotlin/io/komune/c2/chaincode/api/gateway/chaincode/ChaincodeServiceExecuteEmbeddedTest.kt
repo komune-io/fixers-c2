@@ -40,7 +40,7 @@ import org.springframework.web.util.UriComponentsBuilder
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(
-    classes = [ChaincodeApiGatewayApplication::class, ChaincodeServiceExecuteV2EmbeddedTest.TestConfig::class],
+    classes = [ChaincodeApiGatewayApplication::class, ChaincodeServiceExecuteEmbeddedTest.TestConfig::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
 @AutoConfigureTestRestTemplate

@@ -36,7 +36,7 @@ import ssm.sdk.sign.SsmCmdSigner
  * 3. commandIds list passed to invokeAll equals commands.map { it.commandId } in order.
  * 4. Outcomes returned by invokeAll are passed back verbatim.
  *
- * The stub SsmRequester is built with a MockEngine (pattern from SsmRequesterV2Test).
+ * The stub SsmRequester is built with a MockEngine (pattern from SsmRequesterTest).
  * The stub SsmCmdSigner is a SAM that wraps the SsmCmd into a minimal SsmCmdSigned.
  *
  * Recorded state is captured via mutable lists injected into the mock HTTP engine's

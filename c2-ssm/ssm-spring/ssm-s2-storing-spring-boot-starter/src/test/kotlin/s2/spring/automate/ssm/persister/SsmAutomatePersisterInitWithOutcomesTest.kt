@@ -99,7 +99,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     private fun buildPersister(
         scriptedOutcomes: List<CommandOutcome>,
     ): SsmAutomatePersister<TestState, String, IterableEntity, TestEvt> {
-        val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2 =
+        val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
             F2Function { commands ->
                 val commandList = commands.toList()
                 // Return outcomes indexed by position (not commandId) to keep the test simple.
@@ -116,24 +116,16 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 }.asFlow()
             }
 
-        val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
-            F2Function { _ -> error("v2Perform should NOT be called by persistInitWithOutcomes") }
+        val noPerform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction =
+            F2Function { _ -> error("perform should NOT be called by persistInitWithOutcomes") }
 
-        val v1Start: ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction =
-            F2Function { _ -> error("v1Start should NOT be called") }
-
-        val v1Perform: ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction =
-            F2Function { _ -> error("v1Perform should NOT be called") }
-
-        val v1Logs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+        val noLogs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
             F2Function { _ -> error("ssmGetSessionLogsQueryFunction should NOT be called for IterableEntity") }
 
         return SsmAutomatePersister(
-            ssmSessionStartFunction = v1Start,
-            ssmSessionPerformActionFunction = v1Perform,
-            ssmSessionStartFunctionV2 = v2Start,
-            ssmSessionPerformActionFunctionV2 = v2Perform,
-            ssmGetSessionLogsQueryFunction = v1Logs,
+            ssmSessionStartFunction = v2Start,
+            ssmSessionPerformActionFunction = noPerform,
+            ssmGetSessionLogsQueryFunction = noLogs,
             chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
             entityType = IterableEntity::class.java,
             agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),

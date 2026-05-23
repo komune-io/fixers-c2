@@ -199,7 +199,7 @@ class SsmAutomatePersisterTest {
 	fun `persistWithOutcomes maps mixed v2 results to per-item PersistOutcome`() = runTest {
 		// Stub v2 perform: items whose commandId contains "id-3" return Rejected, others Committed.
 		// commandId pattern is "${sessionId}:${iteration + 1}" per SsmAutomatePersister source.
-		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
+		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction =
 			F2Function { commands ->
 				commands.map { cmd ->
 					if (cmd.msgId.contains("id-3")) {
@@ -220,24 +220,16 @@ class SsmAutomatePersisterTest {
 				}
 			}
 
-		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2 =
-			F2Function { _ -> error("v2Start should not be called by persistWithOutcomes") }
+		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
+			F2Function { _ -> error("start should not be called by persistWithOutcomes") }
 
-		// V1 stubs — never reached because IterableEntity uses the in-process getIterations branch
-		// and persistWithOutcomes never calls the v1 perform path.
-		val v1Start: ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction =
-			F2Function { _ -> error("v1Start should not be called") }
-		val v1Perform: ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction =
-			F2Function { _ -> error("v1Perform should not be called") }
-		val v1Logs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+		val noLogs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { _ -> error("ssmGetSessionLogsQueryFunction should not be called for IterableEntity") }
 
 		val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-			ssmSessionStartFunction = v1Start,
-			ssmSessionPerformActionFunction = v1Perform,
-			ssmSessionStartFunctionV2 = v2Start,
-			ssmSessionPerformActionFunctionV2 = v2Perform,
-			ssmGetSessionLogsQueryFunction = v1Logs,
+			ssmSessionStartFunction = v2Start,
+			ssmSessionPerformActionFunction = v2Perform,
+			ssmGetSessionLogsQueryFunction = noLogs,
 			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
 			entityType = IterableEntity::class.java,
 			agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
@@ -263,7 +255,7 @@ class SsmAutomatePersisterTest {
 		val performCommandsSeen = mutableListOf<String>()
 
 		// v2 perform: capture which commands were sent, return Committed for each
-		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionV2 =
+		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction =
 			F2Function { commands ->
 				commands.map { cmd ->
 					performCommandsSeen.add(cmd.msgId)
@@ -291,18 +283,12 @@ class SsmAutomatePersisterTest {
 					.asFlow()
 			}
 
-		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunctionV2 =
-			F2Function { _ -> error("v2Start should not be called") }
-		val v1Start: ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction =
-			F2Function { _ -> error("v1Start should not be called") }
-		val v1Perform: ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction =
-			F2Function { _ -> error("v1Perform should not be called") }
+		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
+			F2Function { _ -> error("start should not be called") }
 
 		val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
-			ssmSessionStartFunction = v1Start,
-			ssmSessionPerformActionFunction = v1Perform,
-			ssmSessionStartFunctionV2 = v2Start,
-			ssmSessionPerformActionFunctionV2 = v2Perform,
+			ssmSessionStartFunction = v2Start,
+			ssmSessionPerformActionFunction = v2Perform,
 			ssmGetSessionLogsQueryFunction = logsQuery,
 			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
 			entityType = SimpleEntity::class.java,

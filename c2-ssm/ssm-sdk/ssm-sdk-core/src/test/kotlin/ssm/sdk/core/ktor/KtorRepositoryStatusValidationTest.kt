@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 import ssm.sdk.dsl.CommandOutcome
 
 /**
- * Tests for KtorRepository.invokeV2 status-branching behaviour.
+ * Tests for KtorRepository.invoke status-branching behaviour.
  *
  * Validates that:
  * - 2xx: deserializes body as List<CommandOutcome>
@@ -288,7 +288,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeV2 4xx outcomes commandId order matches input commandIds`(): Unit = runBlocking {
+    fun `invoke 4xx outcomes commandId order matches input commandIds`(): Unit = runBlocking {
         val ids = listOf("alpha", "beta", "gamma")
         val args = List(3) {
             InvokeRequest(

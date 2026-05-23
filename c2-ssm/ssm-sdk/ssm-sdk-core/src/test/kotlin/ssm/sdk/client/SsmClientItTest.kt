@@ -31,8 +31,8 @@ import ssm.sdk.sign.model.SignerUser
  * SsmTxService.sendStart / sendPerform
  *   → SsmService.invokeAll
  *   → SsmRequester.invokeAll
- *   → KtorRepository.invokeV2
- *   → POST /invoke/v2
+ *   → KtorRepository.invoke
+ *   → POST /invoke
  *   → live chaincode-api-gateway
  *   → live Fabric peer + chaincode commit
  *
@@ -74,7 +74,7 @@ class SsmClientItTest {
         fun init() {
             query = SsmClientTestBuilder.build().buildQueryService()
             tx = SsmClientTestBuilder.build().buildTxService(signer)
-            ssmName = "CarDealershipV2-$uuid"
+            ssmName = "CarDealership-$uuid"
         }
     }
 
@@ -190,7 +190,7 @@ class SsmClientItTest {
     }
 
     // ------------------------------------------------------------------ //
-    //  Batch tests: 2 commands in one /invoke/v2 call                    //
+    //  Batch tests: 2 commands in one /invoke call                    //
     // ------------------------------------------------------------------ //
 
     @Order(60)
