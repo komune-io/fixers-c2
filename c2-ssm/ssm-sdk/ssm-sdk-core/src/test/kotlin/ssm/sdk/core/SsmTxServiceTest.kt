@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
-import ssm.sdk.core.command.SsmPerformCommandV2
-import ssm.sdk.core.command.SsmStartCommandV2
+import ssm.sdk.core.command.SsmPerformCommand
+import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.core.ktor.KtorRepository
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.dsl.CommandOutcome
@@ -28,13 +28,13 @@ import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 
 /**
- * Unit tests (no Spring, no live network) for SsmTxService.sendStartV2 and sendPerformV2.
+ * Unit tests (no Spring, no live network) for SsmTxService.sendStart and sendPerform.
  *
  * Pins:
  * 1. signss / signs is called once (not per-item), building the full signed list.
- * 2. invokeAllV2 receives signed.size == commands.size.
- * 3. commandIds list passed to invokeAllV2 equals commands.map { it.commandId } in order.
- * 4. Outcomes returned by invokeAllV2 are passed back verbatim.
+ * 2. invokeAll receives signed.size == commands.size.
+ * 3. commandIds list passed to invokeAll equals commands.map { it.commandId } in order.
+ * 4. Outcomes returned by invokeAll are passed back verbatim.
  *
  * The stub SsmRequester is built with a MockEngine (pattern from SsmRequesterV2Test).
  * The stub SsmCmdSigner is a SAM that wraps the SsmCmd into a minimal SsmCmdSigned.
@@ -42,7 +42,7 @@ import ssm.sdk.sign.SsmCmdSigner
  * Recorded state is captured via mutable lists injected into the mock HTTP engine's
  * response body, which returns a scripted JSON payload.
  */
-class SsmTxServiceV2Test {
+class SsmTxServiceTest {
 
     // ---------------------------------------------------------------------------
     // Helpers
@@ -140,11 +140,11 @@ class SsmTxServiceV2Test {
     }
 
     // ---------------------------------------------------------------------------
-    // sendStartV2 tests
+    // sendStart tests
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendStartV2 invokes invokeAllV2 with commandIds in input order`(): Unit = runBlocking {
+    fun `sendStart invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
         val ids = listOf("start-cmd-A", "start-cmd-B", "start-cmd-C")
 
         val capturedBody = mutableListOf<String>()
@@ -162,7 +162,7 @@ class SsmTxServiceV2Test {
         val txService = SsmTxService(service, SsmBatchProperties())
 
         val commands = ids.map { id ->
-            SsmStartCommandV2(
+            SsmStartCommand(
                 msgId = id,
                 session = SsmSession(
                     ssm = "test-ssm",
@@ -176,9 +176,9 @@ class SsmTxServiceV2Test {
             )
         }
 
-        val outcomes: List<CommandOutcome> = txService.sendStartV2(commands)
+        val outcomes: List<CommandOutcome> = txService.sendStart(commands)
 
-        // One HTTP call was made (invokeAllV2 batches all commands together)
+        // One HTTP call was made (invokeAll batches all commands together)
         assertThat(capturedBody).hasSize(1)
         // Outcomes are returned verbatim (one per input)
         assertThat(outcomes).hasSize(ids.size)
@@ -189,13 +189,13 @@ class SsmTxServiceV2Test {
     }
 
     @Test
-    fun `sendStartV2 returns outcomes verbatim from invokeAllV2`(): Unit = runBlocking {
+    fun `sendStart returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
         val ids = listOf("cmd-0", "cmd-1", "cmd-2", "cmd-3", "cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))
 
         val commands = ids.map { id ->
-            SsmStartCommandV2(
+            SsmStartCommand(
                 msgId = id,
                 session = SsmSession("test-ssm", "session-$id", mapOf("admin" to "Admin"), "{}", mapOf()),
                 chaincodeUri = chaincodeUri,
@@ -203,7 +203,7 @@ class SsmTxServiceV2Test {
             )
         }
 
-        val outcomes = txService.sendStartV2(commands)
+        val outcomes = txService.sendStart(commands)
 
         assertThat(outcomes).hasSize(5)
         assertThat(outcomes[0].outcome).isEqualTo("Committed")
@@ -214,11 +214,11 @@ class SsmTxServiceV2Test {
     }
 
     // ---------------------------------------------------------------------------
-    // sendPerformV2 tests
+    // sendPerform tests
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendPerformV2 invokes invokeAllV2 with commandIds in input order`(): Unit = runBlocking {
+    fun `sendPerform invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
         val ids = listOf("perform-cmd-X", "perform-cmd-Y")
 
         val capturedBody = mutableListOf<String>()
@@ -236,7 +236,7 @@ class SsmTxServiceV2Test {
         val txService = SsmTxService(service, SsmBatchProperties())
 
         val commands = ids.map { id ->
-            SsmPerformCommandV2(
+            SsmPerformCommand(
                 msgId = id,
                 action = "Validate",
                 context = SsmContext(session = "session-$id", public = "{}", private = mapOf(), iteration = 1),
@@ -245,7 +245,7 @@ class SsmTxServiceV2Test {
             )
         }
 
-        val outcomes: List<CommandOutcome> = txService.sendPerformV2(commands)
+        val outcomes: List<CommandOutcome> = txService.sendPerform(commands)
 
         assertThat(capturedBody).hasSize(1)
         assertThat(outcomes).hasSize(ids.size)
@@ -254,13 +254,13 @@ class SsmTxServiceV2Test {
     }
 
     @Test
-    fun `sendPerformV2 returns outcomes verbatim from invokeAllV2`(): Unit = runBlocking {
+    fun `sendPerform returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
         val ids = listOf("p-cmd-0", "p-cmd-1", "p-cmd-2", "p-cmd-3", "p-cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))
 
         val commands = ids.map { id ->
-            SsmPerformCommandV2(
+            SsmPerformCommand(
                 msgId = id,
                 action = "Perform",
                 context = SsmContext("session-$id", "{}", 0, mapOf()),
@@ -269,7 +269,7 @@ class SsmTxServiceV2Test {
             )
         }
 
-        val outcomes = txService.sendPerformV2(commands)
+        val outcomes = txService.sendPerform(commands)
 
         assertThat(outcomes).hasSize(5)
         assertThat(outcomes[0].outcome).isEqualTo("Committed")

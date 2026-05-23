@@ -27,16 +27,16 @@ import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.toSsmUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQuery
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.data.dsl.features.query.DataSsmSessionGetQuery
 import ssm.data.dsl.features.query.DataSsmSessionGetQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionListQuery
 import ssm.data.dsl.features.query.DataSsmSessionListQueryFunction
-import ssm.tx.dsl.features.ssm.SsmSessionPerformActionCommand
-import ssm.tx.dsl.features.ssm.SsmSessionPerformActionResult
-import ssm.tx.dsl.features.ssm.SsmSessionStartCommand
-import ssm.tx.dsl.features.ssm.SsmSessionStartResult
-import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
-import ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction
+import ssm.sdk.core.command.SsmPerformCommand
+import ssm.sdk.core.command.SsmStartCommand
+import ssm.sdk.dsl.CommandOutcome
+import java.util.UUID
 
 class EventPersisterSsm<EVENT, ID>(
 	private val s2Automate: S2Automate,
@@ -119,7 +119,8 @@ EVENT: WithS2Id<ID>
 		} else {
 			@OptIn(InternalSerializationApi::class)
 			val public = json.encodeToString(eventType.serializer(), event)
-			val context = SsmSessionPerformActionCommand(
+			val context = SsmPerformCommand(
+				msgId = UUID.randomUUID().toString(),
 				action = action,
 				context = SsmContext(
 					session = sessionName,
@@ -135,11 +136,12 @@ EVENT: WithS2Id<ID>
 		return event
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.initFlow( ): Flow<SsmSessionStartResult> = map { event ->
+	private suspend fun Flow<ExecutableAction<EVENT>>.initFlow( ): Flow<CommandOutcome> = map { event ->
 		val sessionName = buildSessionName(event.event)
 		@OptIn(InternalSerializationApi::class)
 		val public = json.encodeToString(eventType.serializer(), event.event)
-		SsmSessionStartCommand(
+		SsmStartCommand(
+			msgId = UUID.randomUUID().toString(),
 			session = SsmSession(
 				ssm = s2Automate.name,
 				session = sessionName,
@@ -154,11 +156,12 @@ EVENT: WithS2Id<ID>
 		ssmSessionStartFunction.invoke(it)
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<SsmSessionPerformActionResult> = map { event ->
+	private suspend fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<CommandOutcome> = map { event ->
 		val sessionName = buildSessionName(event.event)
 		val action = event.event::class.simpleName!!
 		@OptIn(InternalSerializationApi::class)
-		SsmSessionPerformActionCommand(
+		SsmPerformCommand(
+			msgId = UUID.randomUUID().toString(),
 			action = action,
 			context = SsmContext(
 				session = sessionName,
@@ -175,7 +178,8 @@ EVENT: WithS2Id<ID>
 
 	private suspend fun init(event: EVENT): EVENT {
 		@OptIn(InternalSerializationApi::class)
-		val ssmStart = SsmSessionStartCommand(
+		val ssmStart = SsmStartCommand(
+			msgId = UUID.randomUUID().toString(),
 			session = SsmSession(
 				ssm = s2Automate.name,
 				session = buildSessionName(event),

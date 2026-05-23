@@ -23,7 +23,7 @@ import ssm.sdk.dsl.isSuccess
 import ssm.sdk.dsl.isPermanent
 import ssm.sdk.json.JSONConverterObjectMapper
 
-class SsmRequesterV2Test {
+class SsmRequesterTest {
 
     private fun buildMockRequester(responseBody: String): SsmRequester {
         val mockEngine = MockEngine { _ ->

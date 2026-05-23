@@ -5,7 +5,8 @@ import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SsmSession
 
 data class SsmStartCommand(
-    override val chaincodeUri: ChaincodeUri,
-    override val signerName: AgentName,
+    val msgId: String,
     val session: SsmSession,
-): WithSign
+    val chaincodeUri: ChaincodeUri,
+    val signerName: AgentName,
+)

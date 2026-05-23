@@ -22,7 +22,7 @@ class SsmUserRegisterFunctionImpl(
 	}.let {
 		ssmTxService.sendRegisterUser(it).map { result ->
 			SsmUserRegisteredResult(
-				transactionId = result.transactionId,
+				transactionId = result.transactionId.orEmpty(),
 			)
 		}
 	}

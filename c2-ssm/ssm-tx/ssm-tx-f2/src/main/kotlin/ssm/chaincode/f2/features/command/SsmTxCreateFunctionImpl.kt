@@ -21,7 +21,7 @@ class SsmTxCreateFunctionImpl(
 	}.let {
 		ssmTxService.sendCreate(it).map { result ->
 			SsmCreateResult(
-				transactionId = result.transactionId,
+				transactionId = result.transactionId.orEmpty(),
 			)
 		}
 	}

@@ -23,7 +23,7 @@ import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 
 /**
- * Tests for SsmService.invokeAllV2 per-item signing resilience.
+ * Tests for SsmService.invokeAll per-item signing resilience.
  *
  * Validates that:
  * - A signing failure for one item produces CommandOutcome(outcome="Rejected", errorCode="SIGN_FAILED")
@@ -118,13 +118,13 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAllV2 all-success signing path returns all outcomes`(): Unit = runBlocking {
+    fun `invokeAll all-success signing path returns all outcomes`(): Unit = runBlocking {
         val commandIds = listOf("cmd-A", "cmd-B", "cmd-C")
         val cmds = commandIds.map { buildCmd("admin") }
         val requester = buildRequester(committedJson(commandIds))
         val service = SsmService(requester, alwaysSucceedSigner)
 
-        val outcomes: List<CommandOutcome> = service.invokeAllV2(
+        val outcomes: List<CommandOutcome> = service.invokeAll(
             cmds = cmds,
             msgIds = commandIds,
         )
@@ -139,7 +139,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAllV2 single signing failure produces Rejected outcome for that item`(): Unit = runBlocking {
+    fun `invokeAll single signing failure produces Rejected outcome for that item`(): Unit = runBlocking {
         val commandIds = listOf("cmd-good-1", "cmd-good-2")
         // Build cmds: first uses "admin" (good), second uses "bad-agent" (fail)
         val cmds = listOf(
@@ -152,7 +152,7 @@ class SsmServiceSigningResilienceTest {
         val requester = buildRequester(committedJson(successIds))
         val service = SsmService(requester, partialFailSigner("bad-agent"))
 
-        val outcomes: List<CommandOutcome> = service.invokeAllV2(
+        val outcomes: List<CommandOutcome> = service.invokeAll(
             cmds = cmds,
             msgIds = commandIds,
         )
@@ -169,7 +169,7 @@ class SsmServiceSigningResilienceTest {
     }
 
     @Test
-    fun `invokeAllV2 signing failure outcome has correct commandId`(): Unit = runBlocking {
+    fun `invokeAll signing failure outcome has correct commandId`(): Unit = runBlocking {
         val commandIds = listOf("first-cmd", "second-cmd")
         val cmds = listOf(
             buildCmd("bad-agent"), // first-cmd — signing fails
@@ -180,7 +180,7 @@ class SsmServiceSigningResilienceTest {
         val requester = buildRequester(committedJson(successIds))
         val service = SsmService(requester, partialFailSigner("bad-agent"))
 
-        val outcomes: List<CommandOutcome> = service.invokeAllV2(
+        val outcomes: List<CommandOutcome> = service.invokeAll(
             cmds = cmds,
             msgIds = commandIds,
         )
@@ -196,14 +196,14 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAllV2 all-signing-failure produces Rejected for all items`(): Unit = runBlocking {
+    fun `invokeAll all-signing-failure produces Rejected for all items`(): Unit = runBlocking {
         val commandIds = listOf("cmd-X", "cmd-Y", "cmd-Z")
         val cmds = commandIds.map { buildCmd("bad-agent") }
 
         val requester = buildRequester("[]")
         val service = SsmService(requester, partialFailSigner("bad-agent"))
 
-        val outcomes: List<CommandOutcome> = service.invokeAllV2(
+        val outcomes: List<CommandOutcome> = service.invokeAll(
             cmds = cmds,
             msgIds = commandIds,
         )
@@ -221,7 +221,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAllV2 mixed results with all commandIds present in output`(): Unit = runBlocking {
+    fun `invokeAll mixed results with all commandIds present in output`(): Unit = runBlocking {
         val commandIds = listOf("good-1", "bad-1", "good-2")
         val cmds = listOf(
             buildCmd("admin"),
@@ -233,7 +233,7 @@ class SsmServiceSigningResilienceTest {
         val requester = buildRequester(committedJson(successIds))
         val service = SsmService(requester, partialFailSigner("bad-agent"))
 
-        val outcomes: List<CommandOutcome> = service.invokeAllV2(
+        val outcomes: List<CommandOutcome> = service.invokeAll(
             cmds = cmds,
             msgIds = commandIds,
         )

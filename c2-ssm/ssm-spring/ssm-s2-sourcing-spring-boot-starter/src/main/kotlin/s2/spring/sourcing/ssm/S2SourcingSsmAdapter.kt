@@ -19,10 +19,10 @@ import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionGetQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionListQueryFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
-import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
-import ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction
 
 abstract class S2SourcingSsmAdapter<ENTITY, STATE, EVENT, ID, EXECUTOR>(
 	executor: EXECUTOR,

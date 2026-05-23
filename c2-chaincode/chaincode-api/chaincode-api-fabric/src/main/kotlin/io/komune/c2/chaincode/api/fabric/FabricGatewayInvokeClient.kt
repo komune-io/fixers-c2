@@ -163,6 +163,7 @@ class FabricGatewayClient(
         }
     }
 
+    @Suppress("ReturnCount")
     internal fun extractErrorMessage(e: EndorseException): String {
         val cause = e.cause
         if (cause is StatusRuntimeException) {

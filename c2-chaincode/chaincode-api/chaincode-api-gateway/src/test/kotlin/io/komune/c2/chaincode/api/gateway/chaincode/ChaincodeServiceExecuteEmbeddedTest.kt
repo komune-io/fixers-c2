@@ -44,7 +44,7 @@ import org.springframework.web.util.UriComponentsBuilder
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
 @AutoConfigureTestRestTemplate
-class ChaincodeServiceExecuteV2EmbeddedTest {
+class ChaincodeServiceExecuteEmbeddedTest {
 
     class ScriptedChaincodeService(
         fabricGatewayClient: FabricGatewayClient,
