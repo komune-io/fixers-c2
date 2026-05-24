@@ -16,10 +16,10 @@ import s2.spring.automate.ssm.persister.SsmAutomatePersister
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction
+import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
-import ssm.tx.dsl.features.ssm.SsmTxSessionPerformActionFunction
-import ssm.tx.dsl.features.ssm.SsmTxSessionStartFunction
 import tools.jackson.databind.ObjectMapper
 
 abstract class S2SsmConfigurerAdapter<STATE, ID, ENTITY, AGGREGATE> :

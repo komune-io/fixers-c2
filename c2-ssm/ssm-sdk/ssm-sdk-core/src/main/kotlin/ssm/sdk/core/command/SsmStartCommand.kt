@@ -1,11 +1,12 @@
 package ssm.sdk.core.command
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SsmSession
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 data class SsmStartCommand(
-    override val chaincodeUri: ChaincodeUri,
-    override val signerName: AgentName,
+    val msgId: String,
     val session: SsmSession,
-): WithSign
+    val chaincodeUri: ChaincodeUri,
+    val signerName: AgentName,
+)

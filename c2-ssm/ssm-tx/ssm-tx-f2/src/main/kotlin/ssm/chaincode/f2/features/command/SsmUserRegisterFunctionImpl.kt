@@ -1,8 +1,8 @@
 package ssm.chaincode.f2.features.command
 
+import io.komune.c2.chaincode.dsl.burst
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import ssm.chaincode.dsl.model.uri.burst
 import ssm.sdk.core.SsmTxService
 import ssm.sdk.core.command.UserRegisterCommand
 import ssm.tx.dsl.features.user.SsmTxUserRegisterFunction
@@ -22,7 +22,7 @@ class SsmUserRegisterFunctionImpl(
 	}.let {
 		ssmTxService.sendRegisterUser(it).map { result ->
 			SsmUserRegisteredResult(
-				transactionId = result.transactionId,
+				transactionId = result.transactionId.orEmpty(),
 			)
 		}
 	}

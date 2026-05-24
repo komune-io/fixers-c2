@@ -18,4 +18,4 @@ ssm:
   chaincode:
     url: http://localhost:9090
   batch:
-    timeout: 5000
+    timeout: 10000

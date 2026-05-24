@@ -7,10 +7,13 @@ import ssm.sdk.sign.FileUtils
 
 class SsmSdkConfig(
 	val baseUrl: String,
+	val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 ) {
 
 	companion object {
 		private const val SSM_REST_URL = "ssm.rest.url"
+		private const val SSM_CLOUDEVENTS_SOURCE = "ssm.cloudevents.source"
+		const val DEFAULT_CLOUDEVENTS_SOURCE = "/io.komune.c2/sdk"
 
 		@Throws(IOException::class)
 		fun fromConfigFile(filename: String): SsmSdkConfig {
@@ -18,7 +21,8 @@ class SsmSdkConfig(
 			val props = Properties()
 			props.load(FileInputStream(file.file))
 			val baseUrl = props.getProperty(SSM_REST_URL)
-			return SsmSdkConfig(baseUrl)
+			val cloudEventsSource = props.getProperty(SSM_CLOUDEVENTS_SOURCE) ?: DEFAULT_CLOUDEVENTS_SOURCE
+			return SsmSdkConfig(baseUrl, cloudEventsSource)
 		}
 	}
 }

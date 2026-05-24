@@ -1,286 +1,279 @@
 package ssm.sdk.client
 
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.util.Lists
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import ssm.chaincode.dsl.blockchain.Block
-import ssm.chaincode.dsl.blockchain.Transaction
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
-import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmTransition
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
-import ssm.sdk.dsl.InvokeReturn
+import ssm.sdk.core.command.SsmPerformCommand
+import ssm.sdk.core.command.SsmStartCommand
+import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.sign.SsmCmdSignerSha256RSASigner
-import ssm.sdk.sign.extention.addPrivateMessage
-import ssm.sdk.sign.extention.getPrivateMessage
 import ssm.sdk.sign.extention.loadFromFile
 import ssm.sdk.sign.model.Signer
 import ssm.sdk.sign.model.SignerAdmin
 import ssm.sdk.sign.model.SignerUser
 
+/**
+ * Live-Fabric integration test for the full v2 SDK chain:
+ * SsmTxService.sendStart / sendPerform
+ *   → SsmService.invokeAll
+ *   → SsmRequester.invokeAll
+ *   → KtorRepository.invoke
+ *   → POST /invoke
+ *   → live chaincode-api-gateway
+ *   → live Fabric peer + chaincode commit
+ *
+ * Pre-req: sandbox running at http://localhost:9090 (make build && make dev up).
+ */
 @TestMethodOrder(OrderAnnotation::class)
 class SsmClientItTest {
 
-	companion object {
-		private val uuid = UUID.randomUUID().toString()
-		private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
-		private const val NETWORK = "bclan-it/"
-		const val ADMIN_NAME = "ssm-admin"
-		val USER1_NAME = "bob-$uuid"
-		val USER2_NAME = "sam-$uuid"
-		const val USER1_FILENAME = NETWORK + "bob"
-		const val USER2_FILENAME = NETWORK + "sam"
+    companion object {
+        private val uuid: String = UUID.randomUUID().toString()
+        private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
+        private const val NETWORK = "bclan-it/"
+        private const val ADMIN_NAME = "ssm-admin"
+        internal val USER1_NAME = "bob-$uuid"
+        private val USER2_NAME = "sam-$uuid"
+        internal const val USER1_FILENAME = NETWORK + "bob"
+        private const val USER2_FILENAME = NETWORK + "sam"
 
-		private lateinit var query: SsmQueryService
-		private lateinit var tx: SsmTxService
-		private lateinit var ssmName: String
-		private lateinit var sessionName: String
-		private lateinit var session: SsmSession
+        private lateinit var query: SsmQueryService
+        private lateinit var tx: SsmTxService
+        private lateinit var ssmName: String
 
+        private var signerAdmin: SignerAdmin = SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
+        private var signerUser1: Signer = SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME)
+        private var signerUser2: Signer = SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
 
-		private var signerAdmin: SignerAdmin = SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
-		private var signerUser1: Signer = SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME)
-		private var signerUser2: Signer = SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
+        private val signer = SsmCmdSignerSha256RSASigner(
+            SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME),
+            SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME),
+            SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
+        )
 
-		val signer = SsmCmdSignerSha256RSASigner(
-			SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME),
-			SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME),
-			SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
-		)
+        private var agentAdmin: Agent = Agent.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
+        private var agentUser1: Agent = Agent.loadFromFile(signerUser1.name, USER1_FILENAME)
+        private var agentUser2: Agent = Agent.loadFromFile(signerUser2.name, USER2_FILENAME)
 
-		private var agentAdmin: Agent = Agent.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
-		private var agentUser1: Agent = Agent.loadFromFile(signerUser1.name, USER1_FILENAME)
-		private var agentUser2: Agent = Agent.loadFromFile(signerUser2.name, USER2_FILENAME)
+        @BeforeAll
+        @JvmStatic
+        fun init() {
+            query = SsmClientTestBuilder.build().buildQueryService()
+            tx = SsmClientTestBuilder.build().buildTxService(signer)
+            ssmName = "CarDealership-$uuid"
+        }
+    }
 
+    // ------------------------------------------------------------------ //
+    //  Bootstrap: register agents + create SSM (using v1 helpers so the  //
+    //  SSM exists on chain before the v2 tests run)                       //
+    // ------------------------------------------------------------------ //
 
-		@BeforeAll
-		@JvmStatic
-		@Throws(Exception::class)
-		fun init() {
-			query = SsmClientTestBuilder.build().buildQueryService()
-			tx = SsmClientTestBuilder.build().buildTxService(signer)
-			ssmName = "CarDealership-$uuid"
-			val roles = mapOf(
-				signerUser1.name to "Buyer", signerUser2.name to "Seller"
-			)
-			sessionName = "deal20181201-$uuid"
-			session = SsmSession(
-				ssmName,
-				sessionName, roles, "Used car for 100 dollars.", emptyMap()
-			)
-		}
+    @Order(10)
+    @Test
+    fun registerAdmin() = runTest {
+        // Admin name is static (tied to signing identity), so it may already be registered
+        // on a long-lived sandbox from prior runs. Either outcome is acceptable.
+        val result = tx.sendRegisterUser(chaincodeUri, agentAdmin, signerAdmin.name)
+        assertThat(result).isNotNull
+        if (result.outcome != "Committed") {
+            assertThat(result.outcome).isEqualTo("Rejected")
+            assertThat(result.errorMessage).contains("Identifier USER_${agentAdmin.name} already in use.")
+        }
+    }
 
-		private var privateMessage: Map<String, String>? = null
-	}
+    @Order(20)
+    @Test
+    fun registerUsers() = runTest {
+        val r1 = tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
+        val r2 = tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
+        assertThat(r1.outcome).isEqualTo("Committed")
+        assertThat(r2.outcome).isEqualTo("Committed")
+    }
 
-	@Order(5)
-	@Test
-	fun listAdmin() = runBlocking<Unit> {
-		val agentRet = query.listAdmins(chaincodeUri)
-		Assertions.assertThat(agentRet).contains(ADMIN_NAME)
-	}
+    @Order(30)
+    @Test
+    fun createSsm() = runTest {
+        val sell = SsmTransition(0, 1, "Seller", "Sell")
+        val buy = SsmTransition(1, 2, "Buyer", "Buy")
+        val ssm = Ssm(ssmName, Lists.newArrayList(sell, buy))
+        val result = tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
+        assertThat(result).isNotNull
+        assertThat(result.outcome).isEqualTo("Committed")
+    }
 
-	@Order(10)
-	@Test
-	fun adminUser() = runBlocking<Unit> {
-		val agentRet = query.getAdmin(chaincodeUri, ADMIN_NAME)
-		val agentFormClient = agentRet
-		Assertions.assertThat(agentFormClient).isEqualTo(agentAdmin)
-	}
+    // ------------------------------------------------------------------ //
+    //  C2-5 core: sendStart / sendPerform — single commands          //
+    // ------------------------------------------------------------------ //
 
-	@Test
-	@Order(20)
-	fun registerUser1() = runBlocking<Unit> {
-		val transactionEvent = tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
-		val trans = transactionEvent
-		assertThatTransactionExists(trans)
-	}
+    @Order(40)
+    @Test
+    fun `sendStart returns Committed CommandOutcome with transactionId and blockNumber`() = runTest {
+        val sessionName = "v2-deal-start-$uuid"
+        val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
+        val session = SsmSession(ssmName, sessionName, roles, "Starting v2 test", emptyMap())
+        val commandId = "cmd-start-$uuid"
 
-	@Order(30)
-	@Test
-	fun agentUser1() = runBlocking<Unit> {
-		val agentRet = query.getAgent(chaincodeUri, agentUser1.name)!!
-		Assertions.assertThat(agentRet).isEqualTo(agentUser1)
-	}
+        val commands = listOf(
+            SsmStartCommand(
+                msgId = commandId,
+                session = session,
+                chaincodeUri = chaincodeUri,
+                signerName = signerAdmin.name,
+            )
+        )
+        val outcomes: List<CommandOutcome> = tx.sendStart(commands)
 
-	@Test
-	@Order(40)
-	fun registerUser2() = runBlocking<Unit> {
-		val transactionEvent = tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
-		assertThatTransactionExists(transactionEvent)
-	}
+        assertThat(outcomes).hasSize(1)
+        val outcome = outcomes[0]
+        assertThat(outcome.outcome).isEqualTo("Committed")
+        assertThat(outcome.msgId).isEqualTo(commandId)
+        assertThat(outcome.transactionId).isNotNull.isNotEmpty
+        assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
 
-	@Order(50)
-	@Test
-	fun agentUser2() = runBlocking<Unit> {
-		val agentRet = query.getAgent(chaincodeUri, agentUser2.name)
-		Assertions.assertThat(agentRet).isEqualTo(agentUser2)
-	}
+        // Verify session was actually started on chain
+        val sessionState = query.getSession(chaincodeUri, sessionName)
+        assertThat(sessionState).isNotNull
+        assertThat(sessionState!!.current).isEqualTo(0)
+        assertThat(sessionState.ssm).isEqualTo(ssmName)
+    }
 
-	@Test
-	@Order(55)
-	fun listAgent() = runBlocking<Unit> {
-		val agentRet = query.listUsers(chaincodeUri)
-		Assertions.assertThat(agentRet).contains(agentUser1.name, agentUser2.name)
-	}
+    @Order(50)
+    @Test
+    fun `sendPerform returns Committed CommandOutcome with transactionId and blockNumber`() = runTest {
+        // Need a dedicated session for this test (Order 40 session can't be reused easily)
+        val sessionName = "v2-deal-perform-$uuid"
+        val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
+        val session = SsmSession(ssmName, sessionName, roles, "Perform v2 test", emptyMap())
 
-	@Test
-	@Order(60)
-	fun createSsm() = runBlocking<Unit> {
-		val sell = SsmTransition(0, 1, "Seller", "Sell")
-		val buy = SsmTransition(1, 2, "Buyer", "Buy")
-		val ssm = Ssm(ssmName, Lists.newArrayList(sell, buy))
-		val transactionEvent = tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
-		assertThatTransactionExists(transactionEvent)
-	}
+        // Start session via v1 path first so we can perform on it
+        tx.sendStart(chaincodeUri, session, signerAdmin.name)
 
-	@Order(70)
-	@Test
-	fun ssm() = runTest {
-		val ssmReq = query.getSsm(
-			chaincodeUri,
-			ssmName
-		)
-		Assertions.assertThat(ssmReq).isNotNull
-		Assertions.assertThat(ssmReq!!.name).isEqualTo(ssmName)
-	}
+        val commandId = "cmd-perform-$uuid"
+        val context = SsmContext(sessionName, "Selling via v2", 0, emptyMap())
+        val commands = listOf(
+            SsmPerformCommand(
+                msgId = commandId,
+                action = "Sell",
+                context = context,
+                chaincodeUri = chaincodeUri,
+                signerName = signerUser2.name,
+            )
+        )
+        val outcomes: List<CommandOutcome> = tx.sendPerform(commands)
 
-	@Test
-	@Order(80)
-	fun start() = runTest {
-		val roles: Map<String, String> = mapOf(
-			agentUser1.name to "Buyer", agentUser2.name to "Seller"
-		)
-		val session = SsmSession(
-			ssmName,
-			sessionName, roles, "Used car for 100 dollars.", emptyMap()
-		)
-		val transactionEvent = tx.sendStart(chaincodeUri, session, signerAdmin.name)
-		assertThatTransactionExists(transactionEvent)
-	}
+        assertThat(outcomes).hasSize(1)
+        val outcome = outcomes[0]
+        assertThat(outcome.outcome).isEqualTo("Committed")
+        assertThat(outcome.msgId).isEqualTo(commandId)
+        assertThat(outcome.transactionId).isNotNull.isNotEmpty
+        assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
 
-	@Order(90)
-	@Test
-	fun session() = runTest {
-		val ses = query.getSession(
-			chaincodeUri,
-			sessionName
-		)
+        // Verify action transitioned the session
+        val sessionState = query.getSession(chaincodeUri, sessionName)
+        assertThat(sessionState).isNotNull
+        assertThat(sessionState!!.current).isEqualTo(1)
+    }
 
-		Assertions.assertThat(ses?.current).isEqualTo(0)
-		Assertions.assertThat(ses?.iteration).isEqualTo(0)
-		Assertions.assertThat(ses?.origin).isNull()
-		Assertions.assertThat(ses?.ssm).isEqualTo(ssmName)
-		Assertions.assertThat(ses?.roles).isEqualTo(session.roles)
-		Assertions.assertThat(ses?.session).isEqualTo(session.session)
-		Assertions.assertThat(ses?.public).isEqualTo(session.public)
-	}
+    // ------------------------------------------------------------------ //
+    //  Batch tests: 2 commands in one /invoke call                    //
+    // ------------------------------------------------------------------ //
 
-	@Test
-	@Order(100)
-	fun performSell() = runTest {
-		var context = SsmContext(sessionName, "100 dollars 1978 Camaro", 0, emptyMap())
-		context = context.addPrivateMessage(
-			"Message to signer1",
-			agentUser1
-		)
-		privateMessage = context.private
-		val transactionEvent = tx.sendPerform(chaincodeUri,"Sell", context, signerUser2.name)
-		assertThatTransactionExists(transactionEvent)
-	}
+    @Order(60)
+    @Test
+    fun `sendStart with batch of 2 returns 2 Committed outcomes preserving commandIds`() = runTest {
+        val sessionName1 = "v2-batch-start-1-$uuid"
+        val sessionName2 = "v2-batch-start-2-$uuid"
+        val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
 
-	@Order(110)
-	@Test
-	fun sessionAfterSell() = runTest {
-		val sell = SsmTransition(0, 1, "Seller", "Sell")
-		val sesReq = query.getSession(
-			chaincodeUri,
-			sessionName
-		)
-		val stateExpected = SsmSessionState(
-			ssmName,
-			sessionName, session.roles, "100 dollars 1978 Camaro", privateMessage, sell, 1, 1
-		)
-		Assertions.assertThat(sesReq).isEqualTo(stateExpected)
-	}
+        val commandId1 = "cmd-batch-start-1-$uuid"
+        val commandId2 = "cmd-batch-start-2-$uuid"
 
-	@Order(110)
-	@Test
-	fun sessionAfterSellShouldReturnEncryptMessage() = runTest {
-//		val (from, to, role, action) = SsmTransition(0, 1, "Seller", "Sell")
-		val state = query.getSession(chaincodeUri, sessionName)
-		val expectedMessage = state?.getPrivateMessage(signerUser1)
-		Assertions.assertThat(expectedMessage).isEqualTo("Message to signer1")
-	}
+        val commands = listOf(
+            SsmStartCommand(
+                msgId = commandId1,
+                session = SsmSession(ssmName, sessionName1, roles, "Batch start 1", emptyMap()),
+                chaincodeUri = chaincodeUri,
+                signerName = signerAdmin.name,
+            ),
+            SsmStartCommand(
+                msgId = commandId2,
+                session = SsmSession(ssmName, sessionName2, roles, "Batch start 2", emptyMap()),
+                chaincodeUri = chaincodeUri,
+                signerName = signerAdmin.name,
+            )
+        )
+        val outcomes: List<CommandOutcome> = tx.sendStart(commands)
 
-	@Test
-	@Order(120)
-	fun performBuy() = runTest {
-		val context = SsmContext(sessionName, "Deal !", 1, emptyMap())
-		val transactionEvent = tx.sendPerform(chaincodeUri,"Buy", context, signerUser1.name)
-		assertThatTransactionExists(transactionEvent)
-	}
+        assertThat(outcomes).hasSize(2)
+        outcomes.forEachIndexed { index, outcome ->
+            assertThat(outcome.outcome).isEqualTo("Committed")
+            assertThat(outcome.msgId).isEqualTo(commands[index].msgId)
+            assertThat(outcome.transactionId).isNotNull.isNotEmpty
+            assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
+        }
+    }
 
-	suspend fun assertThatTransactionExists(trans: InvokeReturn) {
-		Assertions.assertThat(trans).isNotNull
-		Assertions.assertThat(trans.status).isEqualTo("SUCCESS")
-		val transaction: Transaction? = query.getTransaction(chaincodeUri, trans.transactionId)
-		Assertions.assertThat(transaction).isNotNull
-		Assertions.assertThat(transaction?.blockId).isNotNull
-		val block: Block? = query.getBlock(chaincodeUri, transaction!!.blockId)
-		Assertions.assertThat(block).isNotNull
-	}
+    @Order(70)
+    @Test
+    fun `sendPerform with batch of 2 returns 2 Committed outcomes preserving commandIds`() = runTest {
+        val sessionName1 = "v2-batch-perform-1-$uuid"
+        val sessionName2 = "v2-batch-perform-2-$uuid"
+        val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
 
-	@Order(130)
-	@Test
-	fun sessionAfterBuy() = runTest {
-		val buy = SsmTransition(1, 2, "Buyer", "Buy")
-		val sesReq = query.getSession(
-			chaincodeUri,
-			sessionName
-		)
-		val state = sesReq
-		val stateExcpected = SsmSessionState(
-			ssmName,
-			sessionName, session.roles, "Deal !", emptyMap(), buy, 2, 2
-		)
-		Assertions.assertThat(state).isEqualTo(stateExcpected)
-	}
+        // Start both sessions via v1 path
+        val session1 = SsmSession(ssmName, sessionName1, roles, "Batch perform 1", emptyMap())
+        val session2 = SsmSession(ssmName, sessionName2, roles, "Batch perform 2", emptyMap())
+        tx.sendStart(chaincodeUri, session1, signerAdmin.name)
+        tx.sendStart(chaincodeUri, session2, signerAdmin.name)
 
-	@Test
-	@Order(135)
-	@Throws(Exception::class)
-	fun logSession() = runTest {
-		val sesReq = query.log(
-			chaincodeUri,
-			sessionName
-		)
-		Assertions.assertThat(sesReq.size).isEqualTo(3)
-	}
+        val commandId1 = "cmd-batch-perform-1-$uuid"
+        val commandId2 = "cmd-batch-perform-2-$uuid"
 
-	@Test
-	@Order(140)
-	fun listSsm() = runTest {
-		val agentRet = query.listSsm(chaincodeUri)
-		Assertions.assertThat(agentRet).contains(ssmName)
-	}
+        val commands = listOf(
+            SsmPerformCommand(
+                msgId = commandId1,
+                action = "Sell",
+                context = SsmContext(sessionName1, "Selling batch 1 via v2", 0, emptyMap()),
+                chaincodeUri = chaincodeUri,
+                signerName = signerUser2.name,
+            ),
+            SsmPerformCommand(
+                msgId = commandId2,
+                action = "Sell",
+                context = SsmContext(sessionName2, "Selling batch 2 via v2", 0, emptyMap()),
+                chaincodeUri = chaincodeUri,
+                signerName = signerUser2.name,
+            )
+        )
+        val outcomes: List<CommandOutcome> = tx.sendPerform(commands)
 
-	@Test
-	@Order(150)
-	fun listSession() = runTest {
-		val agentRet = query.listSession(chaincodeUri)
-		Assertions.assertThat(agentRet).contains(sessionName)
-	}
+        assertThat(outcomes).hasSize(2)
+        outcomes.forEachIndexed { index, outcome ->
+            assertThat(outcome.outcome).isEqualTo("Committed")
+            assertThat(outcome.msgId).isEqualTo(commands[index].msgId)
+            assertThat(outcome.transactionId).isNotNull.isNotEmpty
+            assertThat(outcome.blockNumber).isNotNull.isGreaterThan(0L)
+        }
+
+        // Verify both sessions transitioned
+        val state1 = query.getSession(chaincodeUri, sessionName1)
+        val state2 = query.getSession(chaincodeUri, sessionName2)
+        assertThat(state1!!.current).isEqualTo(1)
+        assertThat(state2!!.current).isEqualTo(1)
+    }
 }

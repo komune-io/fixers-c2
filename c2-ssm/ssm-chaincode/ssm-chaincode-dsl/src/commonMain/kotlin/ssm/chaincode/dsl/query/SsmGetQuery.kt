@@ -1,6 +1,7 @@
 package ssm.chaincode.dsl.query
 
 import f2.dsl.fnc.F2Function
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import kotlin.js.JsExport
 import kotlin.js.JsName
 import kotlinx.serialization.Serializable
@@ -8,7 +9,6 @@ import ssm.chaincode.dsl.SsmItemResultDTO
 import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmName
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 /**
  * Retrieves a SSM
@@ -28,8 +28,8 @@ typealias SsmGetQueryFunction = F2Function<SsmGetQuery, SsmGetResult>
 @Serializable
 @JsName("SsmGetQuery")
 class SsmGetQuery(
-	override val chaincodeUri: ChaincodeUri,
-	/**
+    override val chaincodeUri: ChaincodeUri,
+    /**
 	 * Identifier of the SSM to retrieve
 	 * @example [Ssm.name]
 	 */

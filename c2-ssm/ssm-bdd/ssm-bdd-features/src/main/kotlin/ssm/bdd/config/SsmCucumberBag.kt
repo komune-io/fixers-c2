@@ -1,12 +1,12 @@
 package ssm.bdd.config
 
 import io.cucumber.java8.Scenario
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmName
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.sdk.core.SsmSdkConfig
 import ssm.sdk.core.SsmServiceFactory
 import ssm.sdk.sign.SsmCmdSignerSha256RSASigner

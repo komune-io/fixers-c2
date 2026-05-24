@@ -1,8 +1,8 @@
 package ssm.chaincode.f2.features.command
 
+import io.komune.c2.chaincode.dsl.burst
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import ssm.chaincode.dsl.model.uri.burst
 import ssm.sdk.core.SsmTxService
 import ssm.tx.dsl.features.ssm.SsmCreateCommand
 import ssm.tx.dsl.features.ssm.SsmCreateResult
@@ -21,7 +21,7 @@ class SsmTxCreateFunctionImpl(
 	}.let {
 		ssmTxService.sendCreate(it).map { result ->
 			SsmCreateResult(
-				transactionId = result.transactionId,
+				transactionId = result.transactionId.orEmpty(),
 			)
 		}
 	}

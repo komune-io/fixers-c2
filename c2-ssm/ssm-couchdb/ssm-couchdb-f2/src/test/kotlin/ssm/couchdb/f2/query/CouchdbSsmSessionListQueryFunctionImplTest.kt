@@ -1,11 +1,10 @@
 package ssm.couchdb.f2.query
 
 import f2.dsl.fnc.invokeWith
-import kotlinx.coroutines.runBlocking
+import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.from
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import ssm.chaincode.dsl.model.uri.ChaincodeUri
-import ssm.chaincode.dsl.model.uri.from
 import ssm.couchdb.bdd.TestConfig
 import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQuery
 import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQueryFunction
@@ -16,7 +15,7 @@ internal class CouchdbSsmSessionListQueryFunctionImplTest : FunctionTestBase() {
 		= queries.couchdbSsmSessionStateListQueryFunction()
 
 	@Test
-	fun `must return all sessions`(): Unit = runBlocking {
+	suspend fun `must return all sessions`() {
 		val sessions = CouchdbSsmSessionStateListQuery(
 			chaincodeUri = ChaincodeUri.from(
 				channelId = TestConfig.CHANNEL_ID,

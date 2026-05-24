@@ -86,7 +86,41 @@ Key blockchain ops:
 REST endpoint config:
 ```properties
 ssm.rest.url=http://peer0.pr-bc1.civis-blockchain.org:9090
+# CloudEvents producer identity attached to every `/invoke` request envelope.
+# Optional, defaults to `/io.komune.c2/sdk`.
+ssm.cloudevents.source=/io.komune.c2/sdk
 ```
+
+Gateway side (`chaincode-api-gateway` Spring app):
+```properties
+# CloudEvents `source` attribute the gateway sets on every emitted response envelope.
+# Optional, defaults to `/io.komune.c2/gateway`.
+c2.cloudevents.source=/io.komune.c2/gateway
+```
+
+## `/invoke` API wire format
+
+`POST /invoke` consumes and produces CloudEvents 1.0 structured-mode JSON
+(see CE spec §3.1). Each request and response item is a CloudEvents envelope:
+
+```json
+{
+  "specversion": "1.0",
+  "id": "client-uuid-1",
+  "source": "/io.komune.c2/sdk",
+  "type": "io.komune.c2.invoke",
+  "time": "2026-05-22T10:30:00Z",
+  "datacontenttype": "application/json",
+  "data": { ...InvokeRequest or OutcomeData... }
+}
+```
+
+Responses additionally carry `subject` set to the originating request `id` for
+correlation. Response `type` is one of `io.komune.c2.invoke.outcome.{committed,
+rejected,transient,indeterminate,conflict}` — see `InvokeType.Outcome.*`.
+
+Content-Type stays `application/json`; the endpoint also accepts
+`application/cloudevents-batch+json` for future framing migration.
 
 CouchDB for query optimization:
 ```properties

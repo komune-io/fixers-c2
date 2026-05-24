@@ -40,7 +40,12 @@ class SsmServiceFactory(
             batch: SsmBatchProperties,
             bearerTokenHeaderProvider: BearerTokenAuthCredentials? = null
 		): SsmServiceFactory {
-			val coopRepository = KtorRepository(config.baseUrl, batch.timeout.toLong(), bearerTokenHeaderProvider)
+			val coopRepository = KtorRepository(
+				baseUrl = config.baseUrl,
+				timeout = batch.timeout.toLong(),
+				authCredentials = bearerTokenHeaderProvider,
+				cloudEventsSource = config.cloudEventsSource,
+			)
 			val converter = JSONConverterObjectMapper()
 			return SsmServiceFactory(
 				coopRepository = coopRepository,

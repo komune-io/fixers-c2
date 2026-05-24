@@ -2,10 +2,10 @@ package ssm.tx.dsl.features
 
 import f2.dsl.cqrs.Command
 import f2.dsl.cqrs.Event
+import io.komune.c2.chaincode.dsl.ChaincodeUriDTO
+import io.komune.c2.chaincode.dsl.TransactionId
 import kotlin.js.JsExport
 import kotlin.js.JsName
-import ssm.chaincode.dsl.blockchain.TransactionId
-import ssm.chaincode.dsl.model.uri.ChaincodeUriDTO
 
 @JsExport
 @JsName("SsmCommandDTO")
@@ -36,7 +36,7 @@ interface SsmCommandResultDTO : Event {
 @JsExport
 @JsName("SsmCommandResult")
 data class SsmCommandResult(
-	/**
+    /**
 	 * Identifier of the transaction
 	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
 	 */
