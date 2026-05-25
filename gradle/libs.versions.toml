@@ -3,7 +3,7 @@ fixers = "0.40.0-SNAPSHOT"
 fabric = "2.2.26"
 fabricGateway = "1.7.1"
 grpc = "1.67.1"
-protobuf = "4.28.2"
+protobuf = "4.35.0"
 bouncycastle = "1.70"
 cloudant = "0.10.17"
 
