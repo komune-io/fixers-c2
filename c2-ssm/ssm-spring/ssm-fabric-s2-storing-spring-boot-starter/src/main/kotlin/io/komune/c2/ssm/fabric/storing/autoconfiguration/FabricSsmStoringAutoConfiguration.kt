@@ -20,31 +20,6 @@ import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 import ssm.tx.config.spring.autoconfigure.SsmTxAutoConfiguration
 
-/**
- * Wires the in-process Fabric transport into the existing SSM bean graph.
- *
- * What this autoconfig provides:
- * - `SsmRequesterRepository` -> [FabricRepository] (wraps [FabricGatewayClient]).
- * - `SsmTxService` and `SsmQueryService` -> built via [SsmServiceFactory] using the Fabric
- *   repository above.
- *
- * What it deliberately does NOT provide:
- * - `SsmCmdSigner` / `SsmBatchProperties`: consumed from [SsmTxAutoConfiguration]. The signer
- *   reads `ssm.signer.admin.*` properties — the consumer keeps those.
- * - The four F2 functions (`SsmTxSessionStartFunction`, `SsmTxSessionPerformActionFunction`,
- *   `SsmTxInitFunction`, `SsmGetSessionLogsQueryFunction`): provided by the sibling tx /
- *   chaincode starters, which autowire `SsmTxService` and `SsmQueryService`. Once our beans
- *   are present, those starters' impls just work.
- *
- * Coexistence with the ktor path:
- * - [SsmTxAutoConfiguration] only produces `SsmTxService` / `SsmQueryService` when
- *   `ssm.chaincode.url` is set (via `SsmChaincodeProperties`). The Phase 2 consumer change
- *   removes that property, so the ktor beans never materialise and our `@ConditionalOnMissingBean`
- *   beans win unopposed.
- * - `@ConditionalOnClass(FabricGatewayClient::class)` keeps this autoconfig dormant if the
- *   `chaincode-api-fabric` artifact is absent from the classpath.
- * - `coop.fabric.enabled=false` is an emergency kill switch.
- */
 @AutoConfiguration(after = [
     C2ChaincodeAutoConfiguration::class,
     FabricClientConfiguration::class,
@@ -87,12 +62,8 @@ class FabricSsmStoringAutoConfiguration {
         batch = ssmBatchProperties,
     ).buildQueryService()
 
-    /**
-     * Provided here because the upstream SsmChaincodeAutoConfiguration that normally produces
-     * this F2 bean is gated on `ssm.chaincode.url` (the old HTTP transport property), which
-     * the consumer no longer sets. SsmAutomatePersister autowires this bean to load session
-     * iteration state during persist().
-     */
+    // Upstream SsmChaincodeAutoConfiguration is gated on `ssm.chaincode.url`, which the
+    // Fabric-only consumer no longer sets — provide it here so SsmAutomatePersister resolves.
     @Bean
     @ConditionalOnMissingBean
     fun ssmGetSessionLogsQueryFunction(

@@ -104,12 +104,8 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
-	/**
-	 * Submits a batch of invocations to the gateway's CloudEvents-shaped `/invoke` endpoint.
-	 *
-	 * Producers MUST ensure `(cloudEventsSource, msgId)` pairs are unique per
-	 * CloudEvents 1.0 §3.1.1 — the gateway treats `msgId` as the CE `id` attribute.
-	 */
+	// `(cloudEventsSource, msgId)` pairs must be unique per CloudEvents 1.0 §3.1.1 —
+	// the gateway uses `msgId` as the CE `id` attribute.
 	override suspend fun invoke(
 		invokeArgs: List<InvokeRequest>,
 		msgIds: List<String>,
@@ -232,10 +228,7 @@ private const val OUTCOME_REJECTED = "Rejected"
 private const val OUTCOME_TRANSIENT = "Transient"
 private const val OUTCOME_INDETERMINATE = "Indeterminate"
 
-/**
- * Wire shape of the gateway's `OutcomeData` (CE `data` field).
- * Locally redeclared because the gateway type lives in the Spring app, not in a shared module.
- */
+// Locally redeclared: the gateway's `OutcomeData` lives in the Spring app, not a shared module.
 internal data class OutcomeWire(
 	val transactionId: String? = null,
 	val blockNumber: Long? = null,

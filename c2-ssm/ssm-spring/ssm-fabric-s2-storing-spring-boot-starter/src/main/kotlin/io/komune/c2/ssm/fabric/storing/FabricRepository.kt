@@ -11,23 +11,6 @@ import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.repository.SsmRequesterRepository
 import ssm.sdk.dsl.CommandOutcome
 
-/**
- * In-process [SsmRequesterRepository] backed by [FabricGatewayClient] — submits SSM commands
- * directly to a Hyperledger Fabric peer / orderer via the Java Gateway SDK.
- *
- * Pipeline per call:
- *   - `query`: builds a single [InvokeArgs] from the chaincode function + values, delegates
- *     to `FabricGatewayClient.query`, returns the first (only) result string.
- *   - `invoke`: groups `InvokeRequest`s by `(channelid, chaincodeid)`, delegates one batch per
- *     pair to `FabricGatewayClient.invoke`, maps each `TxOutcome` to a `CommandOutcome`.
- *
- * Both calls require the `channelid` and `chaincodeid` to be non-null — the gateway-API HTTP
- * shape allowed them to default from `coop.defaultCcid` server-side, but in-process there is
- * no default fallback layer between this repository and the Fabric SDK.
- *
- * Result list order is preserved per group but NOT across groups when multiple
- * `(channelId, chaincodeId)` pairs appear in one call. Callers key by [CommandOutcome.msgId].
- */
 class FabricRepository(
     private val fabricGatewayClient: FabricGatewayClient,
 ) : SsmRequesterRepository {

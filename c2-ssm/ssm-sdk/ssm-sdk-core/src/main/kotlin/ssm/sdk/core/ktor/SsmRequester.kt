@@ -74,19 +74,9 @@ class SsmRequester(
 		)
 	}
 
-	/**
-	 * Per-query helper. Dispatches one parallel GET per [SsmApiQuery] and decodes each
-	 * response as [T] (typically nullable for single-item lookups). Returns one element
-	 * per input query, in input order — no flatten.
-	 */
 	suspend fun <T> queryEach(queries: List<SsmApiQuery>, clazz: TypeReference<T>): List<T> =
 		queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
 
-	/**
-	 * Per-query helper for queries whose chaincode response is itself a JSON array.
-	 * Dispatches one parallel GET per [SsmApiQuery] and decodes each response as
-	 * `List<T>`. Returns one inner list per input query, in input order — no flatten.
-	 */
 	suspend fun <T> queryEachList(
 		queries: List<SsmApiQuery>,
 		clazz: TypeReference<List<T>>,
