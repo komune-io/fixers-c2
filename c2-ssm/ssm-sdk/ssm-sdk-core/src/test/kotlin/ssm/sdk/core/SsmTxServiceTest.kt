@@ -85,7 +85,7 @@ class SsmTxServiceTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            ssmChaincodeClient = repository,
+            ssmChaincodeRepository = repository,
         )
     }
 

@@ -35,7 +35,7 @@ class SsmRequesterQueryEachListTest {
 		)
 		return SsmRequester(
 			jsonConverter = JSONConverterObjectMapper(),
-			ssmChaincodeClient = repository,
+			ssmChaincodeRepository = repository,
 		)
 	}
 

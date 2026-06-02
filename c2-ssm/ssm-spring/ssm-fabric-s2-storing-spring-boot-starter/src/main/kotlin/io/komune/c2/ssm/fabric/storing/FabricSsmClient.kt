@@ -8,12 +8,12 @@ import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
-import ssm.sdk.core.client.SsmChaincodeClient
+import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.dsl.CommandOutcome
 
 class FabricSsmClient(
     private val fabricGatewayClient: FabricGatewayClient,
-) : SsmChaincodeClient {
+) : SsmChaincodeRepository {
 
     private val logger = LoggerFactory.getLogger(FabricSsmClient::class.java)
 

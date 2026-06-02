@@ -15,7 +15,7 @@ import ssm.chaincode.f2.query.SsmGetSessionLogsQueryFunctionImpl
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmServiceFactory
 import ssm.sdk.core.SsmTxService
-import ssm.sdk.core.client.SsmChaincodeClient
+import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 import ssm.tx.config.spring.autoconfigure.SsmTxAutoConfiguration
@@ -36,17 +36,17 @@ class FabricSsmStoringAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun ssmChaincodeClient(fabricGatewayClient: FabricGatewayClient): SsmChaincodeClient =
+    fun ssmChaincodeRepository(fabricGatewayClient: FabricGatewayClient): SsmChaincodeRepository =
         FabricSsmClient(fabricGatewayClient)
 
     @Bean
     @ConditionalOnMissingBean
     fun ssmTxService(
-        ssmChaincodeClient: SsmChaincodeClient,
+        ssmChaincodeRepository: SsmChaincodeRepository,
         ssmCmdSigner: SsmCmdSigner,
         ssmBatchProperties: SsmBatchProperties,
     ): SsmTxService = SsmServiceFactory(
-        ssmChaincodeClient = ssmChaincodeClient,
+        ssmChaincodeRepository = ssmChaincodeRepository,
         jsonConverter = JSONConverterObjectMapper(),
         batch = ssmBatchProperties,
     ).buildTxService(ssmCmdSigner)
@@ -54,10 +54,10 @@ class FabricSsmStoringAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun ssmQueryService(
-        ssmChaincodeClient: SsmChaincodeClient,
+        ssmChaincodeRepository: SsmChaincodeRepository,
         ssmBatchProperties: SsmBatchProperties,
     ): SsmQueryService = SsmServiceFactory(
-        ssmChaincodeClient = ssmChaincodeClient,
+        ssmChaincodeRepository = ssmChaincodeRepository,
         jsonConverter = JSONConverterObjectMapper(),
         batch = ssmBatchProperties,
     ).buildQueryService()

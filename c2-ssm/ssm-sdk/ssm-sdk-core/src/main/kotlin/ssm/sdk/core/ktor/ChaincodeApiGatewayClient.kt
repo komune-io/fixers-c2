@@ -25,7 +25,7 @@ import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
-import ssm.sdk.core.client.SsmChaincodeClient
+import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
 import java.time.OffsetDateTime
@@ -37,7 +37,7 @@ class ChaincodeApiGatewayClient(
 	private val authCredentials: AuthCredentials?,
 	private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 	client: HttpClient? = null,
-) : SsmChaincodeClient {
+) : SsmChaincodeRepository {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"

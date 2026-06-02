@@ -1,4 +1,4 @@
-package ssm.sdk.core.client
+package ssm.sdk.core.repository
 
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import ssm.chaincode.dsl.model.ChaincodeId
@@ -9,7 +9,7 @@ import ssm.sdk.dsl.CommandOutcome
  * Callers must correlate [invoke] results by [CommandOutcome.msgId], not list position —
  * implementations are free to reorder across `(channelId, chaincodeId)` groupings.
  */
-interface SsmChaincodeClient {
+interface SsmChaincodeRepository {
 	suspend fun query(
 		cmd: String,
 		fcn: String,
