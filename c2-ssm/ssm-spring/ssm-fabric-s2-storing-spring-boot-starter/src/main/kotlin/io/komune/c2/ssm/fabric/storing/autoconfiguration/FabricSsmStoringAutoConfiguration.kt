@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import ssm.chaincode.dsl.config.SsmBatchProperties
+import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
+import ssm.chaincode.f2.query.SsmGetSessionLogsQueryFunctionImpl
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmServiceFactory
 import ssm.sdk.core.SsmTxService
@@ -84,4 +86,18 @@ class FabricSsmStoringAutoConfiguration {
         jsonConverter = JSONConverterObjectMapper(),
         batch = ssmBatchProperties,
     ).buildQueryService()
+
+    /**
+     * Provided here because the upstream SsmChaincodeAutoConfiguration that normally produces
+     * this F2 bean is gated on `ssm.chaincode.url` (the old HTTP transport property), which
+     * the consumer no longer sets. SsmAutomatePersister autowires this bean to load session
+     * iteration state during persist().
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    fun ssmGetSessionLogsQueryFunction(
+        ssmQueryService: SsmQueryService,
+        ssmBatchProperties: SsmBatchProperties,
+    ): SsmGetSessionLogsQueryFunction =
+        SsmGetSessionLogsQueryFunctionImpl(ssmBatchProperties, ssmQueryService)
 }
