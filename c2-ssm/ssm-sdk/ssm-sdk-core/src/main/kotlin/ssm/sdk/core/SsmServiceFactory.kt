@@ -3,24 +3,24 @@ package ssm.sdk.core
 import java.io.IOException
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
-import ssm.sdk.core.ktor.KtorRepository
+import ssm.sdk.core.client.SsmChaincodeClient
+import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
 import ssm.sdk.core.ktor.SsmRequester
-import ssm.sdk.core.repository.SsmRequesterRepository
 import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 
 class SsmServiceFactory(
-    private var ssmRequesterRepository: SsmRequesterRepository,
+    private var ssmChaincodeClient: SsmChaincodeClient,
     private var jsonConverter: JSONConverterObjectMapper,
     private val batch: SsmBatchProperties,
 ) {
 
 	fun buildQueryService(): SsmQueryService {
-		return SsmQueryService(SsmRequester(jsonConverter, ssmRequesterRepository))
+		return SsmQueryService(SsmRequester(jsonConverter, ssmChaincodeClient))
 	}
 
 	fun buildTxService(ssmCmdSigner: SsmCmdSigner): SsmTxService {
-		val ssmService = SsmService(SsmRequester(jsonConverter, ssmRequesterRepository),
+		val ssmService = SsmService(SsmRequester(jsonConverter, ssmChaincodeClient),
 			ssmCmdSigner)
 		return SsmTxService(ssmService, batch)
 	}
@@ -41,7 +41,7 @@ class SsmServiceFactory(
             batch: SsmBatchProperties,
             bearerTokenHeaderProvider: BearerTokenAuthCredentials? = null
 		): SsmServiceFactory {
-			val ktorRepository = KtorRepository(
+			val gatewayClient = ChaincodeApiGatewayClient(
 				baseUrl = config.baseUrl,
 				timeout = batch.timeout.toLong(),
 				authCredentials = bearerTokenHeaderProvider,
@@ -49,7 +49,7 @@ class SsmServiceFactory(
 			)
 			val converter = JSONConverterObjectMapper()
 			return SsmServiceFactory(
-				ssmRequesterRepository = ktorRepository,
+				ssmChaincodeClient = gatewayClient,
 				jsonConverter = converter,
 				batch = batch
 			)

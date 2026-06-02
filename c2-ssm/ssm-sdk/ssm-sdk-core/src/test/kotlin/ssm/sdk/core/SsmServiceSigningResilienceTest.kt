@@ -13,7 +13,7 @@ import io.ktor.serialization.jackson.jackson
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import ssm.sdk.core.ktor.KtorRepository
+import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
@@ -83,7 +83,7 @@ class SsmServiceSigningResilienceTest {
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
         }
-        val repository = KtorRepository(
+        val repository = ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -91,7 +91,7 @@ class SsmServiceSigningResilienceTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            ssmRequesterRepository = repository,
+            ssmChaincodeClient = repository,
         )
     }
 

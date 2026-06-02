@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class FabricRepositoryTest {
+class FabricSsmClientTest {
 
     @Test
     fun `query delegates to FabricGatewayClient and returns first result`() = runTest {
@@ -25,7 +25,7 @@ class FabricRepositoryTest {
             fabric.query("sandbox", "ssm", capture(capturedArgs))
         } returns listOf("""{"sessionName":"42"}""")
 
-        val repo = FabricRepository(fabric)
+        val repo = FabricSsmClient(fabric)
         val result = repo.query(
             cmd = "query",
             fcn = "GetSessionLogs",
@@ -42,7 +42,7 @@ class FabricRepositoryTest {
 
     @Test
     fun `query throws when channelId is null`() = runTest {
-        val repo = FabricRepository(mockk())
+        val repo = FabricSsmClient(mockk())
         assertThrows<IllegalArgumentException> {
             repo.query("query", "GetSessionLogs", listOf("a"), channelId = null, chaincodeId = "ssm")
         }
@@ -57,7 +57,7 @@ class FabricRepositoryTest {
             TxOutcome.Committed(msgId = "msg-1", transactionId = "tx-1", blockNumber = 7, payload = "{}"),
         )
 
-        val repo = FabricRepository(fabric)
+        val repo = FabricSsmClient(fabric)
         val outcomes = repo.invoke(
             invokeArgs = listOf(
                 InvokeRequest(channelid = "sandbox", chaincodeid = "ssm",
@@ -89,7 +89,7 @@ class FabricRepositoryTest {
 
         val req = InvokeRequest(channelid = "sandbox", chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
-        val repo = FabricRepository(fabric)
+        val repo = FabricSsmClient(fabric)
         val outcomes = repo.invoke(
             invokeArgs = List(5) { req },
             msgIds = listOf("m-c", "m-r", "m-t", "m-i", "m-co"),
@@ -119,7 +119,7 @@ class FabricRepositoryTest {
         val b = InvokeRequest(channelid = "chan-B", chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
 
-        val repo = FabricRepository(fabric)
+        val repo = FabricSsmClient(fabric)
         val outcomes = repo.invoke(listOf(a, b, a), listOf("a1", "b1", "a2"))
 
         assertEquals(3, outcomes.size)
@@ -130,7 +130,7 @@ class FabricRepositoryTest {
 
     @Test
     fun `invoke throws when an InvokeRequest has null channelid`() = runTest {
-        val repo = FabricRepository(mockk())
+        val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = null, chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
         assertThrows<IllegalArgumentException> {
@@ -140,7 +140,7 @@ class FabricRepositoryTest {
 
     @Test
     fun `invoke require msgIds size matches invokeArgs size`() = runTest {
-        val repo = FabricRepository(mockk())
+        val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = "s", chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
         assertThrows<IllegalArgumentException> {

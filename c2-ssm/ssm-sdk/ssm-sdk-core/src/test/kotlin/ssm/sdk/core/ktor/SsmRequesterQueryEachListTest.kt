@@ -27,7 +27,7 @@ class SsmRequesterQueryEachListTest {
 		val client = HttpClient(engine) {
 			install(ContentNegotiation) { jackson() }
 		}
-		val repository = KtorRepository(
+		val repository = ChaincodeApiGatewayClient(
 			baseUrl = "http://localhost:9090",
 			timeout = 5_000L,
 			authCredentials = null,
@@ -35,7 +35,7 @@ class SsmRequesterQueryEachListTest {
 		)
 		return SsmRequester(
 			jsonConverter = JSONConverterObjectMapper(),
-			ssmRequesterRepository = repository,
+			ssmChaincodeClient = repository,
 		)
 	}
 

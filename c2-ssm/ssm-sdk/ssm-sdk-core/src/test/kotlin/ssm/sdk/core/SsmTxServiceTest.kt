@@ -18,7 +18,7 @@ import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
-import ssm.sdk.core.ktor.KtorRepository
+import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
@@ -77,7 +77,7 @@ class SsmTxServiceTest {
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
         }
-        val repository = KtorRepository(
+        val repository = ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -85,7 +85,7 @@ class SsmTxServiceTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            ssmRequesterRepository = repository,
+            ssmChaincodeClient = repository,
         )
     }
 
@@ -157,7 +157,7 @@ class SsmTxServiceTest {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
+        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 
@@ -231,7 +231,7 @@ class SsmTxServiceTest {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
+        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 

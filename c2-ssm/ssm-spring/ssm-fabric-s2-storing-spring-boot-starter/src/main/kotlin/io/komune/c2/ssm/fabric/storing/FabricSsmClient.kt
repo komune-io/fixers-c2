@@ -8,14 +8,14 @@ import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
-import ssm.sdk.core.repository.SsmRequesterRepository
+import ssm.sdk.core.client.SsmChaincodeClient
 import ssm.sdk.dsl.CommandOutcome
 
-class FabricRepository(
+class FabricSsmClient(
     private val fabricGatewayClient: FabricGatewayClient,
-) : SsmRequesterRepository {
+) : SsmChaincodeClient {
 
-    private val logger = LoggerFactory.getLogger(FabricRepository::class.java)
+    private val logger = LoggerFactory.getLogger(FabricSsmClient::class.java)
 
     override suspend fun query(
         cmd: String,
@@ -24,8 +24,8 @@ class FabricRepository(
         channelId: ChannelId?,
         chaincodeId: ChaincodeId?,
     ): String {
-        require(channelId != null) { "FabricRepository.query: channelId is required" }
-        require(chaincodeId != null) { "FabricRepository.query: chaincodeId is required" }
+        require(channelId != null) { "FabricSsmClient.query: channelId is required" }
+        require(chaincodeId != null) { "FabricSsmClient.query: chaincodeId is required" }
         val invokeArgs = InvokeArgs(function = fcn, values = args)
         logger.debug("query [{}:{}] fcn={} args={}", channelId, chaincodeId, fcn, args)
         return fabricGatewayClient.query(channelId, chaincodeId, listOf(invokeArgs)).first()
@@ -40,8 +40,8 @@ class FabricRepository(
         }
         if (invokeArgs.isEmpty()) return emptyList()
         invokeArgs.forEach { req ->
-            require(req.channelid != null) { "FabricRepository.invoke: InvokeRequest.channelid is required" }
-            require(req.chaincodeid != null) { "FabricRepository.invoke: InvokeRequest.chaincodeid is required" }
+            require(req.channelid != null) { "FabricSsmClient.invoke: InvokeRequest.channelid is required" }
+            require(req.chaincodeid != null) { "FabricSsmClient.invoke: InvokeRequest.chaincodeid is required" }
         }
 
         return invokeArgs.zip(msgIds)

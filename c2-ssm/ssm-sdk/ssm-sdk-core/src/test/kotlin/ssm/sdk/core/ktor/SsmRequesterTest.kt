@@ -38,7 +38,7 @@ class SsmRequesterTest {
                 jackson()
             }
         }
-        val repository = KtorRepository(
+        val repository = ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -46,7 +46,7 @@ class SsmRequesterTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            ssmRequesterRepository = repository,
+            ssmChaincodeClient = repository,
         )
     }
 

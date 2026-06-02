@@ -1,7 +1,7 @@
 package io.komune.c2.ssm.fabric.storing.autoconfiguration
 
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
-import io.komune.c2.ssm.fabric.storing.FabricRepository
+import io.komune.c2.ssm.fabric.storing.FabricSsmClient
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.sdk.core.SsmQueryService
 import ssm.sdk.core.SsmTxService
-import ssm.sdk.core.repository.SsmRequesterRepository
+import ssm.sdk.core.client.SsmChaincodeClient
 import ssm.sdk.sign.SsmCmdSigner
 
 class FabricSsmStoringAutoConfigurationTest {
@@ -22,31 +22,31 @@ class FabricSsmStoringAutoConfigurationTest {
         .withUserConfiguration(UpstreamStubs::class.java)
 
     @Test
-    fun `produces SsmRequesterRepository SsmTxService and SsmQueryService`() {
+    fun `produces SsmChaincodeClient SsmTxService and SsmQueryService`() {
         runner.run { ctx ->
-            assertThat(ctx).hasSingleBean(SsmRequesterRepository::class.java)
+            assertThat(ctx).hasSingleBean(SsmChaincodeClient::class.java)
             assertThat(ctx).hasSingleBean(SsmTxService::class.java)
             assertThat(ctx).hasSingleBean(SsmQueryService::class.java)
-            assertThat(ctx.getBean(SsmRequesterRepository::class.java))
-                .isInstanceOf(FabricRepository::class.java)
+            assertThat(ctx.getBean(SsmChaincodeClient::class.java))
+                .isInstanceOf(FabricSsmClient::class.java)
         }
     }
 
     @Test
     fun `kill switch disables wiring when coop_fabric_enabled is false`() {
         runner.withPropertyValues("coop.fabric.enabled=false").run { ctx ->
-            assertThat(ctx).doesNotHaveBean(SsmRequesterRepository::class.java)
+            assertThat(ctx).doesNotHaveBean(SsmChaincodeClient::class.java)
             assertThat(ctx).doesNotHaveBean(SsmTxService::class.java)
             assertThat(ctx).doesNotHaveBean(SsmQueryService::class.java)
         }
     }
 
     @Test
-    fun `consumer override of SsmRequesterRepository wins via ConditionalOnMissingBean`() {
-        val override = mockk<SsmRequesterRepository>(relaxed = true)
-        runner.withBean(SsmRequesterRepository::class.java, { override }).run { ctx ->
-            assertThat(ctx).hasSingleBean(SsmRequesterRepository::class.java)
-            assertThat(ctx.getBean(SsmRequesterRepository::class.java)).isSameAs(override)
+    fun `consumer override of SsmChaincodeClient wins via ConditionalOnMissingBean`() {
+        val override = mockk<SsmChaincodeClient>(relaxed = true)
+        runner.withBean(SsmChaincodeClient::class.java, { override }).run { ctx ->
+            assertThat(ctx).hasSingleBean(SsmChaincodeClient::class.java)
+            assertThat(ctx.getBean(SsmChaincodeClient::class.java)).isSameAs(override)
         }
     }
 

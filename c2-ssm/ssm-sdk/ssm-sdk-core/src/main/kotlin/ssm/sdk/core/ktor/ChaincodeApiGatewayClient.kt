@@ -25,20 +25,19 @@ import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
-import ssm.sdk.core.repository.SsmRequesterRepository
+import ssm.sdk.core.client.SsmChaincodeClient
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
 
-class KtorRepository(
+class ChaincodeApiGatewayClient(
 	private val baseUrl: String,
 	private val timeout: Long,
 	private val authCredentials: AuthCredentials?,
 	private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 	client: HttpClient? = null,
-) : SsmRequesterRepository {
+) : SsmChaincodeClient {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"

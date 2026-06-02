@@ -31,7 +31,7 @@ import ssm.sdk.sign.model.SignerUser
  * SsmTxService.sendStart / sendPerform
  *   → SsmService.invokeAll
  *   → SsmRequester.invokeAll
- *   → KtorRepository.invoke
+ *   → ChaincodeApiGatewayClient.invoke
  *   → POST /invoke
  *   → live chaincode-api-gateway
  *   → live Fabric peer + chaincode commit
