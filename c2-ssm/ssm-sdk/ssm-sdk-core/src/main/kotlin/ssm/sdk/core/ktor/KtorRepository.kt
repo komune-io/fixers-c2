@@ -104,8 +104,6 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
-	// `(cloudEventsSource, msgId)` pairs must be unique per CloudEvents 1.0 §3.1.1 —
-	// the gateway uses `msgId` as the CE `id` attribute.
 	override suspend fun invoke(
 		invokeArgs: List<InvokeRequest>,
 		msgIds: List<String>,
@@ -228,7 +226,6 @@ private const val OUTCOME_REJECTED = "Rejected"
 private const val OUTCOME_TRANSIENT = "Transient"
 private const val OUTCOME_INDETERMINATE = "Indeterminate"
 
-// Locally redeclared: the gateway's `OutcomeData` lives in the Spring app, not a shared module.
 internal data class OutcomeWire(
 	val transactionId: String? = null,
 	val blockNumber: Long? = null,
