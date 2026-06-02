@@ -21,4 +21,5 @@ dependencies {
 	kapt(libs.spring.boot.configuration.processor)
 
 	testImplementation(libs.bundles.test)
+	testImplementation("io.mockk:mockk:1.13.13")
 }
