@@ -33,10 +33,13 @@ dependencies {
     testImplementation(libs.bundles.test)
 }
 
-// gRPC and protobuf are pinned via enforcedPlatform BOMs for internal consistency.
-// Maven publication metadata validates against this; suppress per Gradle's recommended path
-// since downstream consumers (Spring Boot apps embedding this library) deliberately want the
-// pinned versions to avoid gRPC/Netty version drift.
+// enforcedPlatform(grpc/protobuf BOMs) is required: fabric-gateway is compiled against
+// specific gRPC/Netty/protobuf ABIs and drifting any of them produces NoSuchMethodError /
+// NoClassDefFoundError at runtime. Plain `platform(...)` would let downstream BOMs
+// (e.g. Spring Boot) win conflict resolution and break Fabric compat.
+// `suppressedValidationErrors.add("enforced-platform")` is an intentional escape hatch:
+// Gradle blocks publishing components with enforced platforms by default because the
+// forced constraints leak transitively to consumers — accepted trade-off here.
 tasks.withType<GenerateModuleMetadata>().configureEach {
     suppressedValidationErrors.add("enforced-platform")
 }

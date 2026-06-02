@@ -28,7 +28,8 @@ class FabricSsmClient(
         require(chaincodeId != null) { "FabricSsmClient.query: chaincodeId is required" }
         val invokeArgs = InvokeArgs(function = fcn, values = args)
         logger.debug("query [{}:{}] fcn={} args={}", channelId, chaincodeId, fcn, args)
-        return fabricGatewayClient.query(channelId, chaincodeId, listOf(invokeArgs)).first()
+        return fabricGatewayClient.query(channelId, chaincodeId, listOf(invokeArgs)).firstOrNull()
+            ?: error("FabricSsmClient.query: empty result for [$channelId:$chaincodeId] fcn=$fcn")
     }
 
     override suspend fun invoke(
@@ -51,7 +52,20 @@ class FabricSsmClient(
                 val args = items.map { (req, _) -> req.toInvokeArgs() }
                 val ids = items.map { (_, id) -> id }
                 logger.info("invoke {} tx(s) on [{}:{}]", items.size, channelId, chaincodeId)
-                fabricGatewayClient.invoke(channelId, chaincodeId, args, ids).map { it.toCommandOutcome() }
+                runCatching {
+                    fabricGatewayClient.invoke(channelId, chaincodeId, args, ids).map { it.toCommandOutcome() }
+                }.getOrElse { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    logger.warn("invoke failed on [{}:{}]: {}", channelId, chaincodeId, e.message)
+                    ids.map { id ->
+                        CommandOutcome(
+                            outcome = "Indeterminate",
+                            msgId = id,
+                            errorCode = "TRANSPORT_ERROR",
+                            errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+                        )
+                    }
+                }
             }
     }
 

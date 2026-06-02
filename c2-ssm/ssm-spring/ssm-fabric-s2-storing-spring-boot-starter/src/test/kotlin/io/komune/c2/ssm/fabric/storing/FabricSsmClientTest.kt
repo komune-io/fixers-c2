@@ -147,4 +147,28 @@ class FabricSsmClientTest {
             repo.invoke(listOf(req, req), listOf("only-one"))
         }
     }
+
+    @Test
+    fun `invoke synthesises Indeterminate for failed group and preserves successful ones`() = runTest {
+        val fabric = mockk<FabricGatewayClient>()
+        coEvery { fabric.invoke("chan-OK", "ssm", any(), any()) } answers {
+            arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 1, "{}") }
+        }
+        coEvery { fabric.invoke("chan-BAD", "ssm", any(), any()) } throws RuntimeException("gateway gone")
+
+        val ok = InvokeRequest(channelid = "chan-OK", chaincodeid = "ssm",
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+        val bad = InvokeRequest(channelid = "chan-BAD", chaincodeid = "ssm",
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+
+        val outcomes = FabricSsmClient(fabric).invoke(listOf(ok, bad), listOf("ok-1", "bad-1"))
+
+        assertEquals(2, outcomes.size)
+        val okOutcome = outcomes.first { it.msgId == "ok-1" }
+        val badOutcome = outcomes.first { it.msgId == "bad-1" }
+        assertEquals("Committed", okOutcome.outcome)
+        assertEquals("Indeterminate", badOutcome.outcome)
+        assertEquals("TRANSPORT_ERROR", badOutcome.errorCode)
+        assertEquals("gateway gone", badOutcome.errorMessage)
+    }
 }
