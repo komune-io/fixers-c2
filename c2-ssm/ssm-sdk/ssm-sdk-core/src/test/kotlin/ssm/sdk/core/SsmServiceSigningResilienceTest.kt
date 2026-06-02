@@ -91,7 +91,7 @@ class SsmServiceSigningResilienceTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            coopRepository = repository,
+            ssmRequesterRepository = repository,
         )
     }
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 import ssm.sdk.core.invoke.builder.HasGet
 import ssm.sdk.core.invoke.builder.HasList
+import ssm.sdk.core.repository.SsmRequesterRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.InvokeException
 import ssm.sdk.dsl.SsmCmdSigned
@@ -18,7 +19,7 @@ import tools.jackson.core.type.TypeReference
 
 class SsmRequester(
 	private val jsonConverter: JSONConverter,
-	private val coopRepository: KtorRepository,
+	private val ssmRequesterRepository: SsmRequesterRepository,
 ) {
 
 	private val logger = LoggerFactory.getLogger(SsmRequester::class.java)
@@ -33,7 +34,7 @@ class SsmRequester(
 			args.function,
 			args.values
 		)
-		val request = coopRepository.query(
+		val request = ssmRequesterRepository.query(
 			cmd = InvokeRequestType.query.name,
 			fcn = args.function,
 			args = args.values,
@@ -47,7 +48,7 @@ class SsmRequester(
 
 	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
 		val args = query.queryArgs(value)
-		val request = coopRepository.query(
+		val request = ssmRequesterRepository.query(
 			cmd = InvokeRequestType.query.name,
 			fcn = args.function,
 			args = args.values,
@@ -96,7 +97,7 @@ class SsmRequester(
 		map { query ->
 			async {
 				val args = query.query.queryArgs(query.value)
-				coopRepository.query(
+				ssmRequesterRepository.query(
 					cmd = InvokeRequestType.query.name,
 					fcn = args.function,
 					args = args.values,
@@ -109,7 +110,7 @@ class SsmRequester(
 
 	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
 		val args = query.listArgs()
-		val request = coopRepository.query(
+		val request = ssmRequesterRepository.query(
 			cmd = InvokeRequestType.query.name,
 			fcn = args.function,
 			args = args.values,
@@ -136,7 +137,7 @@ class SsmRequester(
 		cmds.logger("Invoke", total) { it.chaincodeUri }
 
 		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
-		return coopRepository.invoke(args, msgIds)
+		return ssmRequesterRepository.invoke(args, msgIds)
 	}
 
 	private fun <R> String.handleResponse(transform: (String) -> R): R = try {

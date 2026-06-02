@@ -5,21 +5,22 @@ import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
 import ssm.sdk.core.ktor.KtorRepository
 import ssm.sdk.core.ktor.SsmRequester
+import ssm.sdk.core.repository.SsmRequesterRepository
 import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 
 class SsmServiceFactory(
-    private var coopRepository: KtorRepository,
+    private var ssmRequesterRepository: SsmRequesterRepository,
     private var jsonConverter: JSONConverterObjectMapper,
     private val batch: SsmBatchProperties,
 ) {
 
 	fun buildQueryService(): SsmQueryService {
-		return SsmQueryService(SsmRequester(jsonConverter, coopRepository))
+		return SsmQueryService(SsmRequester(jsonConverter, ssmRequesterRepository))
 	}
 
 	fun buildTxService(ssmCmdSigner: SsmCmdSigner): SsmTxService {
-		val ssmService = SsmService(SsmRequester(jsonConverter, coopRepository),
+		val ssmService = SsmService(SsmRequester(jsonConverter, ssmRequesterRepository),
 			ssmCmdSigner)
 		return SsmTxService(ssmService, batch)
 	}
@@ -40,7 +41,7 @@ class SsmServiceFactory(
             batch: SsmBatchProperties,
             bearerTokenHeaderProvider: BearerTokenAuthCredentials? = null
 		): SsmServiceFactory {
-			val coopRepository = KtorRepository(
+			val ktorRepository = KtorRepository(
 				baseUrl = config.baseUrl,
 				timeout = batch.timeout.toLong(),
 				authCredentials = bearerTokenHeaderProvider,
@@ -48,7 +49,7 @@ class SsmServiceFactory(
 			)
 			val converter = JSONConverterObjectMapper()
 			return SsmServiceFactory(
-				coopRepository = coopRepository,
+				ssmRequesterRepository = ktorRepository,
 				jsonConverter = converter,
 				batch = batch
 			)

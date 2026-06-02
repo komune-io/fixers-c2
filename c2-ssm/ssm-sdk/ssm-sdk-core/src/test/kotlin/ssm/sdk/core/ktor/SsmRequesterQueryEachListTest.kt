@@ -35,7 +35,7 @@ class SsmRequesterQueryEachListTest {
 		)
 		return SsmRequester(
 			jsonConverter = JSONConverterObjectMapper(),
-			coopRepository = repository,
+			ssmRequesterRepository = repository,
 		)
 	}
 

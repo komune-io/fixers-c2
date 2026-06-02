@@ -25,6 +25,7 @@ import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
+import ssm.sdk.core.repository.SsmRequesterRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
 import java.time.OffsetDateTime
@@ -37,7 +38,7 @@ class KtorRepository(
 	private val authCredentials: AuthCredentials?,
 	private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 	client: HttpClient? = null,
-) {
+) : SsmRequesterRepository {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"
@@ -65,7 +66,7 @@ class KtorRepository(
 		}
 	}
 
-	suspend fun query(
+	override suspend fun query(
 		cmd: String,
 		fcn: String,
 		args: List<String>,
@@ -109,7 +110,7 @@ class KtorRepository(
 	 * Producers MUST ensure `(cloudEventsSource, msgId)` pairs are unique per
 	 * CloudEvents 1.0 §3.1.1 — the gateway treats `msgId` as the CE `id` attribute.
 	 */
-	suspend fun invoke(
+	override suspend fun invoke(
 		invokeArgs: List<InvokeRequest>,
 		msgIds: List<String>,
 	): List<CommandOutcome> {

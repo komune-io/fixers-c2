@@ -46,7 +46,7 @@ class SsmRequesterTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            coopRepository = repository,
+            ssmRequesterRepository = repository,
         )
     }
 
