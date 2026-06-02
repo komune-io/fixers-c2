@@ -21,11 +21,9 @@ class FabricSsmClient(
         cmd: String,
         fcn: String,
         args: List<String>,
-        channelId: ChannelId?,
-        chaincodeId: ChaincodeId?,
+        channelId: ChannelId,
+        chaincodeId: ChaincodeId,
     ): String {
-        require(channelId != null) { "FabricSsmClient.query: channelId is required" }
-        require(chaincodeId != null) { "FabricSsmClient.query: chaincodeId is required" }
         val invokeArgs = InvokeArgs(function = fcn, values = args)
         logger.debug("query [{}:{}] fcn={} args={}", channelId, chaincodeId, fcn, args)
         return fabricGatewayClient.query(channelId, chaincodeId, listOf(invokeArgs)).firstOrNull()

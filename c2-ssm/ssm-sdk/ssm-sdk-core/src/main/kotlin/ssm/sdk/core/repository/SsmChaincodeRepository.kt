@@ -14,8 +14,8 @@ interface SsmChaincodeRepository {
 		cmd: String,
 		fcn: String,
 		args: List<String>,
-		channelId: ChannelId?,
-		chaincodeId: ChaincodeId?,
+		channelId: ChannelId,
+		chaincodeId: ChaincodeId,
 	): String
 
 	suspend fun invoke(

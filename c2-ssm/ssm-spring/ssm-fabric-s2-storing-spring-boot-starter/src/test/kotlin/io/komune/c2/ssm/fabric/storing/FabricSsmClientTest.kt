@@ -41,14 +41,6 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `query throws when channelId is null`() = runTest {
-        val repo = FabricSsmClient(mockk())
-        assertThrows<IllegalArgumentException> {
-            repo.query("query", "GetSessionLogs", listOf("a"), channelId = null, chaincodeId = "ssm")
-        }
-    }
-
-    @Test
     fun `invoke maps Committed TxOutcome to Committed CommandOutcome`() = runTest {
         val fabric = mockk<FabricGatewayClient>()
         coEvery {

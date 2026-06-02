@@ -69,14 +69,14 @@ class ChaincodeApiGatewayClient(
 		cmd: String,
 		fcn: String,
 		args: List<String>,
-		channelId: ChannelId?,
-		chaincodeId: ChaincodeId?,
+		channelId: ChannelId,
+		chaincodeId: ChaincodeId,
 	): String {
 		return client.get(baseUrl + PATH) {
 			addAuth()
 			parameter(CMD_PROPS, cmd)
-			channelId?.let { parameter(CHANNEL_ID_PROPS, channelId) }
-			chaincodeId?.let { parameter(CHAINCODE_ID_PROPS, chaincodeId) }
+			parameter(CHANNEL_ID_PROPS, channelId)
+			parameter(CHAINCODE_ID_PROPS, chaincodeId)
 			parameter(FCN_PROPS, fcn)
 			parameter(ARGS_PROPS, args.first())
 		}.bodyAsText()
