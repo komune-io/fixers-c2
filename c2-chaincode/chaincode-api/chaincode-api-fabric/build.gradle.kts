@@ -1,5 +1,6 @@
 plugins {
     alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.fixers.gradle.publish)
     alias(catalogue.plugins.kotlin.spring)
     alias(catalogue.plugins.kotlin.kapt)
 }
@@ -30,4 +31,12 @@ dependencies {
     implementation(libs.grpc.netty.shaded)
 
     testImplementation(libs.bundles.test)
+}
+
+// gRPC and protobuf are pinned via enforcedPlatform BOMs for internal consistency.
+// Maven publication metadata validates against this; suppress per Gradle's recommended path
+// since downstream consumers (Spring Boot apps embedding this library) deliberately want the
+// pinned versions to avoid gRPC/Netty version drift.
+tasks.withType<GenerateModuleMetadata>().configureEach {
+    suppressedValidationErrors.add("enforced-platform")
 }
