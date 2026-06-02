@@ -21,3 +21,7 @@
 *.iml
 *.ipr
 **/out/
+
+### Claude Code ###
+.mcp.json
+tasks/
