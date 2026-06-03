@@ -38,7 +38,7 @@ class StartCommandTest {
 		args.forEach { s: String? -> println(s) }
 		val expectedJson = "{\"ssm\":\"Car dealership\",\"session\":\"deal20181201\",\"roles\":" +
 					"{\"chuck\":\"Buyer\",\"sarah\":\"Seller\"},\"public\":\"Used car for 100 dollars.\"}"
-		Assertions.assertThat(fcn).isEqualTo("start")
+		Assertions.assertThat(fcn.value).isEqualTo("start")
 		Assertions.assertThat(args)
 			.isNotEmpty
 			.containsExactly(

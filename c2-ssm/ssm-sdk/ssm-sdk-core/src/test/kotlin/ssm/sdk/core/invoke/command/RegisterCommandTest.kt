@@ -22,7 +22,7 @@ class RegisterCommandTest {
 
 		val (fcn, args) = RegisterCmd(agent).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
 		args.forEach { s: String? -> println(s) }
-		Assertions.assertThat(fcn).isEqualTo("register")
+		Assertions.assertThat(fcn.value).isEqualTo("register")
 		@Suppress("MaxLineLength")
 		Assertions.assertThat(args)
 			.isNotEmpty

@@ -2,8 +2,10 @@ package io.komune.c2.ssm.fabric.storing
 
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
 import io.komune.c2.chaincode.api.fabric.TxOutcome
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
@@ -18,8 +20,8 @@ class FabricSsmClient(
     private val logger = LoggerFactory.getLogger(FabricSsmClient::class.java)
 
     override suspend fun query(
-        cmd: String,
-        fcn: String,
+        cmd: InvokeRequestType,
+        fcn: InvokeFunction,
         args: List<String>,
         channelId: ChannelId,
         chaincodeId: ChaincodeId,

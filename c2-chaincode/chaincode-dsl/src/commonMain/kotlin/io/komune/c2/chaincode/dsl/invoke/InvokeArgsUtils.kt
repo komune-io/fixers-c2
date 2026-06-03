@@ -12,7 +12,7 @@ object InvokeArgsUtils {
     }
 
     fun isListQuery(args: InvokeArgs): Boolean {
-        return args.function.equals(LIST_QUERY, ignoreCase = true)
+        return args.function.value.equals(LIST_QUERY, ignoreCase = true)
     }
 
     fun isTransactionQuery(args: InvokeArgs): Boolean {
@@ -20,12 +20,12 @@ object InvokeArgsUtils {
     }
 
     private fun isQueryOfType(args: InvokeArgs, type: String): Boolean {
-        return args.values.isNotEmpty() && (args.function.equals(type, ignoreCase = true) || args.values
+        return args.values.isNotEmpty() && (args.function.value.equals(type, ignoreCase = true) || args.values
             .get(0).equals(type, ignoreCase = true)
                 )
     }
 
     fun isQueryFunction(args: InvokeArgs): Boolean {
-        return args.function.equals(QUERY_FUNCTION, ignoreCase = true)
+        return args.function.value.equals(QUERY_FUNCTION, ignoreCase = true)
     }
 }

@@ -35,7 +35,7 @@ class SsmRequester(
 			args.values
 		)
 		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query.name,
+			cmd = InvokeRequestType.query,
 			fcn = args.function,
 			args = args.values,
 			channelId = chaincodeUri.channelId,
@@ -49,7 +49,7 @@ class SsmRequester(
 	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
 		val args = query.queryArgs(value)
 		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query.name,
+			cmd = InvokeRequestType.query,
 			fcn = args.function,
 			args = args.values,
 			channelId = chaincodeUri.channelId,
@@ -88,7 +88,7 @@ class SsmRequester(
 			async {
 				val args = query.query.queryArgs(query.value)
 				ssmChaincodeRepository.query(
-					cmd = InvokeRequestType.query.name,
+					cmd = InvokeRequestType.query,
 					fcn = args.function,
 					args = args.values,
 					channelId = query.chaincodeUri.channelId,
@@ -101,7 +101,7 @@ class SsmRequester(
 	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
 		val args = query.listArgs()
 		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query.name,
+			cmd = InvokeRequestType.query,
 			fcn = args.function,
 			args = args.values,
 			channelId = chaincodeUri.channelId,

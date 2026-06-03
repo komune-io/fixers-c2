@@ -1,6 +1,8 @@
 package ssm.sdk.core.repository
 
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.dsl.CommandOutcome
@@ -11,8 +13,8 @@ import ssm.sdk.dsl.CommandOutcome
  */
 interface SsmChaincodeRepository {
 	suspend fun query(
-		cmd: String,
-		fcn: String,
+		cmd: InvokeRequestType,
+		fcn: InvokeFunction,
 		args: List<String>,
 		channelId: ChannelId,
 		chaincodeId: ChaincodeId,

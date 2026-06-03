@@ -2,6 +2,7 @@ package io.komune.c2.ssm.fabric.storing
 
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
 import io.komune.c2.chaincode.api.fabric.TxOutcome
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
@@ -27,8 +28,8 @@ class FabricSsmClientTest {
 
         val repo = FabricSsmClient(fabric)
         val result = repo.query(
-            cmd = "query",
-            fcn = "GetSessionLogs",
+            cmd = InvokeRequestType.query,
+            fcn = InvokeFunction("GetSessionLogs"),
             args = listOf("deliveryAutomate", "42"),
             channelId = "sandbox",
             chaincodeId = "ssm",
@@ -36,7 +37,7 @@ class FabricSsmClientTest {
 
         assertEquals("""{"sessionName":"42"}""", result)
         val sent = capturedArgs.captured.single()
-        assertEquals("GetSessionLogs", sent.function)
+        assertEquals(InvokeFunction("GetSessionLogs"), sent.function)
         assertEquals(listOf("deliveryAutomate", "42"), sent.values)
     }
 

@@ -71,9 +71,9 @@ class FabricGatewayInvokeClientTest {
             channelId = "ch",
             chaincodeId = "cc",
             invokeArgsList = listOf(
-                InvokeArgs("fn", listOf("a")),
-                InvokeArgs("fn", listOf("b")),
-                InvokeArgs("fn", listOf("c")),
+                InvokeArgs("fn", "a"),
+                InvokeArgs("fn", "b"),
+                InvokeArgs("fn", "c"),
             ),
         )
 
@@ -94,8 +94,8 @@ class FabricGatewayInvokeClientTest {
             channelId = "ch",
             chaincodeId = "cc",
             invokeArgsList = listOf(
-                InvokeArgs("fn", listOf("a")),
-                InvokeArgs("fn", listOf("b")),
+                InvokeArgs("fn", "a"),
+                InvokeArgs("fn", "b"),
             ),
             commandIds = listOf("cmd-1", "cmd-2"),
         )
@@ -113,7 +113,7 @@ class FabricGatewayInvokeClientTest {
             client.invoke(
                 channelId = "ch",
                 chaincodeId = "cc",
-                invokeArgsList = listOf(InvokeArgs("fn", listOf("a"))),
+                invokeArgsList = listOf(InvokeArgs("fn", "a")),
                 commandIds = listOf("c1", "c2"),  // wrong size
             )
         }.exceptionOrNull()
@@ -148,9 +148,9 @@ class FabricGatewayInvokeClientTest {
             channelId = "ch",
             chaincodeId = "cc",
             invokeArgsList = listOf(
-                InvokeArgs("fn", listOf("x")),
-                InvokeArgs("fn", listOf("y")),
-                InvokeArgs("fn", listOf("z")),
+                InvokeArgs("fn", "x"),
+                InvokeArgs("fn", "y"),
+                InvokeArgs("fn", "z"),
             ),
         )
 

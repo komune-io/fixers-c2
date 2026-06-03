@@ -1,8 +1,10 @@
 package ssm.sdk.core.ktor
 
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -66,18 +68,18 @@ class ChaincodeApiGatewayClient(
 	}
 
 	override suspend fun query(
-		cmd: String,
-		fcn: String,
+		cmd: InvokeRequestType,
+		fcn: InvokeFunction,
 		args: List<String>,
 		channelId: ChannelId,
 		chaincodeId: ChaincodeId,
 	): String {
 		return client.get(baseUrl + PATH) {
 			addAuth()
-			parameter(CMD_PROPS, cmd)
+			parameter(CMD_PROPS, cmd.name)
 			parameter(CHANNEL_ID_PROPS, channelId)
 			parameter(CHAINCODE_ID_PROPS, chaincodeId)
-			parameter(FCN_PROPS, fcn)
+			parameter(FCN_PROPS, fcn.value)
 			parameter(ARGS_PROPS, args.first())
 		}.bodyAsText()
 	}
