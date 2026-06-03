@@ -10,7 +10,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
@@ -118,7 +117,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAll all-success signing path returns all outcomes`(): Unit = runBlocking {
+    suspend fun `invokeAll all-success signing path returns all outcomes`() {
         val commandIds = listOf("cmd-A", "cmd-B", "cmd-C")
         val cmds = commandIds.map { buildCmd("admin") }
         val requester = buildRequester(committedJson(commandIds))
@@ -139,7 +138,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAll single signing failure produces Rejected outcome for that item`(): Unit = runBlocking {
+    suspend fun `invokeAll single signing failure produces Rejected outcome for that item`() {
         val commandIds = listOf("cmd-good-1", "cmd-good-2")
         // Build cmds: first uses "admin" (good), second uses "bad-agent" (fail)
         val cmds = listOf(
@@ -169,7 +168,7 @@ class SsmServiceSigningResilienceTest {
     }
 
     @Test
-    fun `invokeAll signing failure outcome has correct commandId`(): Unit = runBlocking {
+    suspend fun `invokeAll signing failure outcome has correct commandId`() {
         val commandIds = listOf("first-cmd", "second-cmd")
         val cmds = listOf(
             buildCmd("bad-agent"), // first-cmd — signing fails
@@ -196,7 +195,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAll all-signing-failure produces Rejected for all items`(): Unit = runBlocking {
+    suspend fun `invokeAll all-signing-failure produces Rejected for all items`() {
         val commandIds = listOf("cmd-X", "cmd-Y", "cmd-Z")
         val cmds = commandIds.map { buildCmd("bad-agent") }
 
@@ -221,7 +220,7 @@ class SsmServiceSigningResilienceTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invokeAll mixed results with all commandIds present in output`(): Unit = runBlocking {
+    suspend fun `invokeAll mixed results with all commandIds present in output`() {
         val commandIds = listOf("good-1", "bad-1", "good-2")
         val cmds = listOf(
             buildCmd("admin"),

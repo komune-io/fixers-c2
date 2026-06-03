@@ -10,7 +10,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.config.SsmBatchProperties
@@ -144,7 +143,7 @@ class SsmTxServiceTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendStart invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
+    suspend fun `sendStart invokes invokeAll with commandIds in input order`() {
         val ids = listOf("start-cmd-A", "start-cmd-B", "start-cmd-C")
 
         val capturedBody = mutableListOf<String>()
@@ -189,7 +188,7 @@ class SsmTxServiceTest {
     }
 
     @Test
-    fun `sendStart returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
+    suspend fun `sendStart returns outcomes verbatim from invokeAll`() {
         val ids = listOf("cmd-0", "cmd-1", "cmd-2", "cmd-3", "cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))
@@ -218,7 +217,7 @@ class SsmTxServiceTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendPerform invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
+    suspend fun `sendPerform invokes invokeAll with commandIds in input order`() {
         val ids = listOf("perform-cmd-X", "perform-cmd-Y")
 
         val capturedBody = mutableListOf<String>()
@@ -254,7 +253,7 @@ class SsmTxServiceTest {
     }
 
     @Test
-    fun `sendPerform returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
+    suspend fun `sendPerform returns outcomes verbatim from invokeAll`() {
         val ids = listOf("p-cmd-0", "p-cmd-1", "p-cmd-2", "p-cmd-3", "p-cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))

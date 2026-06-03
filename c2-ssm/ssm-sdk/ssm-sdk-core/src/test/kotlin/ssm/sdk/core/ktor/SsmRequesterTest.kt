@@ -85,7 +85,7 @@ class SsmRequesterTest {
     """.trimIndent()
 
     @Test
-    fun `invokeAll deserializes mixed CE outcomes without throwing`(): Unit = runBlocking {
+    suspend fun `invokeAll deserializes mixed CE outcomes without throwing`() {
         val responseJson = "[" + ceItem(
             subject = "cmd-1",
             type = "io.komune.c2.invoke.outcome.committed",
@@ -138,7 +138,7 @@ class SsmRequesterTest {
     }
 
     @Test
-    fun `invokeAll handles Transient outcome with isRetryable predicate`(): Unit = runBlocking {
+    suspend fun `invokeAll handles Transient outcome with isRetryable predicate`() {
         val responseJson = "[" + ceItem(
             subject = "cmd-retry",
             type = "io.komune.c2.invoke.outcome.transient",
