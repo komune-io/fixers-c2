@@ -146,7 +146,7 @@ class ChaincodeApiGatewayClientStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 401 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    fun `invoke on 401 synthesises N×Rejected outcomes`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.Unauthorized, "Unauthorized")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -158,7 +158,7 @@ class ChaincodeApiGatewayClientStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 403 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    fun `invoke on 403 synthesises N×Rejected outcomes`(): Unit = runBlocking {
         val repo = buildRepository(HttpStatusCode.Forbidden, "Forbidden")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 

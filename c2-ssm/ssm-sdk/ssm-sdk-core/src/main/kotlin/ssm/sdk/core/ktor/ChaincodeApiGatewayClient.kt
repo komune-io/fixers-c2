@@ -142,12 +142,6 @@ class ChaincodeApiGatewayClient(
 		val statusValue = response.status.value
 		return when {
 			response.status.isSuccess() -> decodeOutcomes(response.bodyAsText(), msgIds)
-			statusValue == HTTP_UNAUTHORIZED || statusValue == HTTP_FORBIDDEN -> synthesiseOutcomes(
-				msgIds = msgIds,
-				outcome = OUTCOME_REJECTED,
-				errorCode = "HTTP_$statusValue",
-				errorMessage = response.bodyAsText(),
-			)
 			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
 				msgIds = msgIds,
 				outcome = OUTCOME_REJECTED,
@@ -221,8 +215,6 @@ class ChaincodeApiGatewayClient(
 	}
 }
 
-private const val HTTP_UNAUTHORIZED = 401
-private const val HTTP_FORBIDDEN = 403
 private const val OUTCOME_REJECTED = "Rejected"
 private const val OUTCOME_TRANSIENT = "Transient"
 private const val OUTCOME_INDETERMINATE = "Indeterminate"

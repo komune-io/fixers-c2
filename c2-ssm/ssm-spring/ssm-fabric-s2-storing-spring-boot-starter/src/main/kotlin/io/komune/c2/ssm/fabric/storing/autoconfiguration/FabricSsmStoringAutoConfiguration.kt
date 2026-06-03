@@ -41,26 +41,27 @@ class FabricSsmStoringAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    fun ssmTxService(
+    fun ssmServiceFactory(
         ssmChaincodeRepository: SsmChaincodeRepository,
-        ssmCmdSigner: SsmCmdSigner,
         ssmBatchProperties: SsmBatchProperties,
-    ): SsmTxService = SsmServiceFactory(
+    ): SsmServiceFactory = SsmServiceFactory(
         ssmChaincodeRepository = ssmChaincodeRepository,
         jsonConverter = JSONConverterObjectMapper(),
         batch = ssmBatchProperties,
-    ).buildTxService(ssmCmdSigner)
+    )
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun ssmTxService(
+        ssmServiceFactory: SsmServiceFactory,
+        ssmCmdSigner: SsmCmdSigner,
+    ): SsmTxService = ssmServiceFactory.buildTxService(ssmCmdSigner)
 
     @Bean
     @ConditionalOnMissingBean
     fun ssmQueryService(
-        ssmChaincodeRepository: SsmChaincodeRepository,
-        ssmBatchProperties: SsmBatchProperties,
-    ): SsmQueryService = SsmServiceFactory(
-        ssmChaincodeRepository = ssmChaincodeRepository,
-        jsonConverter = JSONConverterObjectMapper(),
-        batch = ssmBatchProperties,
-    ).buildQueryService()
+        ssmServiceFactory: SsmServiceFactory,
+    ): SsmQueryService = ssmServiceFactory.buildQueryService()
 
     // Upstream SsmChaincodeAutoConfiguration is gated on `ssm.chaincode.url`, which the
     // Fabric-only consumer no longer sets — provide it here so SsmAutomatePersister resolves.
