@@ -1,5 +1,6 @@
 plugins {
     alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.fixers.gradle.publish)
     alias(catalogue.plugins.kotlin.spring)
     alias(catalogue.plugins.kotlin.kapt)
 }
@@ -30,4 +31,15 @@ dependencies {
     implementation(libs.grpc.netty.shaded)
 
     testImplementation(libs.bundles.test)
+}
+
+// enforcedPlatform(grpc/protobuf BOMs) is required: fabric-gateway is compiled against
+// specific gRPC/Netty/protobuf ABIs and drifting any of them produces NoSuchMethodError /
+// NoClassDefFoundError at runtime. Plain `platform(...)` would let downstream BOMs
+// (e.g. Spring Boot) win conflict resolution and break Fabric compat.
+// `suppressedValidationErrors.add("enforced-platform")` is an intentional escape hatch:
+// Gradle blocks publishing components with enforced platforms by default because the
+// forced constraints leak transitively to consumers — accepted trade-off here.
+tasks.withType<GenerateModuleMetadata>().configureEach {
+    suppressedValidationErrors.add("enforced-platform")
 }

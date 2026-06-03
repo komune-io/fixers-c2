@@ -30,7 +30,7 @@ class SsmRequesterQueryEachTest {
 		val client = HttpClient(engine) {
 			install(ContentNegotiation) { jackson() }
 		}
-		val repository = KtorRepository(
+		val repository = ChaincodeApiGatewayClient(
 			baseUrl = "http://localhost:9090",
 			timeout = 5_000L,
 			authCredentials = null,
@@ -38,7 +38,7 @@ class SsmRequesterQueryEachTest {
 		)
 		return SsmRequester(
 			jsonConverter = JSONConverterObjectMapper(),
-			coopRepository = repository,
+			ssmChaincodeRepository = repository,
 		)
 	}
 
@@ -53,7 +53,7 @@ class SsmRequesterQueryEachTest {
 	private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
 	@Test
-	fun `queryEach preserves input order including nulls`(): Unit = runBlocking {
+	suspend fun `queryEach preserves input order including nulls`() {
 		val requester = buildRequester { request ->
 			val argValue = request.url.parameters["args"]
 			val body = when (argValue) {

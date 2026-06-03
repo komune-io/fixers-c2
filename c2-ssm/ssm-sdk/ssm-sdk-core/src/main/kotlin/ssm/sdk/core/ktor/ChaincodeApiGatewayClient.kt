@@ -1,8 +1,10 @@
 package ssm.sdk.core.ktor
 
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
@@ -25,19 +27,19 @@ import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
 import ssm.sdk.core.auth.AuthCredentials
 import ssm.sdk.core.auth.BearerTokenAuthCredentials
+import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.UUID
 
-class KtorRepository(
+class ChaincodeApiGatewayClient(
 	private val baseUrl: String,
 	private val timeout: Long,
 	private val authCredentials: AuthCredentials?,
 	private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 	client: HttpClient? = null,
-) {
+) : SsmChaincodeRepository {
 	private val logger = LoggerFactory.getLogger(javaClass)
 	companion object {
 		const val PATH = "/"
@@ -65,19 +67,19 @@ class KtorRepository(
 		}
 	}
 
-	suspend fun query(
-		cmd: String,
-		fcn: String,
+	override suspend fun query(
+		cmd: InvokeRequestType,
+		fcn: InvokeFunction,
 		args: List<String>,
-		channelId: ChannelId?,
-		chaincodeId: ChaincodeId?,
+		channelId: ChannelId,
+		chaincodeId: ChaincodeId,
 	): String {
 		return client.get(baseUrl + PATH) {
 			addAuth()
-			parameter(CMD_PROPS, cmd)
-			channelId?.let { parameter(CHANNEL_ID_PROPS, channelId) }
-			chaincodeId?.let { parameter(CHAINCODE_ID_PROPS, chaincodeId) }
-			parameter(FCN_PROPS, fcn)
+			parameter(CMD_PROPS, cmd.name)
+			parameter(CHANNEL_ID_PROPS, channelId)
+			parameter(CHAINCODE_ID_PROPS, chaincodeId)
+			parameter(FCN_PROPS, fcn.value)
 			parameter(ARGS_PROPS, args.first())
 		}.bodyAsText()
 	}
@@ -103,13 +105,7 @@ class KtorRepository(
 		}.bodyAsText()
 	}
 
-	/**
-	 * Submits a batch of invocations to the gateway's CloudEvents-shaped `/invoke` endpoint.
-	 *
-	 * Producers MUST ensure `(cloudEventsSource, msgId)` pairs are unique per
-	 * CloudEvents 1.0 §3.1.1 — the gateway treats `msgId` as the CE `id` attribute.
-	 */
-	suspend fun invoke(
+	override suspend fun invoke(
 		invokeArgs: List<InvokeRequest>,
 		msgIds: List<String>,
 	): List<CommandOutcome> {
@@ -146,12 +142,6 @@ class KtorRepository(
 		val statusValue = response.status.value
 		return when {
 			response.status.isSuccess() -> decodeOutcomes(response.bodyAsText(), msgIds)
-			statusValue == HTTP_UNAUTHORIZED || statusValue == HTTP_FORBIDDEN -> synthesiseOutcomes(
-				msgIds = msgIds,
-				outcome = OUTCOME_REJECTED,
-				errorCode = "HTTP_$statusValue",
-				errorMessage = response.bodyAsText(),
-			)
 			statusValue in CLIENT_ERROR_RANGE -> synthesiseOutcomes(
 				msgIds = msgIds,
 				outcome = OUTCOME_REJECTED,
@@ -225,16 +215,10 @@ class KtorRepository(
 	}
 }
 
-private const val HTTP_UNAUTHORIZED = 401
-private const val HTTP_FORBIDDEN = 403
 private const val OUTCOME_REJECTED = "Rejected"
 private const val OUTCOME_TRANSIENT = "Transient"
 private const val OUTCOME_INDETERMINATE = "Indeterminate"
 
-/**
- * Wire shape of the gateway's `OutcomeData` (CE `data` field).
- * Locally redeclared because the gateway type lives in the Spring app, not in a shared module.
- */
 internal data class OutcomeWire(
 	val transactionId: String? = null,
 	val blockNumber: Long? = null,

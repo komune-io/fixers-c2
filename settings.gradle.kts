@@ -90,6 +90,7 @@ include(
 include(
 	"c2-ssm:ssm-spring:ssm-s2-storing-spring-boot-starter",
 	"c2-ssm:ssm-spring:ssm-s2-sourcing-spring-boot-starter",
+	"c2-ssm:ssm-spring:ssm-fabric-s2-storing-spring-boot-starter",
 )
 
 include(

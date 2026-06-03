@@ -11,7 +11,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.sdk.core.invoke.query.SsmQueryName
@@ -27,7 +26,7 @@ class SsmRequesterQueryEachListTest {
 		val client = HttpClient(engine) {
 			install(ContentNegotiation) { jackson() }
 		}
-		val repository = KtorRepository(
+		val repository = ChaincodeApiGatewayClient(
 			baseUrl = "http://localhost:9090",
 			timeout = 5_000L,
 			authCredentials = null,
@@ -35,7 +34,7 @@ class SsmRequesterQueryEachListTest {
 		)
 		return SsmRequester(
 			jsonConverter = JSONConverterObjectMapper(),
-			coopRepository = repository,
+			ssmChaincodeRepository = repository,
 		)
 	}
 
@@ -50,7 +49,7 @@ class SsmRequesterQueryEachListTest {
 	private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
 	@Test
-	fun `queryEachList keeps one inner list per query and preserves order and sizes`(): Unit = runBlocking {
+	suspend fun `queryEachList keeps one inner list per query and preserves order and sizes`() {
 		val requester = buildRequester { request ->
 			val argValue = request.url.parameters["args"]
 			val body = when (argValue) {
@@ -74,7 +73,7 @@ class SsmRequesterQueryEachListTest {
 	}
 
 	@Test
-	fun `queryEachList preserves empty list slot without dropping it`(): Unit = runBlocking {
+	suspend fun `queryEachList preserves empty list slot without dropping it`() {
 		val requester = buildRequester { request ->
 			val argValue = request.url.parameters["args"]
 			val body = when (argValue) {
@@ -96,7 +95,7 @@ class SsmRequesterQueryEachListTest {
 	}
 
 	@Test
-	fun `queryEachList does not flatten across queries`(): Unit = runBlocking {
+	suspend fun `queryEachList does not flatten across queries`() {
 		val requester = buildRequester { _ ->
 			respond(
 				content = """[{"txId":"tx","iteration":0},{"txId":"tx","iteration":1}]""",

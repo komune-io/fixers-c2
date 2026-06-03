@@ -41,7 +41,7 @@ class FabricGatewayClient(
         val proposalResponses = invokeArgsList.map { invokeArgs ->
             async(parallelIO) {
                 val contract = fabricGatewayBuilder.contracts(channelId, chaincodeId).shuffled().first()
-                val result = contract.evaluateTransaction(invokeArgs.function, *invokeArgs.values.toTypedArray())
+                val result = contract.evaluateTransaction(invokeArgs.function.value, *invokeArgs.values.toTypedArray())
                 String(result)
             }
         }
@@ -91,7 +91,7 @@ class FabricGatewayClient(
         msgId: String,
     ): TxOutcome {
         val endorsed = try {
-            newProposal(invokeArgs.function)
+            newProposal(invokeArgs.function.value)
                 .addArguments(*invokeArgs.values.toTypedArray())
                 .build()
                 .endorse()

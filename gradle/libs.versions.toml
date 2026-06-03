@@ -6,6 +6,7 @@ grpc = "1.67.1"
 protobuf = "4.28.2"
 bouncycastle = "1.70"
 cloudant = "0.10.17"
+mockk = "1.13.13"
 
 [libraries]
 # S2 modules
@@ -52,6 +53,7 @@ junit-platform-suite = { group = "org.junit.platform", name = "junit-platform-su
 assertj-core = { group = "org.assertj", name = "assertj-core" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test" }
 reactor-test = { group = "io.projectreactor", name = "reactor-test" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
 # Cucumber (versions from BOM)
 cucumber-java = { group = "io.cucumber", name = "cucumber-java" }

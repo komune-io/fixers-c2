@@ -25,7 +25,7 @@ class PerformCommandTest {
 		val context = SsmContext("deal20181201", "100 dollars 1978 Camaro", 0, null)
 		val (fcn, args) = PerformCmd("Sell", context).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
 //		args.forEach(Consumer { s: String? -> println(s) })
-		Assertions.assertThat(fcn).isEqualTo("perform")
+		Assertions.assertThat(fcn.value).isEqualTo("perform")
 		@Suppress("MaxLineLength")
 		Assertions.assertThat(args)
 			.isNotEmpty
@@ -51,7 +51,7 @@ class PerformCommandTest {
 		val context = SsmContext("deal20181201", "100 dollars 1978 Camaro", 0, mapOf("vivi" to "message"))
 		val (fcn, args) = PerformCmd("Sell", context).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
 //		args.forEach(Consumer { s: String? -> println(s) })
-		Assertions.assertThat(fcn).isEqualTo("perform")
+		Assertions.assertThat(fcn.value).isEqualTo("perform")
 		@Suppress("MaxLineLength")
 		Assertions.assertThat(args)
 			.isNotEmpty

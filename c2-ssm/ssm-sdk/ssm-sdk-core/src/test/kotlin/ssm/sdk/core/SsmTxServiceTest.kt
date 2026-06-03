@@ -10,7 +10,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.config.SsmBatchProperties
@@ -18,7 +17,7 @@ import ssm.chaincode.dsl.model.SsmContext
 import ssm.chaincode.dsl.model.SsmSession
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
-import ssm.sdk.core.ktor.KtorRepository
+import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
@@ -77,7 +76,7 @@ class SsmTxServiceTest {
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
         }
-        val repository = KtorRepository(
+        val repository = ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -85,7 +84,7 @@ class SsmTxServiceTest {
         )
         return SsmRequester(
             jsonConverter = JSONConverterObjectMapper(),
-            coopRepository = repository,
+            ssmChaincodeRepository = repository,
         )
     }
 
@@ -144,7 +143,7 @@ class SsmTxServiceTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendStart invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
+    suspend fun `sendStart invokes invokeAll with commandIds in input order`() {
         val ids = listOf("start-cmd-A", "start-cmd-B", "start-cmd-C")
 
         val capturedBody = mutableListOf<String>()
@@ -157,7 +156,7 @@ class SsmTxServiceTest {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
+        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 
@@ -189,7 +188,7 @@ class SsmTxServiceTest {
     }
 
     @Test
-    fun `sendStart returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
+    suspend fun `sendStart returns outcomes verbatim from invokeAll`() {
         val ids = listOf("cmd-0", "cmd-1", "cmd-2", "cmd-3", "cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))
@@ -218,7 +217,7 @@ class SsmTxServiceTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `sendPerform invokes invokeAll with commandIds in input order`(): Unit = runBlocking {
+    suspend fun `sendPerform invokes invokeAll with commandIds in input order`() {
         val ids = listOf("perform-cmd-X", "perform-cmd-Y")
 
         val capturedBody = mutableListOf<String>()
@@ -231,7 +230,7 @@ class SsmTxServiceTest {
             )
         }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = KtorRepository("http://localhost:9090", 5_000L, null, client = client)
+        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
         val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
         val txService = SsmTxService(service, SsmBatchProperties())
 
@@ -254,7 +253,7 @@ class SsmTxServiceTest {
     }
 
     @Test
-    fun `sendPerform returns outcomes verbatim from invokeAll`(): Unit = runBlocking {
+    suspend fun `sendPerform returns outcomes verbatim from invokeAll`() {
         val ids = listOf("p-cmd-0", "p-cmd-1", "p-cmd-2", "p-cmd-3", "p-cmd-4")
         val requester = buildRequester(mixedOutcomesJson(ids))
         val txService = buildTxService(buildService(requester))

@@ -14,13 +14,12 @@ import io.ktor.serialization.jackson.jackson
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.sdk.dsl.CommandOutcome
 
 /**
- * Tests for KtorRepository.invoke status-branching behaviour.
+ * Tests for ChaincodeApiGatewayClient.invoke status-branching behaviour.
  *
  * Validates that:
  * - 2xx: deserializes body as List<CommandOutcome>
@@ -30,7 +29,7 @@ import ssm.sdk.dsl.CommandOutcome
  *
  * Closes leaks M, N, O in ERROR-PROPAGATION.md.
  */
-class KtorRepositoryStatusValidationTest {
+class ChaincodeApiGatewayClientStatusValidationTest {
 
     private val commandIds = listOf("cmd-1", "cmd-2")
 
@@ -51,7 +50,7 @@ class KtorRepositoryStatusValidationTest {
         ),
     )
 
-    private fun buildRepository(statusCode: HttpStatusCode, body: String): KtorRepository {
+    private fun buildRepository(statusCode: HttpStatusCode, body: String): ChaincodeApiGatewayClient {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = body,
@@ -62,7 +61,7 @@ class KtorRepositoryStatusValidationTest {
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
         }
-        return KtorRepository(
+        return ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -70,14 +69,14 @@ class KtorRepositoryStatusValidationTest {
         )
     }
 
-    private fun buildNetworkErrorRepository(): KtorRepository {
+    private fun buildNetworkErrorRepository(): ChaincodeApiGatewayClient {
         val mockEngine = MockEngine { _ ->
             throw java.net.ConnectException("Connection refused: localhost/127.0.0.1:9090")
         }
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
         }
-        return KtorRepository(
+        return ChaincodeApiGatewayClient(
             baseUrl = "http://localhost:9090",
             timeout = 5_000L,
             authCredentials = null,
@@ -90,7 +89,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke on 200 deserializes CloudEvents body as CommandOutcome list`(): Unit = runBlocking {
+    suspend fun `invoke on 200 deserializes CloudEvents body as CommandOutcome list`() {
         val responseJson = """
             [
               {
@@ -133,7 +132,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke on 400 synthesises N×Rejected outcomes`(): Unit = runBlocking {
+    suspend fun `invoke on 400 synthesises N×Rejected outcomes`() {
         val repo = buildRepository(HttpStatusCode.BadRequest, """{"error":"bad request"}""")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -146,7 +145,7 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 401 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    suspend fun `invoke on 401 synthesises N×Rejected outcomes`() {
         val repo = buildRepository(HttpStatusCode.Unauthorized, "Unauthorized")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -158,7 +157,7 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 403 synthesises N×Rejected outcomes with AUTH errorClass`(): Unit = runBlocking {
+    suspend fun `invoke on 403 synthesises N×Rejected outcomes`() {
         val repo = buildRepository(HttpStatusCode.Forbidden, "Forbidden")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -170,7 +169,7 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 404 synthesises N×Rejected outcomes with INPUT errorClass`(): Unit = runBlocking {
+    suspend fun `invoke on 404 synthesises N×Rejected outcomes with INPUT errorClass`() {
         val repo = buildRepository(HttpStatusCode.NotFound, "Not Found")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -186,7 +185,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke on 500 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
+    suspend fun `invoke on 500 synthesises N×Transient outcomes with NETWORK errorClass`() {
         val repo = buildRepository(HttpStatusCode.InternalServerError, "Internal Server Error")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -199,7 +198,7 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `invoke on 503 synthesises N×Transient outcomes with NETWORK errorClass`(): Unit = runBlocking {
+    suspend fun `invoke on 503 synthesises N×Transient outcomes with NETWORK errorClass`() {
         val repo = buildRepository(HttpStatusCode.ServiceUnavailable, "Service Unavailable")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -215,7 +214,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke on network error synthesises N×Indeterminate outcomes`(): Unit = runBlocking {
+    suspend fun `invoke on network error synthesises N×Indeterminate outcomes`() {
         val repo = buildNetworkErrorRepository()
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -228,20 +227,22 @@ class KtorRepositoryStatusValidationTest {
     }
 
     @Test
-    fun `connect refused yields Indeterminate with CONNECT_REFUSED code and NETWORK class`(): Unit = runBlocking {
+    suspend fun `connect refused yields Indeterminate with CONNECT_REFUSED code and NETWORK class`() {
         // Use a hermetic MockEngine instead of 127.0.0.1:1 to avoid environment-dependent
         // behaviour (sandboxed Docker / hardened macOS may give TIMEOUT or PermissionException
         // rather than ECONNREFUSED, making the test flaky in CI).
         val mockEngine = MockEngine { _ -> throw java.net.ConnectException("Connection refused") }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
+        val repo = ChaincodeApiGatewayClient(
+            baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+        )
         val outcomes = repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
     }
 
     @Test
-    fun `request timeout yields Indeterminate with TIMEOUT code and NETWORK class`(): Unit = runBlocking {
+    suspend fun `request timeout yields Indeterminate with TIMEOUT code and NETWORK class`() {
         val mockEngine = MockEngine { _ ->
             delay(10_000)
             respond(content = "never reaches", status = HttpStatusCode.OK)
@@ -253,7 +254,7 @@ class KtorRepositoryStatusValidationTest {
                 connectTimeoutMillis = 100L
             }
         }
-        val repo = KtorRepository(
+        val repo = ChaincodeApiGatewayClient(
             baseUrl = "http://test",
             timeout = 100L,
             authCredentials = null,
@@ -272,7 +273,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke on unexpected status synthesises N×Indeterminate with UNEXPECTED_HTTP code`(): Unit = runBlocking {
+    suspend fun `invoke on unexpected status synthesises N×Indeterminate with UNEXPECTED_HTTP code`() {
         val repo = buildRepository(HttpStatusCode.fromValue(302), "Redirect")
         val outcomes: List<CommandOutcome> = repo.invoke(sampleInvokeArgs, commandIds)
 
@@ -288,7 +289,7 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `invoke 4xx outcomes commandId order matches input commandIds`(): Unit = runBlocking {
+    suspend fun `invoke 4xx outcomes commandId order matches input commandIds`() {
         val ids = listOf("alpha", "beta", "gamma")
         val args = List(3) {
             InvokeRequest(
@@ -310,10 +311,12 @@ class KtorRepositoryStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    fun `runCatching rethrows CancellationException instead of synthesising`(): Unit = runBlocking {
+    suspend fun `runCatching rethrows CancellationException instead of synthesising`() {
         val mockEngine = MockEngine { _ -> throw kotlinx.coroutines.CancellationException("cancel") }
         val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repo = KtorRepository(baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client)
+        val repo = ChaincodeApiGatewayClient(
+            baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+        )
         org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
             repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
         }

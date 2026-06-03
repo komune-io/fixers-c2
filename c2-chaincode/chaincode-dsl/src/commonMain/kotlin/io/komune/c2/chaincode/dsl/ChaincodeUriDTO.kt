@@ -35,6 +35,6 @@ data class ChaincodeUri(override val uri: String): ChaincodeUriDTO {
 
 }
 
-fun ChaincodeUri.Companion.from(channelId: ChannelId?, chaincodeId: ChaincodeId?): ChaincodeUri {
+fun ChaincodeUri.Companion.from(channelId: ChannelId, chaincodeId: ChaincodeId): ChaincodeUri {
 	return ChaincodeUri("chaincode:$channelId:$chaincodeId")
 }

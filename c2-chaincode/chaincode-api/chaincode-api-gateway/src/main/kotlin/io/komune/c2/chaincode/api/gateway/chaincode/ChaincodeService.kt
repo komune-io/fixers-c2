@@ -9,6 +9,7 @@ import io.komune.c2.chaincode.api.gateway.chaincode.model.OutcomeData
 import io.komune.c2.chaincode.api.gateway.config.CloudEventsProperties
 import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
+import io.komune.c2.chaincode.dsl.InvokeFunction
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
@@ -64,7 +65,7 @@ open class ChaincodeService(
 	protected open suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
 		val request = envelope.data
 		val pair = chaincodeConfiguration.getChannelChaincodePair(request.channelid, request.chaincodeid)
-		val invokeArgs = InvokeArgs(request.fcn, request.args.toList())
+		val invokeArgs = InvokeArgs(InvokeFunction(request.fcn), request.args.toList())
 		val outcome = fabricGatewayClient.invoke(
 			channelId = pair.channelId,
 			chaincodeId = pair.chainCodeId,

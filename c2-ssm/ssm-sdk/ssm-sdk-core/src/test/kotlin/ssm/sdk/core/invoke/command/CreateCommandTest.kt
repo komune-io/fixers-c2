@@ -59,7 +59,7 @@ class CreateCommandTest {
 		@Suppress("MaxLineLength")
 		val expectedJson =
 			"{\"name\":\"dealership\",\"transitions\":[{\"from\":0,\"to\":1,\"role\":\"Seller\",\"action\":\"Sell\"},{\"from\":1,\"to\":2,\"role\":\"Buyer\",\"action\":\"Buy\"}]}"
-		Assertions.assertThat(fcn).isEqualTo("create")
+		Assertions.assertThat(fcn.value).isEqualTo("create")
 		Assertions.assertThat(args)
 			.isNotEmpty
 			.containsExactly(

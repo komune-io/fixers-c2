@@ -2,6 +2,7 @@ package io.komune.c2.chaincode.dsl.invoke
 
 import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
+import io.komune.c2.chaincode.dsl.InvokeFunction
 
 data class InvokeRequest(
     val channelid: ChannelId? = null,
@@ -22,6 +23,6 @@ fun List<InvokeRequest>.toInvokeArgs(): List<InvokeArgs> = map {
 }
 
 fun InvokeRequest.toInvokeArgs(): InvokeArgs {
-    return InvokeArgs(fcn, args.toList())
+    return InvokeArgs(InvokeFunction(fcn), args.toList())
 }
 
