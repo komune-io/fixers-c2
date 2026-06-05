@@ -151,10 +151,12 @@ ENTITY : WithS2Id<ID> {
 	/**
 	 * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
 	 * to the nullable shape required by the interface signature:
-	 *  - Loaded → entity
-	 *  - Rejected (not-found / unusable payload) → null
-	 *  - Transient (network/IO error) → throw, preserving legacy semantics for
-	 *    callers that don't go through the WithOutcomes path
+	 *  - Loaded     → entity
+	 *  - Rejected   → null   (permanent: no entity, won't change on retry)
+	 *  - Transient / Indeterminate / Conflict → throw, preserving legacy
+	 *    semantics for callers that don't go through the WithOutcomes path
+	 *    (the original cause is rethrown when present so the caller can
+	 *    introspect it).
 	 */
 	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
 		loadWithOutcomes(automateContexts, ids).map { outcome ->
@@ -162,6 +164,10 @@ ENTITY : WithS2Id<ID> {
 				is LoadOutcome.Loaded -> outcome.entity
 				is LoadOutcome.Rejected -> null
 				is LoadOutcome.Transient -> throw outcome.error.cause
+					?: IllegalStateException(outcome.error.description)
+				is LoadOutcome.Indeterminate -> throw outcome.error.cause
+					?: IllegalStateException(outcome.error.description)
+				is LoadOutcome.Conflict -> throw outcome.error.cause
 					?: IllegalStateException(outcome.error.description)
 			}
 		}
