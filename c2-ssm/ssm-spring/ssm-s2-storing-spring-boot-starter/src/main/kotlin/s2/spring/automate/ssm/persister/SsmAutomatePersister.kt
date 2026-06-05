@@ -151,23 +151,24 @@ ENTITY : WithS2Id<ID> {
 	/**
 	 * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
 	 * to the nullable shape required by the interface signature:
-	 *  - Loaded     → entity
-	 *  - Rejected   → null   (permanent: no entity, won't change on retry)
-	 *  - Transient / Indeterminate / Conflict → throw, preserving legacy
-	 *    semantics for callers that don't go through the WithOutcomes path
-	 *    (the original cause is rethrown when present so the caller can
-	 *    introspect it).
+	 *  - Loaded   → entity
+	 *  - Rejected → null   (permanent: no entity, won't change on retry)
+	 *  - any other Failure (Transient / Indeterminate / Conflict) → throw,
+	 *    preserving legacy semantics for callers that don't go through the
+	 *    WithOutcomes path (the original cause is rethrown when present so
+	 *    the caller can introspect it).
+	 *
+	 * Uses the same `is Success / is Failure` idiom as [persistInit] /
+	 * [persist] below — the explicit [LoadOutcome.Rejected] arm pre-empts
+	 * [LoadOutcome.Failure] for the "return null" case; everything else falls
+	 * into the catch-all Failure arm.
 	 */
 	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
 		loadWithOutcomes(automateContexts, ids).map { outcome ->
 			when (outcome) {
 				is LoadOutcome.Loaded -> outcome.entity
 				is LoadOutcome.Rejected -> null
-				is LoadOutcome.Transient -> throw outcome.error.cause
-					?: IllegalStateException(outcome.error.description)
-				is LoadOutcome.Indeterminate -> throw outcome.error.cause
-					?: IllegalStateException(outcome.error.description)
-				is LoadOutcome.Conflict -> throw outcome.error.cause
+				is LoadOutcome.Failure -> throw outcome.error.cause
 					?: IllegalStateException(outcome.error.description)
 			}
 		}
