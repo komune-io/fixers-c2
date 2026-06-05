@@ -1,6 +1,7 @@
 package s2.spring.automate.ssm.persister
 
 import f2.dsl.fnc.operators.batchFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -15,6 +16,7 @@ import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
 import s2.automate.core.persist.AutomatePersister
+import s2.automate.core.persist.LoadOutcome
 import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2State
@@ -57,18 +59,112 @@ ENTITY : WithS2Id<ID> {
 		return load(automateContexts, flowOf(id)).firstOrNull()
 	}
 
-	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY> {
-		return ids.map {
-			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = it.toString())
-		}.let {
-			getSessionForAutomate(it)
-		}.map { session ->
-			val lastTransaction = session.logs.maxByOrNull { transaction ->
-				transaction.state.iteration
-			} ?: throw IllegalStateException("No logs found for session ${session.sessionName}")
-			objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+	/**
+	 * Per-id classified load. The engine's `evolveWithOutcomes` path consumes
+	 * this method directly — overriding it (vs the legacy [load]) is what lets
+	 * a single bad session in a batch surface as one [LoadOutcome.Rejected]
+	 * instead of aborting the whole chunk.
+	 *
+	 * Failure modes:
+	 *  - chaincode-query throws (network / gRPC) → [LoadOutcome.Transient] for
+	 *    every id (we can't classify per-id when the query itself failed);
+	 *  - session not in the result set (chain has no such id) →
+	 *    [LoadOutcome.Rejected] with `SESSION_NOT_FOUND`;
+	 *  - session returned but logs empty → [LoadOutcome.Rejected] with
+	 *    `SESSION_NOT_INITIALIZED` (the originally-broken case);
+	 *  - JSON deserialisation of the last log fails → [LoadOutcome.Rejected]
+	 *    with `DESERIALIZATION_FAILED` (a bad on-chain write — retry won't fix).
+	 */
+	override suspend fun loadWithOutcomes(
+		automateContexts: AutomateContext<S2Automate>,
+		ids: Flow<ID & Any>,
+	): Flow<LoadOutcome<ID & Any, ENTITY>> = flow {
+		val idList = ids.toList()
+		if (idList.isEmpty()) return@flow
+
+		val queries = idList.map { id ->
+			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = id.toString())
+		}
+
+		val sessions = try {
+			getSessionForAutomate(queries.asFlow()).toList()
+		} catch (e: CancellationException) {
+			// Cooperative cancellation must propagate — never swallow it into
+			// a Transient outcome.
+			throw e
+		} catch (e: Throwable) {
+			// Whole chain query failed — we can't classify per id, so every id
+			// becomes Transient (network/timeout-shaped — retry with backoff).
+			idList.forEach { id ->
+				emit(LoadOutcome.Transient<ID & Any, ENTITY>(id,
+					s2error(
+						code = "CHAINCODE_QUERY_FAILED",
+						description = e.message ?: e::class.simpleName ?: "<no message>",
+						payload = mapOf("id" to id.toString()),
+						cause = e,
+					)))
+			}
+			return@flow
+		}
+
+		val sessionsByName = sessions.associateBy { it.sessionName }
+		idList.forEach { id ->
+			val sessionName = id.toString()
+			val session = sessionsByName[sessionName]
+			when {
+				session == null -> emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
+					s2error(
+						code = "SESSION_NOT_FOUND",
+						description = "Session $sessionName not on chaincode",
+						payload = mapOf("id" to sessionName),
+					)))
+				session.logs.isEmpty() -> emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
+					s2error(
+						code = "SESSION_NOT_INITIALIZED",
+						description = "No logs for session $sessionName",
+						payload = mapOf("id" to sessionName),
+					)))
+				else -> {
+					val lastTransaction = session.logs.maxBy { it.state.iteration }
+					val entity = try {
+						objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+					} catch (e: CancellationException) {
+						throw e
+					} catch (e: Throwable) {
+						// Bad write on-chain — Rejected (permanent: retry won't make
+						// the corrupt payload parse).
+						emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
+							s2error(
+								code = "DESERIALIZATION_FAILED",
+								description = e.message ?: e::class.simpleName ?: "<no message>",
+								payload = mapOf("id" to sessionName),
+								cause = e,
+							)))
+						return@forEach
+					}
+					emit(LoadOutcome.Loaded(id, entity))
+				}
+			}
 		}
 	}
+
+	/**
+	 * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
+	 * to the nullable shape required by the interface signature:
+	 *  - Loaded → entity
+	 *  - Rejected (not-found / unusable payload) → null
+	 *  - Transient (network/IO error) → throw, preserving legacy semantics for
+	 *    callers that don't go through the WithOutcomes path
+	 */
+	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
+		loadWithOutcomes(automateContexts, ids).map { outcome ->
+			when (outcome) {
+				is LoadOutcome.Loaded -> outcome.entity
+				is LoadOutcome.Rejected -> null
+				is LoadOutcome.Transient -> throw outcome.error.cause
+					?: IllegalStateException(outcome.error.description)
+			}
+		}
 
 	override suspend fun persistInit(
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
