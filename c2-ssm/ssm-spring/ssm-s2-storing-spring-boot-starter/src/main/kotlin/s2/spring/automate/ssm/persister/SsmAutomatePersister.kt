@@ -1,6 +1,7 @@
 package s2.spring.automate.ssm.persister
 
 import f2.dsl.fnc.operators.batchFlow
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -15,6 +16,7 @@ import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
 import s2.automate.core.persist.AutomatePersister
+import s2.automate.core.persist.LoadOutcome
 import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2State
@@ -57,18 +59,140 @@ ENTITY : WithS2Id<ID> {
 		return load(automateContexts, flowOf(id)).firstOrNull()
 	}
 
-	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY> {
-		return ids.map {
-			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = it.toString())
-		}.let {
-			getSessionForAutomate(it)
-		}.map { session ->
-			val lastTransaction = session.logs.maxByOrNull { transaction ->
-				transaction.state.iteration
-			} ?: throw IllegalStateException("No logs found for session ${session.sessionName}")
-			objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+	/**
+	 * Per-id classified load. The engine's `evolveWithOutcomes` path consumes
+	 * this method directly — overriding it (vs the legacy [load]) is what lets
+	 * a single bad session in a batch surface as one [LoadOutcome.Rejected]
+	 * instead of aborting the whole chunk.
+	 *
+	 * Failure modes:
+	 *  - chaincode-query throws (network / gRPC) → [LoadOutcome.Transient] for
+	 *    every id (we can't classify per-id when the query itself failed);
+	 *  - session not in the result set (chain has no such id) →
+	 *    [LoadOutcome.Rejected] with `SESSION_NOT_FOUND`;
+	 *  - session returned but logs empty → [LoadOutcome.Rejected] with
+	 *    `SESSION_NOT_INITIALIZED` (the originally-broken case);
+	 *  - JSON deserialisation of the last log fails → [LoadOutcome.Rejected]
+	 *    with `DESERIALIZATION_FAILED` (a bad on-chain write — retry won't fix).
+	 */
+	override suspend fun loadWithOutcomes(
+		automateContexts: AutomateContext<S2Automate>,
+		ids: Flow<ID & Any>,
+	): Flow<LoadOutcome<ID & Any, ENTITY>> = flow {
+		val idList = ids.toList()
+		if (idList.isEmpty()) return@flow
+
+		// distinct() — multiple commands in a batch may target the same entity;
+		// the chaincode lookup is the same gRPC call, so dedup the queries.
+		// Outcomes are still emitted per-original-id in the loop below.
+		val queries = idList.distinct().map { id ->
+			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = id.toString())
+		}
+
+		val sessions = try {
+			getSessionForAutomate(queries.asFlow()).toList()
+		} catch (e: CancellationException) {
+			// Cooperative cancellation must propagate — never swallow it into
+			// a Transient outcome.
+			throw e
+		} catch (e: Exception) {
+			// Whole chain query failed — we can't classify per id, so every id
+			// becomes Transient (network/timeout-shaped — retry with backoff).
+			idList.forEach { id ->
+				emit(LoadOutcome.Transient<ID & Any, ENTITY>(id,
+					s2error(
+						code = "CHAINCODE_QUERY_FAILED",
+						description = e.message ?: e::class.simpleName ?: "<no message>",
+						payload = mapOf("id" to id.toString()),
+						cause = e,
+					)))
+			}
+			return@flow
+		}
+
+		val sessionsByName = sessions.associateBy { it.sessionName }
+		idList.forEach { id ->
+			emit(classifySession(id, sessionsByName[id.toString()]))
 		}
 	}
+
+	/**
+	 * Classifies a single id against the chaincode's chain-side session for
+	 * that id. Extracted from [loadWithOutcomes] to keep that method below
+	 * detekt's cyclomatic complexity ceiling.
+	 */
+	private fun classifySession(
+		id: ID & Any,
+		session: SsmGetSessionLogsQueryResult?,
+	): LoadOutcome<ID & Any, ENTITY> {
+		val sessionName = id.toString()
+		return when {
+			session == null -> LoadOutcome.Rejected(id, s2error(
+				code = "SESSION_NOT_FOUND",
+				description = "Session $sessionName not on chaincode",
+				payload = mapOf("id" to sessionName),
+			))
+			session.logs.isEmpty() -> LoadOutcome.Rejected(id, s2error(
+				code = "SESSION_NOT_INITIALIZED",
+				description = "No logs for session $sessionName",
+				payload = mapOf("id" to sessionName),
+			))
+			else -> loadEntityFromLogs(id, session, sessionName)
+		}
+	}
+
+	/**
+	 * Deserialises the entity from the session's last log. Split out from
+	 * [classifySession] so each method stays under detekt's ReturnCount
+	 * ceiling.
+	 */
+	private fun loadEntityFromLogs(
+		id: ID & Any,
+		session: SsmGetSessionLogsQueryResult,
+		sessionName: String,
+	): LoadOutcome<ID & Any, ENTITY> {
+		val lastTransaction = session.logs.maxBy { it.state.iteration }
+		return try {
+			val entity = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+			LoadOutcome.Loaded(id, entity)
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			// Bad write on-chain — Rejected (permanent: retry won't make
+			// the corrupt payload parse).
+			LoadOutcome.Rejected(id, s2error(
+				code = "DESERIALIZATION_FAILED",
+				description = e.message ?: e::class.simpleName ?: "<no message>",
+				payload = mapOf("id" to sessionName),
+				cause = e,
+			))
+		}
+	}
+
+	/**
+	 * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
+	 * to the nullable shape required by the interface signature:
+	 *  - Loaded   → entity
+	 *  - Rejected → null   (permanent: no entity, won't change on retry)
+	 *  - any other Failure (Transient / Indeterminate / Conflict) → throw,
+	 *    preserving legacy semantics for callers that don't go through the
+	 *    WithOutcomes path (the original cause is rethrown when present so
+	 *    the caller can introspect it).
+	 *
+	 * Uses the same `is Success / is Failure` idiom as [persistInit] /
+	 * [persist] below — the explicit [LoadOutcome.Rejected] arm pre-empts
+	 * [LoadOutcome.Failure] for the "return null" case; everything else falls
+	 * into the catch-all Failure arm.
+	 */
+	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
+		loadWithOutcomes(automateContexts, ids).map { outcome ->
+			when (outcome) {
+				is LoadOutcome.Loaded -> outcome.entity
+				is LoadOutcome.Rejected -> null
+				is LoadOutcome.Failure -> throw outcome.error.cause
+					?: IllegalStateException(outcome.error.description)
+			}
+		}
 
 	override suspend fun persistInit(
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
