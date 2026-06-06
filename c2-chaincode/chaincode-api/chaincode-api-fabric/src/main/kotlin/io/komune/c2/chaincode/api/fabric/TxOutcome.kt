@@ -1,14 +1,29 @@
 package io.komune.c2.chaincode.api.fabric
 
 import org.hyperledger.fabric.protos.peer.TxValidationCode
+import s2.dsl.automate.ErrorCategory
 
 /**
  * Per-transaction outcome returned by FabricGatewayClient.invoke. Replaces
  * the previous "throw on failure" semantics so partial batches return
  * structured per-item information instead of cancelling siblings.
+ *
+ * Shape-aligned with [PersistOutcome] / [LoadOutcome] in s2-automate-core:
+ * a [Failure] parent groups the four error variants and pins each one to
+ * the shared [ErrorCategory] taxonomy so downstream consumers key their
+ * retry policy off `category` without pattern-matching every subtype.
+ * Unlike PersistOutcome/LoadOutcome, failures carry stringly-typed
+ * `errorCode` / `errorMessage` rather than an `S2Error` — the Fabric layer
+ * has no concept of structured S2 errors.
  */
 sealed interface TxOutcome {
     val msgId: String
+
+    sealed interface Failure : TxOutcome {
+        val errorCode: String
+        val errorMessage: String
+        val category: ErrorCategory
+    }
 
     data class Committed(
         override val msgId: String,
@@ -19,29 +34,37 @@ sealed interface TxOutcome {
 
     data class Rejected(
         override val msgId: String,
-        val errorCode: String,
-        val errorMessage: String,
-    ) : TxOutcome
+        override val errorCode: String,
+        override val errorMessage: String,
+    ) : Failure {
+        override val category: ErrorCategory = ErrorCategory.Rejected
+    }
 
     data class Transient(
         override val msgId: String,
-        val errorCode: String,
-        val errorMessage: String,
-    ) : TxOutcome
+        override val errorCode: String,
+        override val errorMessage: String,
+    ) : Failure {
+        override val category: ErrorCategory = ErrorCategory.Transient
+    }
 
     data class Indeterminate(
         override val msgId: String,
-        val errorCode: String,
-        val errorMessage: String,
-    ) : TxOutcome
+        override val errorCode: String,
+        override val errorMessage: String,
+    ) : Failure {
+        override val category: ErrorCategory = ErrorCategory.Indeterminate
+    }
 
     data class Conflict(
         override val msgId: String,
-        val errorCode: String,
-        val errorMessage: String,
+        override val errorCode: String,
+        override val errorMessage: String,
         val transactionId: String? = null,
         val blockNumber: Long? = null,
-    ) : TxOutcome
+    ) : Failure {
+        override val category: ErrorCategory = ErrorCategory.Conflict
+    }
 }
 
 object TxValidationCodeMapper {

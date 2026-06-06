@@ -74,17 +74,9 @@ class FabricSsmClient(
             outcome = "Committed", msgId = msgId,
             transactionId = transactionId, blockNumber = blockNumber, payload = payload,
         )
-        is TxOutcome.Rejected -> CommandOutcome(
-            outcome = "Rejected", msgId = msgId, errorCode = errorCode, errorMessage = errorMessage,
-        )
-        is TxOutcome.Transient -> CommandOutcome(
-            outcome = "Transient", msgId = msgId, errorCode = errorCode, errorMessage = errorMessage,
-        )
-        is TxOutcome.Indeterminate -> CommandOutcome(
-            outcome = "Indeterminate", msgId = msgId, errorCode = errorCode, errorMessage = errorMessage,
-        )
-        is TxOutcome.Conflict -> CommandOutcome(
-            outcome = "Conflict", msgId = msgId, errorCode = errorCode, errorMessage = errorMessage,
+        is TxOutcome.Failure -> CommandOutcome(
+            outcome = category.name, msgId = msgId,
+            errorCode = errorCode, errorMessage = errorMessage,
         )
     }
 }

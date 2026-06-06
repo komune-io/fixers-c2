@@ -9,6 +9,8 @@ dependencies {
     implementation(project(":c2-chaincode:chaincode-api:chaincode-api-config"))
     implementation(project(":c2-chaincode:chaincode-dsl"))
 
+    api(libs.s2.automate.dsl)
+
     kapt(libs.spring.boot.configuration.processor)
     implementation(libs.spring.boot.autoconfigure)
     implementation(libs.jackson.module.kotlin)

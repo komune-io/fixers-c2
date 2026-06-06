@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
-import s2.automate.core.persist.ErrorCategory
 import s2.automate.core.persist.LoadOutcome
+import s2.dsl.automate.ErrorCategory
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2RoleValue
