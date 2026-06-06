@@ -82,7 +82,10 @@ ENTITY : WithS2Id<ID> {
 		val idList = ids.toList()
 		if (idList.isEmpty()) return@flow
 
-		val queries = idList.map { id ->
+		// distinct() — multiple commands in a batch may target the same entity;
+		// the chaincode lookup is the same gRPC call, so dedup the queries.
+		// Outcomes are still emitted per-original-id in the loop below.
+		val queries = idList.distinct().map { id ->
 			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = id.toString())
 		}
 
@@ -92,7 +95,7 @@ ENTITY : WithS2Id<ID> {
 			// Cooperative cancellation must propagate — never swallow it into
 			// a Transient outcome.
 			throw e
-		} catch (e: Throwable) {
+		} catch (e: Exception) {
 			// Whole chain query failed — we can't classify per id, so every id
 			// becomes Transient (network/timeout-shaped — retry with backoff).
 			idList.forEach { id ->
@@ -130,7 +133,7 @@ ENTITY : WithS2Id<ID> {
 						objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
 					} catch (e: CancellationException) {
 						throw e
-					} catch (e: Throwable) {
+					} catch (e: Exception) {
 						// Bad write on-chain — Rejected (permanent: retry won't make
 						// the corrupt payload parse).
 						emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
