@@ -81,7 +81,12 @@ class SsmAutomatePersisterLoadOutcomesTest {
 
 	// --- builders for SSM query stubs ---
 
-	private fun ssmLog(sessionName: String, txId: String, iteration: Int, public: String = """{"id":"$sessionName","status":1}"""): SsmSessionStateLog =
+	private fun ssmLog(
+		sessionName: String,
+		txId: String,
+		iteration: Int,
+		public: String = """{"id":"$sessionName","status":1}""",
+	): SsmSessionStateLog =
 		SsmSessionStateLog(
 			txId = txId,
 			state = SsmSessionState(
@@ -216,7 +221,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - JSON parse fails for one log emits Rejected DESERIALIZATION_FAILED for that id only`() = runTest {
+	fun `loadWithOutcomes - JSON parse failure emits Rejected DESERIALIZATION_FAILED for that id only`() = runTest {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				queries.toList().map { q ->

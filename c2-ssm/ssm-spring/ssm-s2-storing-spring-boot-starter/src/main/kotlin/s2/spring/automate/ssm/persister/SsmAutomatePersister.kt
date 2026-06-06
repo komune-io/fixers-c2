@@ -112,42 +112,60 @@ ENTITY : WithS2Id<ID> {
 
 		val sessionsByName = sessions.associateBy { it.sessionName }
 		idList.forEach { id ->
-			val sessionName = id.toString()
-			val session = sessionsByName[sessionName]
-			when {
-				session == null -> emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
-					s2error(
-						code = "SESSION_NOT_FOUND",
-						description = "Session $sessionName not on chaincode",
-						payload = mapOf("id" to sessionName),
-					)))
-				session.logs.isEmpty() -> emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
-					s2error(
-						code = "SESSION_NOT_INITIALIZED",
-						description = "No logs for session $sessionName",
-						payload = mapOf("id" to sessionName),
-					)))
-				else -> {
-					val lastTransaction = session.logs.maxBy { it.state.iteration }
-					val entity = try {
-						objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
-					} catch (e: CancellationException) {
-						throw e
-					} catch (e: Exception) {
-						// Bad write on-chain — Rejected (permanent: retry won't make
-						// the corrupt payload parse).
-						emit(LoadOutcome.Rejected<ID & Any, ENTITY>(id,
-							s2error(
-								code = "DESERIALIZATION_FAILED",
-								description = e.message ?: e::class.simpleName ?: "<no message>",
-								payload = mapOf("id" to sessionName),
-								cause = e,
-							)))
-						return@forEach
-					}
-					emit(LoadOutcome.Loaded(id, entity))
-				}
-			}
+			emit(classifySession(id, sessionsByName[id.toString()]))
+		}
+	}
+
+	/**
+	 * Classifies a single id against the chaincode's chain-side session for
+	 * that id. Extracted from [loadWithOutcomes] to keep that method below
+	 * detekt's cyclomatic complexity ceiling.
+	 */
+	private fun classifySession(
+		id: ID & Any,
+		session: SsmGetSessionLogsQueryResult?,
+	): LoadOutcome<ID & Any, ENTITY> {
+		val sessionName = id.toString()
+		return when {
+			session == null -> LoadOutcome.Rejected(id, s2error(
+				code = "SESSION_NOT_FOUND",
+				description = "Session $sessionName not on chaincode",
+				payload = mapOf("id" to sessionName),
+			))
+			session.logs.isEmpty() -> LoadOutcome.Rejected(id, s2error(
+				code = "SESSION_NOT_INITIALIZED",
+				description = "No logs for session $sessionName",
+				payload = mapOf("id" to sessionName),
+			))
+			else -> loadEntityFromLogs(id, session, sessionName)
+		}
+	}
+
+	/**
+	 * Deserialises the entity from the session's last log. Split out from
+	 * [classifySession] so each method stays under detekt's ReturnCount
+	 * ceiling.
+	 */
+	private fun loadEntityFromLogs(
+		id: ID & Any,
+		session: SsmGetSessionLogsQueryResult,
+		sessionName: String,
+	): LoadOutcome<ID & Any, ENTITY> {
+		val lastTransaction = session.logs.maxBy { it.state.iteration }
+		return try {
+			val entity = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+			LoadOutcome.Loaded(id, entity)
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			// Bad write on-chain — Rejected (permanent: retry won't make
+			// the corrupt payload parse).
+			LoadOutcome.Rejected(id, s2error(
+				code = "DESERIALIZATION_FAILED",
+				description = e.message ?: e::class.simpleName ?: "<no message>",
+				payload = mapOf("id" to sessionName),
+				cause = e,
+			))
 		}
 	}
 
