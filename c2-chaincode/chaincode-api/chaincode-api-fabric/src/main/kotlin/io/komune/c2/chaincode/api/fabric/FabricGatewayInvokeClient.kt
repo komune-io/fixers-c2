@@ -109,7 +109,7 @@ class FabricGatewayClient(
             )
         }
 
-        logger.info("Submit transaction[${endorsed.transactionId}] in [${channelId}:$chaincodeId]...")
+        logger.debug("Submit transaction[${endorsed.transactionId}] in [${channelId}:$chaincodeId]...")
         val submitted = try {
             endorsed.submitAsync()
         } catch (e: Exception) {
@@ -118,7 +118,7 @@ class FabricGatewayClient(
 
         val status = submitted.status
         return if (status.isSuccessful) {
-            logger.info(
+            logger.debug(
                 "Committed transaction[{}] in [{}:{}] block {}",
                 endorsed.transactionId, channelId, chaincodeId, status.blockNumber
             )
