@@ -37,6 +37,7 @@ import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.dsl.CommandOutcome
+import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 
 class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
@@ -228,15 +229,14 @@ ENTITY : WithS2Id<ID> {
 		val outcomes = ssmSessionStartFunction.invoke(commands.asFlow()).toList()
 		val byId = outcomes.associateBy { it.msgId }
 
-		val candidates = collectedContexts.map { ctx ->
-			val cid = "start:${ctx.entity.s2Id()}"
+		val candidates = collectedContexts.zip(commands).map { (ctx, cmd) ->
 			ReconcileCandidate(
 				sessionName = ctx.entity.s2Id().toString(),
 				targetIteration = START_ITERATION,
-				intendedPublic = objectMapper.writeValueAsString(ctx.entity),
+				intendedPublic = cmd.session.public,
 				event = ctx.event,
 				automateContext = ctx.automateContext,
-				base = toPersistOutcome(cid, ctx.event, byId[cid]),
+				base = toPersistOutcome(cmd.msgId, ctx.event, byId[cmd.msgId]),
 			)
 		}
 		val reconciled = reconcileFailures(candidates)
@@ -374,16 +374,14 @@ ENTITY : WithS2Id<ID> {
 		val outcomes = ssmSessionPerformActionFunction.invoke(commands.asFlow()).toList()
 		val byId = outcomes.associateBy { it.msgId }
 
-		@Suppress("UNCHECKED_CAST")
-		val candidates = good.map { sr ->
-			val cid = "${sr.sessionId}:${sr.iteration + 1}"
+		val candidates = good.zip(commands).map { (sr, cmd) ->
 			ReconcileCandidate(
 				sessionName = sr.sessionId,
 				targetIteration = sr.iteration + 1,
-				intendedPublic = objectMapper.writeValueAsString(sr.transitionContext.entity),
-				event = sr.transitionContext.event as EVENT,
+				intendedPublic = cmd.context.public,
+				event = sr.transitionContext.event,
 				automateContext = sr.transitionContext.automateContext,
-				base = toPersistOutcome(cid, sr.transitionContext.event as EVENT, byId[cid]),
+				base = toPersistOutcome(cmd.msgId, sr.transitionContext.event, byId[cmd.msgId]),
 			)
 		}
 		val reconciled = reconcileFailures(candidates)
@@ -465,9 +463,15 @@ ENTITY : WithS2Id<ID> {
 		val toCheck = candidates.filter { it.base.isReconcilableFailure() }
 		if (toCheck.isEmpty()) return emptyMap()
 
-		val logsBySession = getSessionForAutomate(
-			toCheck.map { GetAutomateSessionQuery(it.automateContext, it.sessionName) }.asFlow()
-		).toList().associateBy { it.sessionName }
+		val logsBySession = try {
+			getSessionForAutomate(
+				toCheck.map { GetAutomateSessionQuery(it.automateContext, it.sessionName) }.distinct().asFlow()
+			).toList().associateBy { it.sessionName }
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			return emptyMap()
+		}
 
 		return toCheck.associate { candidate ->
 			candidate.msgId to reconcileOne(candidate, logsBySession[candidate.sessionName])
@@ -498,10 +502,14 @@ ENTITY : WithS2Id<ID> {
 	 */
 	private fun publicMatches(intended: String, onChain: Any?): Boolean {
 		if (onChain == null) return false
-		val onChainJson = onChain.toString()
 		return runCatching {
-			objectMapper.readTree(intended) == objectMapper.readTree(onChainJson)
-		}.getOrDefault(intended == onChainJson)
+			val intendedNode = objectMapper.readTree(intended)
+			val onChainNode = when (onChain) {
+				is String -> objectMapper.readTree(onChain)
+				else -> objectMapper.valueToTree<JsonNode>(onChain)
+			}
+			intendedNode == onChainNode
+		}.getOrDefault(intended == onChain.toString())
 	}
 }
 
