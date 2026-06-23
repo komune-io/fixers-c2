@@ -25,6 +25,7 @@ import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 import ssm.chaincode.dsl.model.SsmTransition
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
+import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
 import ssm.sdk.dsl.CommandOutcome
 import tools.jackson.databind.ObjectMapper
 
@@ -119,13 +120,13 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val noPerform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction =
             F2Function { _ -> error("perform should NOT be called by persistInitWithOutcomes") }
 
-        val noLogs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
-            F2Function { _ -> error("ssmGetSessionLogsQueryFunction should NOT be called for IterableEntity") }
+        val noSessionsOnChain: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+            F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
 
         return SsmAutomatePersister(
             ssmSessionStartFunction = v2Start,
             ssmSessionPerformActionFunction = noPerform,
-            ssmGetSessionLogsQueryFunction = noLogs,
+            ssmGetSessionLogsQueryFunction = noSessionsOnChain,
             chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
             entityType = IterableEntity::class.java,
             agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
