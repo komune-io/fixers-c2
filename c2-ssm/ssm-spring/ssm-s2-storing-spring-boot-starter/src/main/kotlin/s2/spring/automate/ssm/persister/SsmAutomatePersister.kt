@@ -37,6 +37,7 @@ import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.dsl.CommandOutcome
+import org.slf4j.LoggerFactory
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 
@@ -55,6 +56,8 @@ class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
 ENTITY : WithS2Id<ID> {
+
+	private val logger = LoggerFactory.getLogger(SsmAutomatePersister::class.java)
 
 	override suspend fun load(automateContexts: AutomateContext<S2Automate>, id: ID & Any): ENTITY? {
 		return load(automateContexts, flowOf(id)).firstOrNull()
@@ -470,7 +473,8 @@ ENTITY : WithS2Id<ID> {
 		} catch (e: CancellationException) {
 			throw e
 		} catch (e: Exception) {
-			return emptyMap()
+			logger.warn("Reconciliation chain query failed; falling back to base outcomes", e)
+			emptyMap()
 		}
 
 		return toCheck.associate { candidate ->
