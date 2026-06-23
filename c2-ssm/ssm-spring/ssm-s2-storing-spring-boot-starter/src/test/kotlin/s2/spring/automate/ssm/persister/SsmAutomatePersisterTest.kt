@@ -223,13 +223,13 @@ class SsmAutomatePersisterTest {
 		val v2Start: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
 			F2Function { _ -> error("start should not be called by persistWithOutcomes") }
 
-		val noLogs: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
-			F2Function { _ -> error("ssmGetSessionLogsQueryFunction should not be called for IterableEntity") }
+		val noSessionsOnChain: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+			F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
 
 		val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
 			ssmSessionStartFunction = v2Start,
 			ssmSessionPerformActionFunction = v2Perform,
-			ssmGetSessionLogsQueryFunction = noLogs,
+			ssmGetSessionLogsQueryFunction = noSessionsOnChain,
 			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
 			entityType = IterableEntity::class.java,
 			agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),

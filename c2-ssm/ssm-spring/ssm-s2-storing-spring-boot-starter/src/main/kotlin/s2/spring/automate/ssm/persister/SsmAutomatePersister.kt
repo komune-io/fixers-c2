@@ -37,6 +37,8 @@ import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.dsl.CommandOutcome
+import org.slf4j.LoggerFactory
+import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 
 class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
@@ -54,6 +56,8 @@ class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
 ENTITY : WithS2Id<ID> {
+
+	private val logger = LoggerFactory.getLogger(SsmAutomatePersister::class.java)
 
 	override suspend fun load(automateContexts: AutomateContext<S2Automate>, id: ID & Any): ENTITY? {
 		return load(automateContexts, flowOf(id)).firstOrNull()
@@ -228,10 +232,18 @@ ENTITY : WithS2Id<ID> {
 		val outcomes = ssmSessionStartFunction.invoke(commands.asFlow()).toList()
 		val byId = outcomes.associateBy { it.msgId }
 
-		collectedContexts.forEach { ctx ->
-			val cid = "start:${ctx.entity.s2Id()}"
-			emit(toPersistOutcome(cid, ctx.event, byId[cid]))
+		val candidates = collectedContexts.zip(commands).map { (ctx, cmd) ->
+			ReconcileCandidate(
+				sessionName = ctx.entity.s2Id().toString(),
+				targetIteration = START_ITERATION,
+				intendedPublic = cmd.session.public,
+				event = ctx.event,
+				automateContext = ctx.automateContext,
+				base = toPersistOutcome(cmd.msgId, ctx.event, byId[cmd.msgId]),
+			)
 		}
+		val reconciled = reconcileFailures(candidates)
+		candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
 	}
 
 	private fun getIterations(
@@ -365,11 +377,18 @@ ENTITY : WithS2Id<ID> {
 		val outcomes = ssmSessionPerformActionFunction.invoke(commands.asFlow()).toList()
 		val byId = outcomes.associateBy { it.msgId }
 
-		good.forEach { sr ->
-			val cid = "${sr.sessionId}:${sr.iteration + 1}"
-			@Suppress("UNCHECKED_CAST")
-			emit(toPersistOutcome(cid, sr.transitionContext.event as EVENT, byId[cid]))
+		val candidates = good.zip(commands).map { (sr, cmd) ->
+			ReconcileCandidate(
+				sessionName = sr.sessionId,
+				targetIteration = sr.iteration + 1,
+				intendedPublic = cmd.context.public,
+				event = sr.transitionContext.event,
+				automateContext = sr.transitionContext.automateContext,
+				base = toPersistOutcome(cmd.msgId, sr.transitionContext.event, byId[cmd.msgId]),
+			)
 		}
+		val reconciled = reconcileFailures(candidates)
+		candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
 	}
 
 	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
@@ -428,6 +447,95 @@ ENTITY : WithS2Id<ID> {
 			)
 		}
 	}
+
+	/**
+	 * Idempotent reconciliation: a transition that actually committed on a prior attempt
+	 * (lost response, sweeper retry, duplicate send, or a replay onto a non-wiped chain) comes
+	 * back here as a [PersistOutcome.Failure]. Instead of guessing from the chaincode's error
+	 * prose, we ask the chain: if the session's log at the target iteration already holds the
+	 * exact state this command was writing, the transition is on chain — promote it to
+	 * [PersistOutcome.Success] and recover the real txId, instead of re-rejecting and flooding
+	 * the DLQ.
+	 *
+	 * Cost: zero reads on the success path; a single batched session-logs read only when at
+	 * least one outcome [isReconcilableFailure].
+	 */
+	private suspend fun reconcileFailures(
+		candidates: List<ReconcileCandidate<EVENT>>,
+	): Map<String, PersistOutcome<EVENT>> {
+		val toCheck = candidates.filter { it.base.isReconcilableFailure() }
+		if (toCheck.isEmpty()) return emptyMap()
+
+		val logsBySession = try {
+			getSessionForAutomate(
+				toCheck.map { GetAutomateSessionQuery(it.automateContext, it.sessionName) }.distinct().asFlow()
+			).toList().associateBy { it.sessionName }
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			logger.warn("Reconciliation chain query failed; falling back to base outcomes", e)
+			emptyMap()
+		}
+
+		return toCheck.associate { candidate ->
+			candidate.msgId to reconcileOne(candidate, logsBySession[candidate.sessionName])
+		}
+	}
+
+	private fun reconcileOne(
+		candidate: ReconcileCandidate<EVENT>,
+		onChain: SsmGetSessionLogsQueryResult?,
+	): PersistOutcome<EVENT> {
+		val log = onChain?.logs?.firstOrNull { it.state.iteration == candidate.targetIteration }
+		return if (log != null && publicMatches(candidate.intendedPublic, log.state.public)) {
+			PersistOutcome.Success(
+				msgId = candidate.msgId,
+				event = candidate.event,
+				metadata = mapOf("transactionId" to log.txId),
+			)
+		} else {
+			candidate.base
+		}
+	}
+
+	/**
+	 * Canonical (key-order-insensitive) JSON equality between the state this command intended to
+	 * write and the state already on chain at that iteration. Tree comparison via the same
+	 * ObjectMapper avoids serialization-order false-negatives; on a parse failure we fall back to
+	 * raw string equality (never throwing out of reconciliation).
+	 */
+	private fun publicMatches(intended: String, onChain: Any?): Boolean {
+		if (onChain == null) return false
+		return runCatching {
+			val intendedNode = objectMapper.readTree(intended)
+			val onChainNode = when (onChain) {
+				is String -> objectMapper.readTree(onChain)
+				else -> objectMapper.valueToTree<JsonNode>(onChain)
+			}
+			intendedNode == onChainNode
+		}.getOrDefault(intended == onChain.toString())
+	}
+}
+
+private const val START_ITERATION = 0
+
+/**
+ * A failure the chain might already hold, so worth a state-check. Excludes [PersistOutcome.Transient]:
+ * a network/gRPC failure means the tx may never have reached the chain, so it must retry — never reconcile.
+ */
+private fun PersistOutcome<*>.isReconcilableFailure(): Boolean =
+	this is PersistOutcome.Failure && this !is PersistOutcome.Transient
+
+/** A persisted command paired with the on-chain state it intended to write, for [reconcileFailures]. */
+private class ReconcileCandidate<EVENT>(
+	val sessionName: SessionName,
+	val targetIteration: Int,
+	val intendedPublic: String,
+	val event: EVENT,
+	val automateContext: AutomateContext<S2Automate>,
+	val base: PersistOutcome<EVENT>,
+) {
+	val msgId: String get() = base.msgId
 }
 
 data class GetSessionQuery<STATE, ID, ENTITY, EVENT>(
