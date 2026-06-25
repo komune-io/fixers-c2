@@ -13,7 +13,7 @@
 #   ABSOLUTE_MAX_BYTES   (default 51380224 = 49 MiB)
 #   MAX_MESSAGE_COUNT    (default 1024)
 #   BATCH_TIMEOUT        (default 2s)
-set -e
+set -eo pipefail
 
 source /opt/c2-sandbox/chaincode/bin/env_chaincode   # ORDERER_ADDR, ORDERER_CERT, CHANNEL
 
@@ -27,7 +27,7 @@ ORDERER_MSPID="${ORDERER_MSPID:-BlockchainLANOrdererMSP}"
 bs='.channel_group.groups.Orderer.values.BatchSize.value'
 bt='.channel_group.groups.Orderer.values.BatchTimeout.value'
 
-WORK="$(mktemp -d)"; cd "$WORK"
+WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT; cd "$WORK"
 
 echo "[batch-config] fetching current config of ${CHANNEL}"
 peer channel fetch config config_block.pb -o "${ORDERER_ADDR}" -c "${CHANNEL}" --tls --cafile "${ORDERER_CERT}"
