@@ -3,6 +3,11 @@
 source /opt/c2-sandbox/chaincode/bin/env_chaincode
 init_channel.sh
 
+# Apply the orderer block-cutting params (BatchSize/BatchTimeout) to the channel.
+# Idempotent: skips when on-chain values already match. Override via container env
+# (PREFERRED_MAX_BYTES / ABSOLUTE_MAX_BYTES / MAX_MESSAGE_COUNT / BATCH_TIMEOUT).
+set_batch_config.sh
+
 source /opt/chaincode/ssm/env_ssm
 source /opt/c2-sandbox/chaincode/ssm/env_ssm
 

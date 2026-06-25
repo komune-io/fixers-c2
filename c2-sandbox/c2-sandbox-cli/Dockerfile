@@ -25,6 +25,8 @@ ENV GOPATH="/opt/gopath"
 
 COPY ./config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/users/${CLI_USER}@${COOP_PEER_DOMAIN}/ /etc/hyperledger/user
 COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/tlsca/ /etc/hyperledger/orderer/
+# orderer-org admin MSP — required to sign channel Orderer-group config updates (set_batch_config.sh)
+COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/users/Admin@${COOP_CA_DOMAIN}/msp /etc/hyperledger/orderer-admin/msp
 COPY ./config/fabric/config /etc/hyperledger/config
 
 COPY ./config/chaincode /opt/c2-sandbox/chaincode
