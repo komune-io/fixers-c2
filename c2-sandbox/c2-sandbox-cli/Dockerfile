@@ -4,7 +4,9 @@ ARG SSM_VERSION
 FROM hyperledger/fabric-tools:${VERSION_FABRIC}
 
 # jq is required by set_batch_config.sh (channel config edit); fabric-tools does not ship it.
-RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+# DL3008 ignored: pinning jq to a base-image-specific version is brittle across fabric-tools bumps.
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
 
 ARG DOCKER_REPOSITORY
 ARG COOP_PEER
