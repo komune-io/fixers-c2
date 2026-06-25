@@ -3,6 +3,11 @@ ARG SSM_VERSION
 
 FROM hyperledger/fabric-tools:${VERSION_FABRIC}
 
+# jq is required by set_batch_config.sh (channel config edit); fabric-tools does not ship it.
+# DL3008 ignored: pinning jq to a base-image-specific version is brittle across fabric-tools bumps.
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
+
 ARG DOCKER_REPOSITORY
 ARG COOP_PEER
 ARG COOP_PEER_DOMAIN
@@ -25,6 +30,10 @@ ENV GOPATH="/opt/gopath"
 
 COPY ./config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/users/${CLI_USER}@${COOP_PEER_DOMAIN}/ /etc/hyperledger/user
 COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/tlsca/ /etc/hyperledger/orderer/
+# orderer-org admin MSP — required to sign channel Orderer-group config updates (set_batch_config.sh).
+# Dev-sandbox crypto only: this MSP is already committed in-repo and baked into the orderer image,
+# so this introduces no new secret exposure. Real deployments inject crypto at runtime, not via this image.
+COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/users/Admin@${COOP_CA_DOMAIN}/msp /etc/hyperledger/orderer-admin/msp
 COPY ./config/fabric/config /etc/hyperledger/config
 
 COPY ./config/chaincode /opt/c2-sandbox/chaincode
