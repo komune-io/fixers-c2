@@ -47,7 +47,7 @@ class FabricGatewayClient(
         }
 
         proposalResponses.awaitAll().also {
-            logger.info("Transaction[${it.size}] sent in in ${currentTimeMillis() - start} ms")
+            logger.debug("Transaction[${it.size}] sent in ${currentTimeMillis() - start} ms")
         }
 
     }
