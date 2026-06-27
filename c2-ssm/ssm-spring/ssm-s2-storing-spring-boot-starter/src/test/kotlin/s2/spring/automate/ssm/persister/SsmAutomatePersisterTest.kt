@@ -59,6 +59,7 @@ class SsmAutomatePersisterTest {
 			override val position = status
 		}
 		override fun s2Iteration() = iteration
+		override fun withS2Iteration(iteration: Int) = copy(iteration = iteration)
 	}
 
 	@Test

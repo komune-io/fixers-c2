@@ -53,6 +53,7 @@ class SsmAutomatePersisterReconciliationTest {
         override fun s2Id() = id
         override fun s2State() = object : TestState { override val position = status }
         override fun s2Iteration() = iteration
+        override fun withS2Iteration(iteration: Int) = copy(iteration = iteration)
     }
 
     data class TestEvt(val id: String = "") : Event
