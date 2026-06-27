@@ -157,7 +157,16 @@ ENTITY : WithS2Id<ID> {
 	): LoadOutcome<ID & Any, ENTITY> {
 		val lastTransaction = session.logs.maxBy { it.state.iteration }
 		return try {
-			val entity = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+			val raw = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+			// Stamp the on-chain iteration onto the loaded entity (it's already in
+			// the logs we just fetched). Entities implementing WithS2Iteration then
+			// carry it through to persist, which skips the redundant iteration query.
+			@Suppress("UNCHECKED_CAST")
+			val entity = if (raw is WithS2Iteration) {
+				raw.withS2Iteration(lastTransaction.state.iteration) as ENTITY
+			} else {
+				raw
+			}
 			LoadOutcome.Loaded(id, entity)
 		} catch (e: CancellationException) {
 			throw e
