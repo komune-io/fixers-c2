@@ -161,9 +161,8 @@ ENTITY : WithS2Id<ID> {
 			// Stamp the on-chain iteration onto the loaded entity (it's already in
 			// the logs we just fetched). Entities implementing WithS2Iteration then
 			// carry it through to persist, which skips the redundant iteration query.
-			@Suppress("UNCHECKED_CAST")
 			val entity = if (raw is WithS2Iteration) {
-				raw.withS2Iteration(lastTransaction.state.iteration) as ENTITY
+				entityType.cast(raw.withS2Iteration(lastTransaction.state.iteration))
 			} else {
 				raw
 			}
