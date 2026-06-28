@@ -1,7 +1,7 @@
 [versions]
 fixers = "0.41.0-SNAPSHOT"
 fabric = "2.2.26"
-fabricGateway = "1.7.1"
+fabricGateway = "1.11.0"
 grpc = "1.67.1"
 protobuf = "4.28.2"
 bouncycastle = "1.70"
