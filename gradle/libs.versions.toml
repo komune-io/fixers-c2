@@ -82,7 +82,7 @@ testcontainers-redis = { group = "com.redis", name = "testcontainers-redis" }
 # Project-specific
 fabric-sdk-java = { group = "org.hyperledger.fabric-sdk-java", name = "fabric-sdk-java", version.ref = "fabric" }
 fabric-gateway = { group = "org.hyperledger.fabric", name = "fabric-gateway", version.ref = "fabricGateway" }
-fabric-protos = { group = "org.hyperledger.fabric", name = "fabric-protos", version = "0.3.2" }
+fabric-protos = { group = "org.hyperledger.fabric", name = "fabric-protos", version = "0.3.7" }
 grpc-bom = { group = "io.grpc", name = "grpc-bom", version.ref = "grpc" }
 grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf" }
 grpc-stub = { group = "io.grpc", name = "grpc-stub" }
