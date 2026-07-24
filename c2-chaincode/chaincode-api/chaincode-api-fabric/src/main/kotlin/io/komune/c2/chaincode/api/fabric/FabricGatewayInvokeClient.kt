@@ -23,10 +23,9 @@ import org.slf4j.LoggerFactory
 
 class FabricGatewayClient(
     private val fabricGatewayBuilder: FabricGatewayBuilder,
+    parallelism: Int,
 ) {
-    @Suppress("MagicNumber")
-//    val customThreadPool = Executors.newFixedThreadPool(1024).asCoroutineDispatcher()
-    val parallelIO = Dispatchers.IO.limitedParallelism(256)
+    val parallelIO = Dispatchers.IO.limitedParallelism(parallelism)
 
     private val logger: Logger = LoggerFactory.getLogger(FabricGatewayClient::class.java)
 

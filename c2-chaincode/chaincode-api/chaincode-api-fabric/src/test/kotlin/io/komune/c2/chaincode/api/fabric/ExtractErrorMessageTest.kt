@@ -25,7 +25,8 @@ class ExtractErrorMessageTest {
         object : FabricGatewayBuilder() {
             override fun contracts(channelId: ChannelId, chaincodeId: ChaincodeId): List<Contract> =
                 emptyList()
-        }
+        },
+        parallelism = 1,
     )
 
     // --------------------------------------------------------------------------

@@ -65,7 +65,7 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     fun `invoke returns list with same size as input, no exception escapes`() = runTest {
-        val client = FabricGatewayClient(stubBuilder())
+        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -88,7 +88,7 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     fun `invoke preserves per-item commandId in outcomes`() = runTest {
-        val client = FabricGatewayClient(stubBuilder())
+        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -107,7 +107,7 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     fun `commandIds size mismatch throws IllegalArgumentException before any Fabric call`() = runTest {
-        val client = FabricGatewayClient(stubBuilder())
+        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val thrown = runCatching {
             client.invoke(
@@ -142,7 +142,7 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
 
-        val client = FabricGatewayClient(stubBuilder(countingContract))
+        val client = FabricGatewayClient(stubBuilder(countingContract), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
