@@ -161,4 +161,81 @@ class FabricGatewayInvokeClientTest {
         assertThat(callCount.get()).isEqualTo(3)
         assertThat(outcomes).hasSize(3)
     }
+
+    @Test
+    fun `parallelism caps the number of concurrently executing items`() = runTest {
+        val inFlight = AtomicInteger(0)
+        val maxInFlight = AtomicInteger(0)
+        val calls = AtomicInteger(0)
+        val gaugingContract: Contract = object : Contract {
+            override fun getChaincodeName(): String = "stub"
+            override fun getContractName(): Optional<String> = Optional.empty()
+
+            override fun newProposal(transactionName: String): Proposal.Builder {
+                calls.incrementAndGet()
+                val now = inFlight.incrementAndGet()
+                maxInFlight.updateAndGet { seen -> maxOf(seen, now) }
+                try {
+                    // Hold the slot long enough for the other items to pile up on the dispatcher.
+                    Thread.sleep(50)
+                } finally {
+                    inFlight.decrementAndGet()
+                }
+                throw StatusRuntimeException(Status.UNAVAILABLE.withDescription("stub: no gRPC"))
+            }
+
+            override fun submitTransaction(name: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+        }
+
+        val client = FabricGatewayClient(stubBuilder(gaugingContract), parallelism = 2)
+
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = (1..8).map { InvokeArgs("fn", "arg$it") },
+        )
+
+        // Every item ran, none were lost to the cap...
+        assertThat(calls.get()).isEqualTo(8)
+        assertThat(outcomes).hasSize(8)
+        // ...and at no point did more than `parallelism` items execute at once.
+        assertThat(maxInFlight.get()).isLessThanOrEqualTo(2)
+    }
+
+    @Test
+    fun `query evaluates each item on the shared dispatcher and returns the payloads in order`() = runTest {
+        val evaluatingContract: Contract = object : Contract {
+            override fun getChaincodeName(): String = "stub"
+            override fun getContractName(): Optional<String> = Optional.empty()
+
+            override fun newProposal(transactionName: String): Proposal.Builder =
+                throw UnsupportedOperationException("query must not endorse")
+
+            override fun submitTransaction(name: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String): ByteArray = "eval:$name".toByteArray()
+            override fun evaluateTransaction(name: String, vararg args: String): ByteArray =
+                "eval:$name:${args.joinToString(",")}".toByteArray()
+            override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+        }
+
+        val client = FabricGatewayClient(stubBuilder(evaluatingContract), parallelism = 2)
+
+        val results = client.query(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(
+                InvokeArgs("fnA", "x"),
+                InvokeArgs("fnB", "y", "z"),
+            ),
+        )
+
+        assertThat(results).containsExactly("eval:fnA:x", "eval:fnB:y,z")
+    }
 }
