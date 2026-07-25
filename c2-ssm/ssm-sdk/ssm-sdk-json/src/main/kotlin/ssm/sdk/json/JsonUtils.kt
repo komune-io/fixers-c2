@@ -47,6 +47,17 @@ object JsonUtils {
 		return mapper.readValue(value, clazz)
 	}
 
+	/**
+	 * Deserializes a JSON array into a List of [clazz] elements. Unlike an erased
+	 * TypeReference<List<T>>, the collection type is built from the actual element
+	 * class, so complex DTOs deserialize as T instead of LinkedHashMap.
+	 */
+	@Throws(IOException::class)
+	fun <T> toObjects(value: String, clazz: Class<T>): List<T> {
+		val type = mapper.typeFactory.constructCollectionType(List::class.java, clazz)
+		return mapper.readValue(value, type)
+	}
+
 	@Throws(IOException::class)
 	inline fun <reified T> toObject(value: String): T {
 		return mapper.readValue(value, object : TypeReference<T>() {})

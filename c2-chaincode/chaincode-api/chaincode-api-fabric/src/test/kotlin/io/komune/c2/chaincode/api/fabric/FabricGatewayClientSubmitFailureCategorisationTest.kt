@@ -23,7 +23,8 @@ class FabricGatewayClientSubmitFailureCategorisationTest {
                 channelId: io.komune.c2.chaincode.dsl.ChannelId,
                 chaincodeId: io.komune.c2.chaincode.dsl.ChaincodeId,
             ) = emptyList<org.hyperledger.fabric.client.Contract>()
-        }
+        },
+        parallelism = 1,
     )
 
     @Test

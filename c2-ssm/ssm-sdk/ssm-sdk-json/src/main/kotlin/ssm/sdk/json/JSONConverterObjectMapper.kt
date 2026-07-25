@@ -1,7 +1,5 @@
 package ssm.sdk.json
 
-import tools.jackson.core.type.TypeReference
-
 class JSONConverterObjectMapper : JSONConverter {
 
 
@@ -9,8 +7,7 @@ class JSONConverterObjectMapper : JSONConverter {
 		if (value.isBlank()) {
 			return emptyList()
 		}
-		val type: TypeReference<List<T>> = object : TypeReference<List<T>>() {}
-		return JsonUtils.toObject(value, type)
+		return JsonUtils.toObjects(value, clazz)
 	}
 
 	override fun <T> toCompletableObject(clazz: Class<T>, value: String): T? {

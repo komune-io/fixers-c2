@@ -5,4 +5,6 @@ plugins {
 
 dependencies {
 	commonMainApi(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
+
+	jvmTestImplementation(libs.bundles.test)
 }
