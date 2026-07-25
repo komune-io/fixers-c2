@@ -6,6 +6,7 @@ import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.util.Optional
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.hyperledger.fabric.client.Contract
@@ -124,13 +125,13 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     fun `one item failure does not cancel sibling items (supervisorScope)`() = runTest {
-        var callCount = 0
+        val callCount = AtomicInteger(0)
         val countingContract: Contract = object : Contract {
             override fun getChaincodeName(): String = "stub"
             override fun getContractName(): Optional<String> = Optional.empty()
 
             override fun newProposal(transactionName: String): Proposal.Builder {
-                callCount++
+                callCount.incrementAndGet()
                 throw StatusRuntimeException(Status.INTERNAL.withDescription("stub failure"))
             }
 
@@ -142,7 +143,9 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
 
-        val client = FabricGatewayClient(stubBuilder(countingContract), parallelism = 1)
+        // parallelism = 3: keep the three items concurrently scheduled so the test actually
+        // exercises sibling behavior under the supervisor scope, not sequential execution.
+        val client = FabricGatewayClient(stubBuilder(countingContract), parallelism = 3)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -155,7 +158,7 @@ class FabricGatewayInvokeClientTest {
         )
 
         // All 3 items must have been attempted (not cancelled due to first failure).
-        assertThat(callCount).isEqualTo(3)
+        assertThat(callCount.get()).isEqualTo(3)
         assertThat(outcomes).hasSize(3)
     }
 }
