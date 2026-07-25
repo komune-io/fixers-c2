@@ -11,4 +11,6 @@ dependencies {
     implementation(libs.f2.spring.starter.function)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.slf4j.api)
+
+    testImplementation(libs.bundles.test)
 }

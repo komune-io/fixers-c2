@@ -6,4 +6,6 @@ plugins {
 
 dependencies {
 	commonMainApi(libs.f2.dsl.cqrs)
+
+	jvmTestImplementation(libs.bundles.test)
 }
