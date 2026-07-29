@@ -168,9 +168,11 @@ class FabricGatewayClient(
      * Pure transform: parses a serialized [ProposedTransaction], overwrites the nested
      * `ChannelHeader.timestamp` with [epochMillis], and returns the re-serialized bytes. Everything else —
      * transaction id, channel id, chaincode input, signature-header nonce/creator — is preserved verbatim,
-     * so the transaction id (a hash of nonce + creator, not the timestamp) stays valid. Kept side-effect-free
-     * and `internal` so it can be unit-tested without a live Gateway; the caller feeds the result to
-     * [org.hyperledger.fabric.client.Gateway.newProposal] which returns it unsigned for lazy re-signing.
+     * so the transaction id (a hash of nonce + creator, not the timestamp) stays valid. Any signature is
+     * cleared — it covered the pre-rewrite bytes, and leaving one would make the downstream
+     * [org.hyperledger.fabric.client.Gateway.newProposal] `endorse()` skip re-signing (its `isSigned()`
+     * short-circuit) and submit a signature over stale bytes. Kept side-effect-free and `internal` so it can
+     * be unit-tested without a live Gateway.
      */
     internal fun rewriteProposalTimestamp(proposalBytes: ByteArray, epochMillis: Long): ByteArray {
         val proposedTx = ProposedTransaction.parseFrom(proposalBytes)
@@ -188,10 +190,6 @@ class FabricGatewayClient(
         val rewrittenInner = innerProposal.toBuilder().setHeader(rewrittenHeader.toByteString()).build()
         val rewrittenSignedProposal = proposedTx.proposal.toBuilder()
             .setProposalBytes(rewrittenInner.toByteString())
-            // Clear any signature: it covered the pre-rewrite bytes. Leaving one would make
-            // Gateway.newProposal -> endorse() skip re-signing (isSigned() short-circuit) and submit a
-            // signature over stale bytes. In practice the proposal is still unsigned here, but clearing
-            // keeps the transform correct for any signed input.
             .clearSignature()
             .build()
         return proposedTx.toBuilder().setProposal(rewrittenSignedProposal).build().toByteArray()
