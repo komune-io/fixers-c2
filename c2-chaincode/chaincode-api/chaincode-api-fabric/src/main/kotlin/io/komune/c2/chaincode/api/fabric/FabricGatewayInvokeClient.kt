@@ -1,5 +1,6 @@
 package io.komune.c2.chaincode.api.fabric
 
+import com.google.protobuf.Timestamp
 import com.google.rpc.Status
 import io.grpc.Metadata
 import io.grpc.StatusRuntimeException
@@ -16,9 +17,14 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.supervisorScope
 import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.EndorseException
+import org.hyperledger.fabric.client.Proposal
+import org.hyperledger.fabric.protos.common.ChannelHeader
+import org.hyperledger.fabric.protos.common.Header
 import org.hyperledger.fabric.protos.gateway.ErrorDetail
+import org.hyperledger.fabric.protos.gateway.ProposedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.hyperledger.fabric.protos.peer.Proposal as PeerProposal
 
 
 class FabricGatewayClient(
@@ -90,10 +96,13 @@ class FabricGatewayClient(
         msgId: String,
     ): TxOutcome {
         val endorsed = try {
-            newProposal(invokeArgs.function.value)
+            val proposal = newProposal(invokeArgs.function.value)
                 .addArguments(*invokeArgs.values.toTypedArray())
                 .build()
-                .endorse()
+            val effectiveProposal = invokeArgs.timestamp
+                ?.let { rewriteEnvelopeTimestamp(channelId, proposal, it) }
+                ?: proposal
+            effectiveProposal.endorse()
         } catch (e: EndorseException) {
             return TxOutcome.Rejected(
                 msgId = msgId,
@@ -135,6 +144,55 @@ class FabricGatewayClient(
                 blockNumber = status.blockNumber,
             )
         }
+    }
+
+    /**
+     * Rewrites the transaction envelope's `ChannelHeader.timestamp` to [epochMillis] (a business/replay
+     * time) instead of the wall-clock value fabric-gateway stamps at `build()` time. The transaction id is
+     * derived from the nonce + creator identity — NOT the timestamp — so it stays valid after the rewrite.
+     *
+     * The rewritten proposal is recreated via [org.hyperledger.fabric.client.Gateway.newProposal], which
+     * returns it unsigned; [Proposal.endorse] then re-signs the modified bytes lazily. This is a simulation
+     * aid (historical drain replay) and must not be enabled against a shared/production chain.
+     */
+    private fun rewriteEnvelopeTimestamp(
+        channelId: ChannelId,
+        proposal: Proposal,
+        epochMillis: Long,
+    ): Proposal {
+        val rewrittenBytes = rewriteProposalTimestamp(proposal.bytes, epochMillis)
+        return fabricGatewayBuilder.gateway(channelId).newProposal(rewrittenBytes)
+    }
+
+    /**
+     * Pure transform: parses a serialized [ProposedTransaction], overwrites the nested
+     * `ChannelHeader.timestamp` with [epochMillis], and returns the re-serialized bytes. Everything else —
+     * transaction id, channel id, chaincode input, signature-header nonce/creator — is preserved verbatim,
+     * so the transaction id (a hash of nonce + creator, not the timestamp) stays valid. Any signature is
+     * cleared — it covered the pre-rewrite bytes, and leaving one would make the downstream
+     * [org.hyperledger.fabric.client.Gateway.newProposal] `endorse()` skip re-signing (its `isSigned()`
+     * short-circuit) and submit a signature over stale bytes. Kept side-effect-free and `internal` so it can
+     * be unit-tested without a live Gateway.
+     */
+    internal fun rewriteProposalTimestamp(proposalBytes: ByteArray, epochMillis: Long): ByteArray {
+        val proposedTx = ProposedTransaction.parseFrom(proposalBytes)
+        val innerProposal = PeerProposal.parseFrom(proposedTx.proposal.proposalBytes)
+        val header = Header.parseFrom(innerProposal.header)
+        val channelHeader = ChannelHeader.parseFrom(header.channelHeader)
+
+        val timestamp = Timestamp.newBuilder()
+            .setSeconds(Math.floorDiv(epochMillis, MILLIS_PER_SECOND))
+            .setNanos((Math.floorMod(epochMillis, MILLIS_PER_SECOND) * NANOS_PER_MILLI).toInt())
+            .build()
+
+        val rewrittenChannelHeader = channelHeader.toBuilder().setTimestamp(timestamp).build()
+        val rewrittenHeader = header.toBuilder().setChannelHeader(rewrittenChannelHeader.toByteString()).build()
+        val rewrittenInner = innerProposal.toBuilder().setHeader(rewrittenHeader.toByteString()).build()
+        val rewrittenSignedProposal = proposedTx.proposal.toBuilder()
+            .setProposalBytes(rewrittenInner.toByteString())
+            .clearSignature()
+            .build()
+        return proposedTx.toBuilder().setProposal(rewrittenSignedProposal).build().toByteArray()
     }
 
     /**
@@ -185,6 +243,11 @@ class FabricGatewayClient(
                 ?: ""
         }
         return e.message ?: e::class.simpleName ?: ""
+    }
+
+    companion object {
+        private const val MILLIS_PER_SECOND = 1000L
+        private const val NANOS_PER_MILLI = 1_000_000L
     }
 }
 

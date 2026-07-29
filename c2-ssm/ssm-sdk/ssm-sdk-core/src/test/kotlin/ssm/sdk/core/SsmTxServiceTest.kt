@@ -1,6 +1,9 @@
 package ssm.sdk.core
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
+import io.komune.c2.chaincode.dsl.InvokeFunction
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
+import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -23,6 +26,7 @@ import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
 import ssm.sdk.dsl.SsmCmdName
 import ssm.sdk.dsl.SsmCmdSigned
+import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.json.JSONConverterObjectMapper
 import ssm.sdk.sign.SsmCmdSigner
 
@@ -250,6 +254,72 @@ class SsmTxServiceTest {
         assertThat(outcomes).hasSize(ids.size)
         assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
         outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
+    }
+
+    // ---------------------------------------------------------------------------
+    // business timestamp propagation
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Captures the [InvokeRequest]s handed to the chaincode repository so a test can assert what the
+     * transaction layer emitted. Returns a Committed outcome per msgId. Order is preserved because
+     * [stubSigner] never fails, so successSigned mirrors the input command order.
+     */
+    private class CapturingRepository : SsmChaincodeRepository {
+        val captured = mutableListOf<InvokeRequest>()
+        override suspend fun query(
+            cmd: InvokeRequestType, fcn: InvokeFunction, args: List<String>,
+            channelId: String, chaincodeId: String,
+        ): String = "{}"
+        override suspend fun invoke(invokeArgs: List<InvokeRequest>, msgIds: List<String>): List<CommandOutcome> {
+            captured += invokeArgs
+            return msgIds.map { CommandOutcome(outcome = "Committed", msgId = it) }
+        }
+    }
+
+    private fun txServiceWith(repo: SsmChaincodeRepository): SsmTxService =
+        SsmTxService(SsmService(SsmRequester(JSONConverterObjectMapper(), repo), stubSigner), SsmBatchProperties())
+
+    @Test
+    suspend fun `sendStart forwards the command timestamp onto the invoke request, null stays null`() {
+        val repo = CapturingRepository()
+        val commands = listOf(
+            SsmStartCommand(
+                msgId = "s-with-ts",
+                session = SsmSession("ssm", "session-1", mapOf("admin" to "Admin"), "{}", mapOf()),
+                chaincodeUri = chaincodeUri, signerName = "admin", timestamp = 1_623_715_200_000L,
+            ),
+            SsmStartCommand(
+                msgId = "s-no-ts",
+                session = SsmSession("ssm", "session-2", mapOf("admin" to "Admin"), "{}", mapOf()),
+                chaincodeUri = chaincodeUri, signerName = "admin",
+            ),
+        )
+
+        txServiceWith(repo).sendStart(commands)
+
+        assertThat(repo.captured).hasSize(2)
+        assertThat(repo.captured[0].timestamp).isEqualTo(1_623_715_200_000L)
+        assertThat(repo.captured[1].timestamp).isNull()
+        // Timestamp is transport metadata only — never part of the on-chain args.
+        assertThat(repo.captured[0].args.toList()).doesNotContain("1623715200000")
+    }
+
+    @Test
+    suspend fun `sendPerform forwards the command timestamp onto the invoke request`() {
+        val repo = CapturingRepository()
+        val commands = listOf(
+            SsmPerformCommand(
+                msgId = "p-with-ts", action = "Validate",
+                context = SsmContext("session-1", "{}", 1, mapOf()),
+                chaincodeUri = chaincodeUri, signerName = "user1", timestamp = 1_600_000_000_000L,
+            ),
+        )
+
+        txServiceWith(repo).sendPerform(commands)
+
+        assertThat(repo.captured).hasSize(1)
+        assertThat(repo.captured[0].timestamp).isEqualTo(1_600_000_000_000L)
     }
 
     @Test

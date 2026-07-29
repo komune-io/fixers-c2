@@ -58,14 +58,16 @@ class SsmTxService(
 
 	suspend fun sendStart(commands: List<SsmStartCommand>): List<CommandOutcome> {
 		logger.info("Start ${commands.size} session(s)")
-		val cmds = commands.map { start(it.session, it.chaincodeUri, it.signerName) }
+		val cmds = commands.map { start(it.session, it.chaincodeUri, it.signerName).copy(timestamp = it.timestamp) }
 		val ids = commands.map { it.msgId }
 		return ssmService.invokeAll(cmds, ids)
 	}
 
 	suspend fun sendPerform(commands: List<SsmPerformCommand>): List<CommandOutcome> {
 		logger.info("Perform ${commands.size} action(s)")
-		val cmds = commands.map { perform(it.action, it.context, it.chaincodeUri, it.signerName) }
+		val cmds = commands.map {
+			perform(it.action, it.context, it.chaincodeUri, it.signerName).copy(timestamp = it.timestamp)
+		}
 		val ids = commands.map { it.msgId }
 		return ssmService.invokeAll(cmds, ids)
 	}

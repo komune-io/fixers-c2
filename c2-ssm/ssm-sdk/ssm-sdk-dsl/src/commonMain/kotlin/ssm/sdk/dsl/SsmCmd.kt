@@ -10,4 +10,9 @@ data class SsmCmd(
     val command: SsmCmdName,
     val performAction: String? = null,
     val valueToSign: String,
+    /**
+     * Optional business timestamp (epoch millis). Carried as transport metadata down to the Fabric
+     * transaction envelope; deliberately excluded from [valueToSign] so the SSM signature is unaffected.
+     */
+    val timestamp: Long? = null,
 )

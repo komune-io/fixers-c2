@@ -57,7 +57,8 @@ AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
 			chaincodeUri = chaincodeUri,
 			agentSigner = signer,
 			permissive = permissive,
-			batch = batchParams
+			batch = batchParams,
+			timestampProvider = ::businessTimestampOf
 		).also {
 			ssmTxInitFunction.invoke(
 				SsmInitCommand(
@@ -73,6 +74,13 @@ AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
 	abstract fun entityType(): Class<ENTITY>
 	abstract fun chaincodeUri(): ChaincodeUri
 	abstract fun signerAgent(): Agent
+
+	/**
+	 * Optional per-transition business timestamp (epoch millis) resolved from the S2 command
+	 * (`S2InitCommand` on start, `S2Command` on perform). Override to stamp the Fabric tx envelope
+	 * with a historical date instead of wall-clock. Default: null (wall-clock).
+	 */
+	open fun businessTimestampOf(msg: Any): Long? = null
 
 	open var permissive = false
 }
