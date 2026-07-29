@@ -42,13 +42,15 @@ class FabricGatewayCommitTest {
             .setTxId(txId).setChannelId(channelId)
             .setTimestamp(Timestamp.newBuilder().setSeconds(1L).build())
             .build()
+        val signatureHeader = SignatureHeader.newBuilder().setNonce(ByteString.copyFromUtf8("n")).build()
         val header = Header.newBuilder()
             .setChannelHeader(channelHeader.toByteString())
-            .setSignatureHeader(SignatureHeader.newBuilder().setNonce(ByteString.copyFromUtf8("n")).build().toByteString())
+            .setSignatureHeader(signatureHeader.toByteString())
             .build()
+        val payload = ChaincodeProposalPayload.newBuilder().setInput(ByteString.copyFromUtf8("in")).build()
         val inner = PeerProposal.newBuilder()
             .setHeader(header.toByteString())
-            .setPayload(ChaincodeProposalPayload.newBuilder().setInput(ByteString.copyFromUtf8("in")).build().toByteString())
+            .setPayload(payload.toByteString())
             .build()
         return ProposedTransaction.newBuilder()
             .setProposal(SignedProposal.newBuilder().setProposalBytes(inner.toByteString()).build())
@@ -56,6 +58,9 @@ class FabricGatewayCommitTest {
             .build()
             .toByteArray()
     }
+
+    private fun clientFor(status: Status, gateway: Gateway? = null) =
+        FabricGatewayClient(builder(stubContract(stubProposal(proposedTxBytes(), status)), gateway), parallelism = 1)
 
     private fun stubStatus(successful: Boolean, block: Long, code: TxValidationCode = TxValidationCode.VALID) =
         object : Status {
@@ -138,7 +143,7 @@ class FabricGatewayCommitTest {
     @Test
     fun `successful commit without timestamp yields a Committed outcome`() = runTest {
         val status = stubStatus(successful = true, block = 7L)
-        val client = FabricGatewayClient(builder(stubContract(stubProposal(proposedTxBytes(), status))), parallelism = 1)
+        val client = clientFor(status)
 
         val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
 
@@ -167,7 +172,7 @@ class FabricGatewayCommitTest {
     @Test
     fun `unsuccessful validation code yields a non-committed outcome`() = runTest {
         val status = stubStatus(successful = false, block = 3L, code = TxValidationCode.MVCC_READ_CONFLICT)
-        val client = FabricGatewayClient(builder(stubContract(stubProposal(proposedTxBytes(), status))), parallelism = 1)
+        val client = clientFor(status)
 
         val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
 
