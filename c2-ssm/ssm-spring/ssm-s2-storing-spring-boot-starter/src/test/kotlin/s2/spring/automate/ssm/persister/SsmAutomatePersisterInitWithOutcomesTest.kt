@@ -254,6 +254,34 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
+    fun `persistInitWithOutcomes stamps the start command with timestampProvider of the msg`() = runTest {
+        val capturedTimestamps = mutableListOf<Long?>()
+        val capturingStart: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
+            F2Function { commands ->
+                val list = commands.toList()
+                list.forEach { capturedTimestamps += it.timestamp }
+                list.map {
+                    CommandOutcome(outcome = "Committed", msgId = it.msgId, transactionId = "tx", blockNumber = 1L)
+                }.asFlow()
+            }
+        val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
+            ssmSessionStartFunction = capturingStart,
+            ssmSessionPerformActionFunction = F2Function { _ -> error("perform should NOT be called") },
+            ssmGetSessionLogsQueryFunction = F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() },
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            entityType = IterableEntity::class.java,
+            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            objectMapper = ObjectMapper(),
+            batch = S2BatchProperties(),
+            timestampProvider = { msg -> if (msg is TestInitCommand) 1_623_715_200_000L else null },
+        )
+
+        persister.persistInitWithOutcomes(flowOf(makeInitTransitionContext(IterableEntity("e-ts", 1, 0)))).toList()
+
+        assertThat(capturedTimestamps).containsExactly(1_623_715_200_000L)
+    }
+
+    @Test
     fun `persistInitWithOutcomes emits one outcome per input`() = runTest {
         val scripted = listOf(
             CommandOutcome(outcome = "Committed",     msgId = "", transactionId = "tx-1", blockNumber = 1L),

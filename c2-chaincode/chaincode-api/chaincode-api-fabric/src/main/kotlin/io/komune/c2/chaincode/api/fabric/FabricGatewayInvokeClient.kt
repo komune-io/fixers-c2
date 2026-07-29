@@ -160,7 +160,20 @@ class FabricGatewayClient(
         proposal: Proposal,
         epochMillis: Long,
     ): Proposal {
-        val proposedTx = ProposedTransaction.parseFrom(proposal.bytes)
+        val rewrittenBytes = rewriteProposalTimestamp(proposal.bytes, epochMillis)
+        return fabricGatewayBuilder.gateway(channelId).newProposal(rewrittenBytes)
+    }
+
+    /**
+     * Pure transform: parses a serialized [ProposedTransaction], overwrites the nested
+     * `ChannelHeader.timestamp` with [epochMillis], and returns the re-serialized bytes. Everything else —
+     * transaction id, channel id, chaincode input, signature-header nonce/creator — is preserved verbatim,
+     * so the transaction id (a hash of nonce + creator, not the timestamp) stays valid. Kept side-effect-free
+     * and `internal` so it can be unit-tested without a live Gateway; the caller feeds the result to
+     * [org.hyperledger.fabric.client.Gateway.newProposal] which returns it unsigned for lazy re-signing.
+     */
+    internal fun rewriteProposalTimestamp(proposalBytes: ByteArray, epochMillis: Long): ByteArray {
+        val proposedTx = ProposedTransaction.parseFrom(proposalBytes)
         val innerProposal = PeerProposal.parseFrom(proposedTx.proposal.proposalBytes)
         val header = Header.parseFrom(innerProposal.header)
         val channelHeader = ChannelHeader.parseFrom(header.channelHeader)
@@ -176,9 +189,7 @@ class FabricGatewayClient(
         val rewrittenSignedProposal = proposedTx.proposal.toBuilder()
             .setProposalBytes(rewrittenInner.toByteString())
             .build()
-        val rewrittenProposedTx = proposedTx.toBuilder().setProposal(rewrittenSignedProposal).build()
-
-        return fabricGatewayBuilder.gateway(channelId).newProposal(rewrittenProposedTx.toByteArray())
+        return proposedTx.toBuilder().setProposal(rewrittenSignedProposal).build().toByteArray()
     }
 
     /**
