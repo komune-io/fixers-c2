@@ -62,6 +62,8 @@ class FabricProposalTimestampRewriteTest {
             .build()
         val signedProposal = SignedProposal.newBuilder()
             .setProposalBytes(innerProposal.toByteString())
+            // Non-empty signature over the pre-rewrite bytes: the rewrite MUST drop it so endorse() re-signs.
+            .setSignature(ByteString.copyFromUtf8("stale-signature-over-old-bytes"))
             .build()
         return ProposedTransaction.newBuilder()
             .setProposal(signedProposal)
@@ -112,6 +114,21 @@ class FabricProposalTimestampRewriteTest {
         // Chaincode payload (the actual invocation args) is byte-identical.
         assertThat(inner.payload).isEqualTo(payload.toByteString())
         // Signature stays empty so Gateway.newProposal + endorse() re-signs the rewritten bytes.
+        assertThat(rewritten.proposal.signature.isEmpty).isTrue()
+    }
+
+    @Test
+    fun `clears a pre-existing signature so endorse re-signs the rewritten bytes`() {
+        val original = proposedTransaction(txId = "tx-signed", channelId = "ch", originalEpochSeconds = 1L)
+        // Guard: the fixture genuinely carries a signature over the pre-rewrite bytes.
+        assertThat(original.proposal.signature.isEmpty).isFalse()
+
+        val rewritten = ProposedTransaction.parseFrom(
+            client.rewriteProposalTimestamp(original.toByteArray(), 1_623_715_200_000L)
+        )
+
+        // A retained signature would make Gateway.newProposal -> endorse() skip re-signing and submit a
+        // signature over stale bytes; the rewrite must drop it.
         assertThat(rewritten.proposal.signature.isEmpty).isTrue()
     }
 

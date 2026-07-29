@@ -188,6 +188,11 @@ class FabricGatewayClient(
         val rewrittenInner = innerProposal.toBuilder().setHeader(rewrittenHeader.toByteString()).build()
         val rewrittenSignedProposal = proposedTx.proposal.toBuilder()
             .setProposalBytes(rewrittenInner.toByteString())
+            // Clear any signature: it covered the pre-rewrite bytes. Leaving one would make
+            // Gateway.newProposal -> endorse() skip re-signing (isSigned() short-circuit) and submit a
+            // signature over stale bytes. In practice the proposal is still unsigned here, but clearing
+            // keeps the transform correct for any signed input.
+            .clearSignature()
             .build()
         return proposedTx.toBuilder().setProposal(rewrittenSignedProposal).build().toByteArray()
     }
