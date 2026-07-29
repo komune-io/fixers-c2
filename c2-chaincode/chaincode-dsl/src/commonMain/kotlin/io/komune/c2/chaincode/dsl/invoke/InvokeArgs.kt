@@ -12,6 +12,6 @@ data class InvokeArgs(
 	 */
 	val timestamp: Long? = null,
 ) {
-	constructor(function: String, vararg values: String) :
-		this(InvokeFunction(function), values.toList())
+	constructor(function: String, vararg values: String, timestamp: Long? = null) :
+		this(InvokeFunction(function), values.toList(), timestamp)
 }
