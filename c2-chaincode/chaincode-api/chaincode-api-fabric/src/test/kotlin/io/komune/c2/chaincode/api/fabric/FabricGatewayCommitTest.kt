@@ -115,8 +115,11 @@ class FabricGatewayCommitTest {
         override fun evaluateTransaction(name: String, vararg args: ByteArray) = ByteArray(0)
     }
 
-    private fun stubGateway(recreated: Proposal) = object : Gateway {
-        override fun newProposal(proposalBytes: ByteArray): Proposal = recreated
+    private fun stubGateway(recreated: Proposal, onNewProposal: (ByteArray) -> Unit = {}) = object : Gateway {
+        override fun newProposal(proposalBytes: ByteArray): Proposal {
+            onNewProposal(proposalBytes)
+            return recreated
+        }
         override fun getIdentity() = error("unused")
         override fun getNetwork(networkName: String) = error("unused")
         override fun newSignedProposal(p: ByteArray, s: ByteArray) = error("unused")
@@ -158,7 +161,11 @@ class FabricGatewayCommitTest {
         val status = stubStatus(successful = true, block = 9L)
         val built = stubProposal(proposedTxBytes(), status)      // returned by contract.build(); bytes fed to rewrite
         val recreated = stubProposal(proposedTxBytes(), status)  // returned by gateway.newProposal(rewrittenBytes)
-        val client = FabricGatewayClient(builder(stubContract(built), stubGateway(recreated)), parallelism = 1)
+        var rewrittenBytes: ByteArray? = null
+        val client = FabricGatewayClient(
+            builder(stubContract(built), stubGateway(recreated) { rewrittenBytes = it }),
+            parallelism = 1,
+        )
 
         val outcomes = client.invoke(
             "ch", "cc",
@@ -167,6 +174,13 @@ class FabricGatewayCommitTest {
         )
 
         assertThat(outcomes.single()).isInstanceOf(TxOutcome.Committed::class.java)
+        // The bytes handed to Gateway.newProposal must carry the rewritten (business) timestamp — proving the
+        // rewrite branch ran, not just that some commit happened.
+        val proposedTx = ProposedTransaction.parseFrom(requireNotNull(rewrittenBytes))
+        val inner = PeerProposal.parseFrom(proposedTx.proposal.proposalBytes)
+        val timestamp = ChannelHeader.parseFrom(Header.parseFrom(inner.header).channelHeader).timestamp
+        assertThat(timestamp.seconds).isEqualTo(1_623_715_200L)
+        assertThat(timestamp.nanos).isZero()
     }
 
     @Test
