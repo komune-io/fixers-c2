@@ -18,7 +18,8 @@ data class SsmCmdSigned(
 fun SsmCmdSigned.buildArgs(): InvokeArgs {
 	return InvokeArgs(
 		function = InvokeFunction(cmd.command.value),
-		values = listOfNotNull(cmd.performAction, cmd.json, signer, signature)
+		values = listOfNotNull(cmd.performAction, cmd.json, signer, signature),
+		timestamp = cmd.timestamp,
 	)
 }
 
@@ -31,6 +32,7 @@ fun SsmCmdSigned.buildCommandArgs(
 		channelid = chaincodeUri.channelId,
 		chaincodeid = chaincodeUri.chaincodeId,
 		fcn = args.function.value,
-		args = args.values.toTypedArray()
+		args = args.values.toTypedArray(),
+		timestamp = args.timestamp,
 	)
 }

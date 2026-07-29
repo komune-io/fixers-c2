@@ -51,7 +51,13 @@ class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
 	internal var agentSigner: Agent,
 	internal var objectMapper: ObjectMapper,
 	internal var batch: S2BatchProperties,
-	internal var permissive: Boolean = false
+	internal var permissive: Boolean = false,
+	/**
+	 * Resolves an optional business timestamp (epoch millis) from the S2 command driving a transition
+	 * (`InitTransitionAppliedContext.msg` / `TransitionAppliedContext.msg`). When it returns a value, the
+	 * Fabric tx envelope is stamped with that time instead of wall-clock. Defaults to null (wall-clock).
+	 */
+	internal var timestampProvider: (Any) -> Long? = { null }
 ) : AutomatePersister<STATE, ID, ENTITY, EVENT, S2Automate> where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
@@ -234,6 +240,7 @@ ENTITY : WithS2Id<ID> {
 				),
 				signerName = agentSigner.name,
 				chaincodeUri = chaincodeUri,
+				timestamp = timestampProvider(ctx.msg),
 			)
 		}
 
@@ -379,6 +386,7 @@ ENTITY : WithS2Id<ID> {
 				),
 				signerName = agentSigner.name,
 				chaincodeUri = chaincodeUri,
+				timestamp = timestampProvider(sr.transitionContext.msg),
 			)
 		}
 
