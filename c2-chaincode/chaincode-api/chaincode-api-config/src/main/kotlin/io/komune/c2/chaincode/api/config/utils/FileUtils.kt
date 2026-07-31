@@ -2,6 +2,7 @@ package io.komune.c2.chaincode.api.config.utils
 
 import java.io.File
 import java.io.FileReader
+import java.net.URI
 import java.net.URISyntaxException
 import java.net.URL
 
@@ -20,7 +21,7 @@ object FileUtils {
 
     fun getUrl(resource: String): URL {
         if (resource.startsWith(FILE)) {
-            return URL(resource)
+            return URI(resource).toURL()
         }
         return getResource(resource)
     }

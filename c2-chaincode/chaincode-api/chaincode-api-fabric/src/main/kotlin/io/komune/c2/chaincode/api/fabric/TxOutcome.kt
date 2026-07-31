@@ -94,25 +94,8 @@ object TxValidationCodeMapper {
                 transactionId = transactionId,
                 blockNumber = blockNumber,
             )
-        "ENDORSEMENT_POLICY_FAILURE" ->
-            TxOutcome.Rejected(
-                msgId = msgId,
-                errorCode = statusCodeName,
-                errorMessage = "validation: $statusCodeName",
-            )
-        "UNAUTHORISED" ->
-            TxOutcome.Rejected(
-                msgId = msgId,
-                errorCode = statusCodeName,
-                errorMessage = "validation: $statusCodeName",
-            )
-        "TARGET_CHAIN_NOT_FOUND" ->
-            TxOutcome.Rejected(
-                msgId = msgId,
-                errorCode = statusCodeName,
-                errorMessage = "validation: $statusCodeName",
-            )
-        "BAD_RWSET", "BAD_CHANNEL_HEADER",
+        "ENDORSEMENT_POLICY_FAILURE", "UNAUTHORISED",
+        "TARGET_CHAIN_NOT_FOUND", "BAD_RWSET", "BAD_CHANNEL_HEADER",
         "BAD_HEADER_EXTENSION", "INVALID_CONFIG_TRANSACTION", "MARSHAL_TX_ERROR",
         "NIL_ENVELOPE", "BAD_PAYLOAD", "BAD_COMMON_HEADER", "BAD_CREATOR_SIGNATURE",
         "INVALID_ENDORSER_TRANSACTION", "UNSUPPORTED_TX_PAYLOAD", "BAD_PROPOSAL_TXID",

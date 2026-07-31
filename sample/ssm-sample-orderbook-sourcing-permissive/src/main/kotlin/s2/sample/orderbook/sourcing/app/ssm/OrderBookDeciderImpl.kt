@@ -35,7 +35,7 @@ class OrderBookDeciderImpl(
 
 	@Bean
 	override fun orderBookPublishDecider(): OrderBookDecide<OrderBookPublishCommand, OrderBookPublishedEvent> =
-		aggregate.decide { cmd, entity ->
+		aggregate.decide { cmd, _ ->
 			OrderBookPublishedEvent(
 				id = cmd.id,
 				state = OrderBookState.Published
