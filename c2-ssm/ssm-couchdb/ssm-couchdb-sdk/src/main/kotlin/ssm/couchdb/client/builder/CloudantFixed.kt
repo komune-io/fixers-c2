@@ -18,6 +18,16 @@ class CloudantFixed(
 	authenticator: Authenticator
 ) : Cloudant(serviceName, authenticator) {
 
+	/**
+	 * Custom `_changes` request that, unlike [Cloudant.postChanges], passes `last-event-id`,
+	 * `ssm` and `session` as query parameters so they reach the `ssm_changes_filter`
+	 * design-document filter.
+	 *
+	 * The request is issued as a GET without a body: the body-only options of
+	 * [PostChangesOptions] (`docIds`, `fields`, `selector`) are intentionally not supported
+	 * and are ignored. They would require `filter=_doc_ids`/`_selector`, which conflicts
+	 * with the custom design-document filter this client relies on.
+	 */
 	fun postChanges(
 		postChangesOptions: PostChangesOptions, ssm: SsmName?, session: SessionName?
 	): ServiceCall<ChangesResult> {
