@@ -3,7 +3,6 @@ package ssm.api.features.query
 import f2.dsl.fnc.invoke
 import f2.dsl.fnc.invokeWith
 import java.util.UUID
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import ssm.api.DataSsmQueryFunctionImpl
@@ -36,7 +35,7 @@ internal class DataSsmSessionListQueryFunctionImplTest {
 
 
 	@Test
-	fun `test exception`() = runTest {
+	suspend fun `test exception`() {
 		val uuid = UUID.randomUUID().toString().take(8)
 		val createdSsmName = createSsmWithSession(uuid)
 

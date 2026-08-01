@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -130,7 +129,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	// --- tests ---
 
 	@Test
-	fun `loadWithOutcomes - all sessions have logs - emits Loaded per id`() = runTest {
+	suspend fun `loadWithOutcomes - all sessions have logs - emits Loaded per id`() {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				queries.toList().map { q ->
@@ -152,7 +151,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - missing session emits Rejected SESSION_NOT_FOUND for that id only`() = runTest {
+	suspend fun `loadWithOutcomes - missing session emits Rejected SESSION_NOT_FOUND for that id only`() {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				// Drop sess-2 from the result set — simulates a session not on chain.
@@ -179,7 +178,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - empty logs emits Rejected SESSION_NOT_INITIALIZED`() = runTest {
+	suspend fun `loadWithOutcomes - empty logs emits Rejected SESSION_NOT_INITIALIZED`() {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				queries.toList().map { q ->
@@ -200,7 +199,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - chaincode query throws emits Transient for every id`() = runTest {
+	suspend fun `loadWithOutcomes - chaincode query throws emits Transient for every id`() {
 		val cause = RuntimeException("peer unreachable")
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { _ -> flow { throw cause } }
@@ -221,7 +220,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - JSON parse failure emits Rejected DESERIALIZATION_FAILED for that id only`() = runTest {
+	suspend fun `loadWithOutcomes - JSON parse failure emits Rejected DESERIALIZATION_FAILED for that id only`() {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				queries.toList().map { q ->
@@ -249,7 +248,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - mixed batch with Loaded + Rejected emits per-id outcomes in input order`() = runTest {
+	suspend fun `loadWithOutcomes - mixed batch with Loaded + Rejected emits per-id outcomes in input order`() {
 		// sess-2 missing from chain (not in query response), sess-4 has empty logs.
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
@@ -276,7 +275,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - empty input emits nothing`() = runTest {
+	suspend fun `loadWithOutcomes - empty input emits nothing`() {
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { queries ->
 				// Should not even receive an empty batch — persister should short-circuit.
@@ -293,7 +292,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	// --- legacy load() compatibility tests ---
 
 	@Test
-	fun `load(Flow) - returns null for not-found sessions (legacy compat)`() = runTest {
+	suspend fun `load(Flow) - returns null for not-found sessions (legacy compat)`() {
 		// Pre-fix: this case threw IllegalStateException — killing the whole flow.
 		// Post-fix: returns null for the missing id, so legacy callers see a typed
 		// nullable instead of an exception.
@@ -317,7 +316,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `load(Flow) - throws for Transient read errors (legacy compat)`() = runTest {
+	suspend fun `load(Flow) - throws for Transient read errors (legacy compat)`() {
 		val cause = RuntimeException("peer unreachable")
 		val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
 			F2Function { _ -> flow { throw cause } }
@@ -331,7 +330,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - chaincode query throws CancellationException - propagates without conversion`() = runTest {
+	suspend fun `loadWithOutcomes - chaincode query throws CancellationException - propagates without conversion`() {
 		// CancellationException MUST NOT be caught by the chain-query catch block,
 		// otherwise cooperative cancellation gets silently converted into Transient
 		// outcomes and the parent coroutine never sees the cancel signal.
@@ -347,7 +346,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 	}
 
 	@Test
-	fun `loadWithOutcomes - JSON parse fails with CancellationException - propagates without conversion`() = runTest {
+	suspend fun `loadWithOutcomes - JSON parse fails with CancellationException - propagates without conversion`() {
 		// The Jackson deserialiser is unlikely to throw CancellationException
 		// directly, but a custom deserialiser could call into suspending code.
 		// We pin the behaviour: the per-id JSON-parse catch must let cancellation

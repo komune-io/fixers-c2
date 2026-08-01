@@ -11,6 +11,8 @@ object SsmBddConfig {
 	private const val SEPARATOR_SLASH = "//////////////////////////////////////////////"
 	private const val SEPARATOR_STAR = "**********************************************"
 
+	private const val DEFAULT_LOCAL_COUCHDB_CREDENTIAL = "couchdb"
+
 	object Commune {
 		object Chaincode {
 			const val url = "http://peer0.pr-commune.Komune.io"
@@ -32,8 +34,8 @@ object SsmBddConfig {
 		}
 		object Couchdb {
 			const val url = "http://localhost:5984"
-			const val username = "couchdb"
-			const val password = "couchdb"
+			val username = System.getenv("BCLAN_COUCH_USER") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
+			val password = System.getenv("BCLAN_COUCH_PASS") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
 		}
 
 	}

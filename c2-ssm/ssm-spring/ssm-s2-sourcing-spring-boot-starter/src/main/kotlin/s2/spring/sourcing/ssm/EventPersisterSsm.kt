@@ -108,7 +108,9 @@ EVENT: WithS2Id<ID>
 		}
 	}
 
-	override suspend fun createTable() {}
+	override suspend fun createTable() {
+		// No-op: SSM has no table to create, sessions are started lazily on first persist.
+	}
 
 	override suspend fun persist(event: EVENT): EVENT {
 		val sessionName = buildSessionName(event)

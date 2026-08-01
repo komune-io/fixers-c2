@@ -11,4 +11,5 @@ dependencies {
 	api(project(":c2-ssm:ssm-spring:ssm-tx-spring-boot-starter:ssm-tx-session-start-spring-boot-starter"))
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
+	testImplementation(libs.bundles.test)
 }

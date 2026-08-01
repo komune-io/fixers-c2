@@ -30,12 +30,12 @@ class DidAggregateBean(
 	}
 
 	@Bean("revokePublicKey")
-	override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = f2Function { cmd ->
+	override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = f2Function { _ ->
 		TODO("Not yet implemented")
 	}
 
 	@Bean("revoke")
-	override fun revoke(): DidRevokeCommandFunction = f2Function { cmd ->
+	override fun revoke(): DidRevokeCommandFunction = f2Function { _ ->
 		TODO("Not yet implemented")
 	}
 

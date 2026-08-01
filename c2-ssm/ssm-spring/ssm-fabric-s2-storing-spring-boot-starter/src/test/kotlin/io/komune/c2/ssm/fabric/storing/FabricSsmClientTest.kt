@@ -10,7 +10,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -19,7 +18,7 @@ import org.junit.jupiter.api.assertThrows
 class FabricSsmClientTest {
 
     @Test
-    fun `query delegates to FabricGatewayClient and returns first result`() = runTest {
+    suspend fun `query delegates to FabricGatewayClient and returns first result`() {
         val fabric = mockk<FabricGatewayClient>()
         val capturedArgs = slot<List<InvokeArgs>>()
         coEvery {
@@ -42,7 +41,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke maps Committed TxOutcome to Committed CommandOutcome`() = runTest {
+    suspend fun `invoke maps Committed TxOutcome to Committed CommandOutcome`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery {
             fabric.invoke("sandbox", "ssm", any<List<InvokeArgs>>(), listOf("msg-1"))
@@ -68,7 +67,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke maps every TxOutcome variant`() = runTest {
+    suspend fun `invoke maps every TxOutcome variant`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery {
             fabric.invoke("sandbox", "ssm", any<List<InvokeArgs>>(), any<List<String>>())
@@ -98,7 +97,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke groups commands by (channelId, chaincodeId) before calling FabricGatewayClient`() = runTest {
+    suspend fun `invoke groups commands by (channelId, chaincodeId) before calling FabricGatewayClient`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery { fabric.invoke("chan-A", "ssm", any(), any()) } answers {
             arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 1, "{}") }
@@ -122,7 +121,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke throws when an InvokeRequest has null channelid`() = runTest {
+    suspend fun `invoke throws when an InvokeRequest has null channelid`() {
         val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = null, chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
@@ -132,7 +131,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke require msgIds size matches invokeArgs size`() = runTest {
+    suspend fun `invoke require msgIds size matches invokeArgs size`() {
         val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = "s", chaincodeid = "ssm",
             cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
@@ -142,7 +141,7 @@ class FabricSsmClientTest {
     }
 
     @Test
-    fun `invoke synthesises Indeterminate for failed group and preserves successful ones`() = runTest {
+    suspend fun `invoke synthesises Indeterminate for failed group and preserves successful ones`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery { fabric.invoke("chan-OK", "ssm", any(), any()) } answers {
             arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 1, "{}") }

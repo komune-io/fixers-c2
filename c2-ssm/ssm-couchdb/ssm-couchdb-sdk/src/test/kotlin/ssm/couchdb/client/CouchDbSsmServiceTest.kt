@@ -1,11 +1,18 @@
 package ssm.couchdb.client
 
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import ssm.couchdb.client.test.CouchDbSandbox
 import ssm.couchdb.client.test.DataTest
 import ssm.couchdb.dsl.model.DocType
 
 class CouchDbSsmServiceTest {
+
+	@BeforeEach
+	fun requireCouchDb() {
+		CouchDbSandbox.assumeAvailable()
+	}
 
 	@Test
 	fun shouldReturnAdmin() {

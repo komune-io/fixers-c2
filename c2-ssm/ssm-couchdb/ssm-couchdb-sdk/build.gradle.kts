@@ -10,4 +10,5 @@ dependencies {
 
 	api(libs.cloudant)
 
+	testImplementation(libs.bundles.test)
 }
