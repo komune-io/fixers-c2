@@ -2,8 +2,8 @@ coop:
   defaultCcid: sandbox/ex02
   ccid: sandbox/ex02, sandbox/ssm
   user:
-    name: ${COOP_USER_NAME:dfef919ef60296ca173d99f2132becde}
-    password: ${COOP_USER_PASSWORD:660bd560b383333750f629362e0160f9}
+    name: ${COOP_USER_NAME}
+    password: ${COOP_USER_PASSWORD}
     org: bclan
   endorsers: peer0:bclan
   config:
