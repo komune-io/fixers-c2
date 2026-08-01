@@ -1,9 +1,17 @@
 package ssm.couchdb.client
 
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import ssm.couchdb.client.test.CouchDbSandbox
 import ssm.couchdb.client.test.DataTest
 
 internal class SsmCouchDbClientTest {
+
+	@BeforeEach
+	fun requireCouchDb() {
+		CouchDbSandbox.assumeAvailable()
+	}
 
 	@Test
 	fun `verify lastEventId is working`() {
@@ -16,7 +24,7 @@ internal class SsmCouchDbClientTest {
 	}
 
 	@Test
-	suspend fun `explore ssmCouchDb getChanges return type`() {
+	fun `explore ssmCouchDb getChanges return type`(): Unit = runBlocking {
 		val allChanges = DataTest.ssmCouchDbClient.getSsmChanges(
 			dbName = DataTest.dbSsmName, ssmName = DataTest.ssmName, sessionName = null
 		)
