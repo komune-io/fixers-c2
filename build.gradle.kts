@@ -25,6 +25,12 @@ fixers {
 	sonar {
 		organization = "komune-io"
 		projectKey = "komune-io_connect-c2"
+		properties {
+			// Samples are standalone demo applications and ssm-bdd is published test
+			// infrastructure: exclude them from coverage and duplication analysis.
+			property("sonar.coverage.exclusions", "**/sample/**,**/ssm-bdd/**")
+			property("sonar.cpd.exclusions", "**/sample/**")
+		}
 	}
 	repositories {
 		sonatypeSnapshots = true
