@@ -54,7 +54,6 @@ class CloudantFixed(
 		return createServiceCall(builder.build(), responseConverter)
 	}
 
-	// SMART-B Use query last-event-id instead of header's one
 	private fun RequestBuilder.applyQueryParameters(
 		options: PostChangesOptions,
 		ssm: SsmName?,
