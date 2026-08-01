@@ -30,3 +30,11 @@ fixers {
 		sonatypeSnapshots = true
 	}
 }
+
+subprojects {
+	tasks.withType<Test>().configureEach {
+		testLogging {
+			exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+		}
+	}
+}
