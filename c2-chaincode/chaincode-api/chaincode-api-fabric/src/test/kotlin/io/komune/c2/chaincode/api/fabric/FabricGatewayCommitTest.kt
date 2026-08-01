@@ -10,7 +10,6 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.util.Optional
 import java.util.function.UnaryOperator
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.EndorseException
@@ -144,7 +143,7 @@ class FabricGatewayCommitTest {
     }
 
     @Test
-    fun `successful commit without timestamp yields a Committed outcome`() = runTest {
+    suspend fun `successful commit without timestamp yields a Committed outcome`() {
         val status = stubStatus(successful = true, block = 7L)
         val client = clientFor(status)
 
@@ -157,7 +156,7 @@ class FabricGatewayCommitTest {
     }
 
     @Test
-    fun `successful commit with timestamp goes through the rewrite path and commits`() = runTest {
+    suspend fun `successful commit with timestamp goes through the rewrite path and commits`() {
         val status = stubStatus(successful = true, block = 9L)
         val built = stubProposal(proposedTxBytes(), status)      // returned by contract.build(); bytes fed to rewrite
         val recreated = stubProposal(proposedTxBytes(), status)  // returned by gateway.newProposal(rewrittenBytes)
@@ -184,7 +183,7 @@ class FabricGatewayCommitTest {
     }
 
     @Test
-    fun `unsuccessful validation code yields a non-committed outcome`() = runTest {
+    suspend fun `unsuccessful validation code yields a non-committed outcome`() {
         val status = stubStatus(successful = false, block = 3L, code = TxValidationCode.MVCC_READ_CONFLICT)
         val client = clientFor(status)
 
@@ -194,7 +193,7 @@ class FabricGatewayCommitTest {
     }
 
     @Test
-    fun `endorse failure yields a Rejected outcome`() = runTest {
+    suspend fun `endorse failure yields a Rejected outcome`() {
         val proposal = object : Proposal {
             override fun getTransactionId() = "tx-1"
             override fun getBytes() = proposedTxBytes()
@@ -211,7 +210,7 @@ class FabricGatewayCommitTest {
     }
 
     @Test
-    fun `submit failure yields an Indeterminate outcome`() = runTest {
+    suspend fun `submit failure yields an Indeterminate outcome`() {
         val throwingTx = object : Transaction {
             override fun getResult() = ByteArray(0)
             override fun getTransactionId() = "tx-1"

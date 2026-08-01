@@ -2,7 +2,6 @@ package ssm.sdk.client
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import java.util.UUID
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.util.Lists
 import org.junit.jupiter.api.BeforeAll
@@ -85,7 +84,7 @@ class SsmClientItTest {
 
     @Order(10)
     @Test
-    fun registerAdmin() = runTest {
+    suspend fun registerAdmin() {
         // Admin name is static (tied to signing identity), so it may already be registered
         // on a long-lived sandbox from prior runs. Either outcome is acceptable.
         val result = tx.sendRegisterUser(chaincodeUri, agentAdmin, signerAdmin.name)
@@ -98,7 +97,7 @@ class SsmClientItTest {
 
     @Order(20)
     @Test
-    fun registerUsers() = runTest {
+    suspend fun registerUsers() {
         val r1 = tx.sendRegisterUser(chaincodeUri, agentUser1, signerAdmin.name)
         val r2 = tx.sendRegisterUser(chaincodeUri, agentUser2, signerAdmin.name)
         assertThat(r1.outcome).isEqualTo("Committed")
@@ -107,7 +106,7 @@ class SsmClientItTest {
 
     @Order(30)
     @Test
-    fun createSsm() = runTest {
+    suspend fun createSsm() {
         val sell = SsmTransition(0, 1, "Seller", "Sell")
         val buy = SsmTransition(1, 2, "Buyer", "Buy")
         val ssm = Ssm(ssmName, Lists.newArrayList(sell, buy))
@@ -122,7 +121,7 @@ class SsmClientItTest {
 
     @Order(40)
     @Test
-    fun `sendStart returns Committed CommandOutcome with transactionId and blockNumber`() = runTest {
+    suspend fun `sendStart returns Committed CommandOutcome with transactionId and blockNumber`() {
         val sessionName = "v2-deal-start-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
         val session = SsmSession(ssmName, sessionName, roles, "Starting v2 test", emptyMap())
@@ -154,7 +153,7 @@ class SsmClientItTest {
 
     @Order(50)
     @Test
-    fun `sendPerform returns Committed CommandOutcome with transactionId and blockNumber`() = runTest {
+    suspend fun `sendPerform returns Committed CommandOutcome with transactionId and blockNumber`() {
         // Need a dedicated session for this test (Order 40 session can't be reused easily)
         val sessionName = "v2-deal-perform-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
@@ -195,7 +194,7 @@ class SsmClientItTest {
 
     @Order(60)
     @Test
-    fun `sendStart with batch of 2 returns 2 Committed outcomes preserving commandIds`() = runTest {
+    suspend fun `sendStart with batch of 2 returns 2 Committed outcomes preserving commandIds`() {
         val sessionName1 = "v2-batch-start-1-$uuid"
         val sessionName2 = "v2-batch-start-2-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
@@ -230,7 +229,7 @@ class SsmClientItTest {
 
     @Order(70)
     @Test
-    fun `sendPerform with batch of 2 returns 2 Committed outcomes preserving commandIds`() = runTest {
+    suspend fun `sendPerform with batch of 2 returns 2 Committed outcomes preserving commandIds`() {
         val sessionName1 = "v2-batch-perform-1-$uuid"
         val sessionName2 = "v2-batch-perform-2-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")

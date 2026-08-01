@@ -2,7 +2,6 @@ package ssm.api.features.query
 
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import ssm.api.DataSsmQueryFunctionImpl
@@ -22,7 +21,7 @@ internal class DataSsmSessionGetQueryFunctionImplTest {
 
 
 	@Test
-	fun `test exception`() = runTest  {
+	suspend fun `test exception`() {
 		val queries = flowOf(
 			DataSsmSessionGetQuery(
 				"sessionName",

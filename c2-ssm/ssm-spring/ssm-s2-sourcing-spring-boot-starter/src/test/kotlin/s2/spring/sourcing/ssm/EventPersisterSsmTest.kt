@@ -1,7 +1,6 @@
 package s2.spring.sourcing.ssm
 
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
@@ -67,7 +66,7 @@ class EventPersisterSsmTest {
 	}
 
 	@Test
-	fun `toEvents deserializes valid string public data`() = runTest {
+	suspend fun `toEvents deserializes valid string public data`() {
 		val event = TestEvent("id-1", "hello")
 		val encoded = json.encodeToString(TestEvent.serializer(), event)
 		val logs = listOf(ssmLog(0, encoded))
@@ -80,7 +79,7 @@ class EventPersisterSsmTest {
 	}
 
 	@Test
-	fun `toEvents throws IllegalStateException when public is not a String`() = runTest {
+	suspend fun `toEvents throws IllegalStateException when public is not a String`() {
 		val logs = listOf(ssmLog(0, 12345))
 
 		val exception = assertThrows<Exception> {
@@ -92,7 +91,7 @@ class EventPersisterSsmTest {
 	}
 
 	@Test
-	fun `toEvents throws IllegalStateException when public is a map`() = runTest {
+	suspend fun `toEvents throws IllegalStateException when public is a map`() {
 		val logs = listOf(ssmLog(0, mapOf("key" to "value")))
 
 		val exception = assertThrows<Exception> {
@@ -103,7 +102,7 @@ class EventPersisterSsmTest {
 	}
 
 	@Test
-	fun `toEvents sorts logs by iteration before deserializing`() = runTest {
+	suspend fun `toEvents sorts logs by iteration before deserializing`() {
 		val event1 = TestEvent("id-1", "first")
 		val event2 = TestEvent("id-1", "second")
 		// Intentionally reversed order
@@ -120,7 +119,7 @@ class EventPersisterSsmTest {
 	}
 
 	@Test
-	fun `toEvents handles empty log list`() = runTest {
+	suspend fun `toEvents handles empty log list`() {
 		val result = invokeToEvents(createPersister(), emptyList()).toList()
 		assertThat(result).isEmpty()
 	}
