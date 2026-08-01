@@ -41,7 +41,7 @@ class FabricGatewayBlockClient(
         val gateway = fabricGatewayBuilder.gateway(channelId)
         val network = gateway.getNetwork(channelId)
         val contract = network.getContract("qscc")
-        val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
+        val blockResponse = contract.evaluateTransaction("GetBlockByTxID", channelId, transactionId)
         return blockResponse.toBlock()
     }
 
@@ -52,7 +52,7 @@ class FabricGatewayBlockClient(
     ): BlockId {
         val network = gateway.getNetwork(channelId)
         val contract = network.getContract("qscc")
-        val blockResponse = contract.evaluateTransaction("GetBlockByTxId", channelId, transactionId)
+        val blockResponse = contract.evaluateTransaction("GetBlockByTxID", channelId, transactionId)
         return blockResponse.toBlock().blockId
     }
 
