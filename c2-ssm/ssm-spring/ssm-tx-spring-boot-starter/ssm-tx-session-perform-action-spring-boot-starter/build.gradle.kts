@@ -15,4 +15,5 @@ dependencies {
 	kapt(libs.spring.boot.configuration.processor)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
+	testImplementation(libs.bundles.test)
 }

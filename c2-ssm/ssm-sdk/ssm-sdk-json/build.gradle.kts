@@ -6,4 +6,5 @@ plugins {
 dependencies {
 	implementation(libs.jackson.module.kotlin)
 	testImplementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-dsl"))
+	testImplementation(libs.bundles.test)
 }
