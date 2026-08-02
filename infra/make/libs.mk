@@ -1,6 +1,6 @@
 VERSION = $(shell cat VERSION)
 
-.PHONY: clean lint build test test-pre publish promote
+.PHONY: clean lint build test test-pre check publish promote
 
 clean:
 	./gradlew clean
@@ -34,6 +34,9 @@ test:
 
 test-post:
 	@make dev down
+
+check:
+	VERSION=$(VERSION) ./gradlew sonar
 
 stage:
 	VERSION=$(VERSION) ./gradlew stage
