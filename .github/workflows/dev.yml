@@ -53,5 +53,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+    with:
+      # SonarCloud analysis runs via the Gradle sonar task in the libs check step.
+      with-sonarcloud: false
     secrets:
       FIXERS_SONAR_TOKEN: ${{ secrets.FIXERS_SONAR_TOKEN }}
