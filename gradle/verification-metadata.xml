@@ -6,6 +6,8 @@
       <trusted-artifacts>
          <trust group="io\.komune(\..*)?" version=".*-SNAPSHOT" regex="true" reason="Sibling fixers libraries under active development: snapshot checksums change on every publish."/>
          <trust group="com\.gradle" name="(develocity-gradle-plugin|common-custom-user-data-gradle-plugin)" regex="true" reason="Injected into the buildscript classpath by gradle/actions setup-gradle in CI; never resolved locally."/>
+         <trust group="org\.nodejs" name="node" regex="true" reason="Kotlin/JS toolchain downloads an OS-specific node distribution; checksums differ per platform."/>
+         <trust group="com\.yarnpkg" name="yarn" regex="true" reason="Kotlin/JS toolchain downloads the yarn distribution alongside node."/>
       </trusted-artifacts>
    </configuration>
    <components>
