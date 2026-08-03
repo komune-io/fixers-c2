@@ -24,12 +24,15 @@ fixers {
 	}
 	sonar {
 		organization = "komune-io"
-		projectKey = "komune-io_connect-c2"
+		projectKey = "komune-io_fixers-c2"
 		properties {
 			// Samples are standalone demo applications and ssm-bdd is published test
 			// infrastructure: exclude them from coverage and duplication analysis.
 			property("sonar.coverage.exclusions", "**/sample/**,**/ssm-bdd/**")
 			property("sonar.cpd.exclusions", "**/sample/**")
+			// MPP modules report as jacocoJvmTestReport.xml, JVM modules as
+			// jacocoTestReport.xml: match both so coverage reaches SonarCloud.
+			property("sonar.coverage.jacoco.xmlReportPaths", "**/build/reports/jacoco/**/*.xml")
 		}
 	}
 	repositories {

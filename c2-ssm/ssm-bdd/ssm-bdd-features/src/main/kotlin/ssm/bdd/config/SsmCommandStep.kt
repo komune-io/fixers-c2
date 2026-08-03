@@ -161,18 +161,18 @@ abstract class SsmCommandStep {
 
 	private fun DataTable.asStartSessionRole(): Map<String, AgentName> {
 		return asMaps().associate { columns ->
-			columns["userName"]!!.contextualize(bag) to columns["role"]!!
+			columns.getValue("userName").contextualize(bag) to columns.getValue("role")
 		}
 	}
 
 	private fun DataTable.asPerformAction(): List<PerformAction> {
 		return asMaps().map { columns ->
 			PerformAction(
-				sessionName = columns[PerformAction::sessionName.name]!!.contextualize(bag),
-				userName = columns[PerformAction::userName.name]!!.contextualize(bag),
-				action = columns[PerformAction::action.name]!!,
-				iteration = columns[PerformAction::iteration.name]?.toInt()!!,
-				public = columns[PerformAction::public.name]!!,
+				sessionName = columns.getValue(PerformAction::sessionName.name).contextualize(bag),
+				userName = columns.getValue(PerformAction::userName.name).contextualize(bag),
+				action = columns.getValue(PerformAction::action.name),
+				iteration = columns.getValue(PerformAction::iteration.name).toInt(),
+				public = columns.getValue(PerformAction::public.name),
 				)
 		}
 	}
@@ -188,10 +188,10 @@ abstract class SsmCommandStep {
 	fun DataTable.asTransitions(): List<SsmTransition> {
 		return asMaps().map { columns ->
 			SsmTransition(
-				from = columns[SsmTransition::from.name]?.toInt()!!,
-				to = columns[SsmTransition::to.name]?.toInt()!!,
-				role = columns[SsmTransition::role.name]!!,
-				action = columns[SsmTransition::action.name]!!,
+				from = columns.getValue(SsmTransition::from.name).toInt(),
+				to = columns.getValue(SsmTransition::to.name).toInt(),
+				role = columns.getValue(SsmTransition::role.name),
+				action = columns.getValue(SsmTransition::action.name),
 			)
 		}
 	}
