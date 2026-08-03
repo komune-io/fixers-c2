@@ -18,12 +18,12 @@ class SsmChaincodeAutoConfigurationBeanFactoryInitializationAotProcessor : BeanF
             val method: Method = ReflectionUtils.findMethod(
                 SsmChaincodeAutoConfiguration::class.java,
                 SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name,
-                SsmChaincodeProperties::class.java
+                SsmChaincodeConfiguration::class.java
             )!!
             hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
 
             hints.reflection().registerType(SsmChaincodeProperties::class.java)
-            hints.reflection().registerType(SsmChaincodeProperties::class.java)
+            hints.reflection().registerType(SsmChaincodeConfiguration::class.java)
         }
     }
 }
