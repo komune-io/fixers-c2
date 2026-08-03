@@ -29,10 +29,8 @@ class SsmCouchDbClientBuilder {
 	}
 
 	fun build(): CouchdbSsmClient {
-		val converter = requireNotNull(this.jsonConverter)
-		val auth = requireNotNull(this.auth)
 		val cloudant = buildCloudant(auth)
-		return CouchdbSsmClient(cloudant, converter)
+		return CouchdbSsmClient(cloudant, jsonConverter)
 	}
 
 	private fun buildCloudant(auth: SsmCouchDbAuth): CloudantFixed {

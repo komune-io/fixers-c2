@@ -20,9 +20,10 @@ object InvokeArgsUtils {
     }
 
     private fun isQueryOfType(args: InvokeArgs, type: String): Boolean {
-        return args.values.isNotEmpty() && (args.function.value.equals(type, ignoreCase = true) || args.values
-            .get(0).equals(type, ignoreCase = true)
-                )
+        return args.values.isNotEmpty() && (
+            args.function.value.equals(type, ignoreCase = true) ||
+                args.values[0].equals(type, ignoreCase = true)
+            )
     }
 
     fun isQueryFunction(args: InvokeArgs): Boolean {

@@ -32,7 +32,6 @@ class C2ChaincodeConfiguration(
 	fun getCcids(): Array<String> = ccid.split(",").toTypedArray()
 
 	fun getChannelChaincodes(): Map<ChannelId, ChannelConfig> {
-		val user = requireNotNull(user) { "Bad user[${user}] in application.yml" }
 		val config = requireNotNull(config) { "Bad config[${config}] in application.yml" }
 		return ChannelConfig.fromConfig(getCcids(), user, config, getEndorsers())
 	}

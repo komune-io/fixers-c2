@@ -26,7 +26,7 @@ class SsmCouchdbAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFac
             hints.reflection().registerType(SsmCouchdbConfig::class.java)
 
             SsmCouchdbConfig::class.java.declaredConstructors.forEach {
-                hints.reflection().registerConstructor(it, ExecutableMode.INTROSPECT)
+                hints.reflection().registerConstructor(it, ExecutableMode.INVOKE)
             }
         }
     }

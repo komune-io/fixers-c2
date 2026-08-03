@@ -29,6 +29,8 @@ dependencyResolutionManagement {
 	}
 }
 
+rootProject.name = "fixers-c2"
+
 include(
 	"c2-ssm:ssm-bdd:ssm-bdd-config",
 	"c2-ssm:ssm-bdd:ssm-bdd-features",

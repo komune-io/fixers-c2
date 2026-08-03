@@ -7,6 +7,8 @@ import kotlin.reflect.KClass
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.InternalSerializationApi
@@ -138,44 +140,50 @@ EVENT: WithS2Id<ID>
 		return event
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.initFlow( ): Flow<CommandOutcome> = map { event ->
-		val sessionName = buildSessionName(event.event)
-		@OptIn(InternalSerializationApi::class)
-		val public = json.encodeToString(eventType.serializer(), event.event)
-		SsmStartCommand(
-			msgId = UUID.randomUUID().toString(),
-			session = SsmSession(
-				ssm = s2Automate.name,
-				session = sessionName,
-				roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
-				public = public,
-				private = mapOf()
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri
-		)
-	}.let {
-		ssmSessionStartFunction.invoke(it)
+	private fun Flow<ExecutableAction<EVENT>>.initFlow(): Flow<CommandOutcome> {
+		val commands = map { event ->
+			val sessionName = buildSessionName(event.event)
+			@OptIn(InternalSerializationApi::class)
+			val public = json.encodeToString(eventType.serializer(), event.event)
+			SsmStartCommand(
+				msgId = UUID.randomUUID().toString(),
+				session = SsmSession(
+					ssm = s2Automate.name,
+					session = sessionName,
+					roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
+					public = public,
+					private = mapOf()
+				),
+				signerName = agentSigner.name,
+				chaincodeUri = chaincodeUri
+			)
+		}
+		return flow {
+			emitAll(ssmSessionStartFunction.invoke(commands))
+		}
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<CommandOutcome> = map { event ->
-		val sessionName = buildSessionName(event.event)
-		val action = event.event::class.simpleName!!
-		@OptIn(InternalSerializationApi::class)
-		SsmPerformCommand(
-			msgId = UUID.randomUUID().toString(),
-			action = action,
-			context = SsmContext(
-				session = sessionName,
-				public = json.encodeToString(eventType.serializer(), event.event),
-				private = mapOf(),
-				iteration = event.iteration ?: 0,
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri
-		)
-	}.let { toUpdated ->
-		ssmSessionPerformActionFunction.invoke(toUpdated)
+	private fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<CommandOutcome> {
+		val commands = map { event ->
+			val sessionName = buildSessionName(event.event)
+			val action = event.event::class.simpleName!!
+			@OptIn(InternalSerializationApi::class)
+			SsmPerformCommand(
+				msgId = UUID.randomUUID().toString(),
+				action = action,
+				context = SsmContext(
+					session = sessionName,
+					public = json.encodeToString(eventType.serializer(), event.event),
+					private = mapOf(),
+					iteration = event.iteration ?: 0,
+				),
+				signerName = agentSigner.name,
+				chaincodeUri = chaincodeUri
+			)
+		}
+		return flow {
+			emitAll(ssmSessionPerformActionFunction.invoke(commands))
+		}
 	}
 
 	private suspend fun init(event: EVENT): EVENT {

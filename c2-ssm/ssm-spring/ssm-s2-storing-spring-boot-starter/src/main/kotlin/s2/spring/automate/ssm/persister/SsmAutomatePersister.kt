@@ -4,6 +4,7 @@ import f2.dsl.fnc.operators.batchFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -322,28 +323,30 @@ ENTITY : WithS2Id<ID> {
 		return "${query.sessionId}:lookup"
 	}
 
-	private suspend fun getSessions(
+	private fun getSessions(
 		queries: List<GetSessionQuery<STATE, ID, ENTITY, EVENT>>,
-	): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
-		SsmGetSessionLogsQuery(
-			sessionName = query.sessionId,
-			chaincodeUri = chaincodeUri,
-			ssmName = query.transitionContext.automateContext.automate.name,
-		)
-	}.let {
-		ssmGetSessionLogsQueryFunction.invoke(it.asFlow())
+	): Flow<SsmGetSessionLogsQueryResult> = flow {
+		val logsQueries = queries.map { query ->
+			SsmGetSessionLogsQuery(
+				sessionName = query.sessionId,
+				chaincodeUri = chaincodeUri,
+				ssmName = query.transitionContext.automateContext.automate.name,
+			)
+		}
+		emitAll(ssmGetSessionLogsQueryFunction.invoke(logsQueries.asFlow()))
 	}
 
-	private suspend fun getSessionForAutomate(
+	private fun getSessionForAutomate(
 		queries: Flow<GetAutomateSessionQuery>,
-	): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
-		SsmGetSessionLogsQuery(
-			sessionName = query.sessionId,
-			chaincodeUri = chaincodeUri,
-			ssmName = query.automateContext.automate.name,
-		)
-	}.let {
-		ssmGetSessionLogsQueryFunction.invoke(it)
+	): Flow<SsmGetSessionLogsQueryResult> = flow {
+		val logsQueries = queries.map { query ->
+			SsmGetSessionLogsQuery(
+				sessionName = query.sessionId,
+				chaincodeUri = chaincodeUri,
+				ssmName = query.automateContext.automate.name,
+			)
+		}
+		emitAll(ssmGetSessionLogsQueryFunction.invoke(logsQueries))
 	}
 
 	override suspend fun persist(

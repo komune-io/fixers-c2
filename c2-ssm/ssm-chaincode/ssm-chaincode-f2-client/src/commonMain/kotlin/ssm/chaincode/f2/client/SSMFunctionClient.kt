@@ -9,13 +9,6 @@ fun ssmClient(urlBase: String,): F2SupplierSingle<SSMFunctionClient> = F2Supplie
         SSMFunctionClient(s2Client)
     }
 }
-interface SSMRemoteFunction {
-	// fun perform(): SsmPerformRemoteFunction
-}
+interface SSMRemoteFunction
 
-open class SSMFunctionClient(val client: F2Client) : SSMRemoteFunction {
-
-    // override fun perform() = object : SsmPerformRemoteFunction {
-    //  	override suspend fun invoke(cmd: SsmPerformCommand): SsmPerformResult = client.executeInvoke("perform" ,cmd)
-    // }
-}
+open class SSMFunctionClient(val client: F2Client) : SSMRemoteFunction

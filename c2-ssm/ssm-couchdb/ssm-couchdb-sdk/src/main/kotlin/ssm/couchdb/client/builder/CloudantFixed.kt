@@ -35,8 +35,7 @@ class CloudantFixed(
 			postChangesOptions,
 			"postChangesOptions cannot be null"
 		)
-		val pathParamsMap: MutableMap<String, String> = HashMap()
-		pathParamsMap["db"] = postChangesOptions.db()
+		val pathParamsMap: Map<String, String> = mapOf("db" to postChangesOptions.db())
 		val builder = RequestBuilder.get(
 			RequestBuilder.resolveRequestUrl(
 				serviceUrl, "/{db}/_changes", pathParamsMap
@@ -78,7 +77,9 @@ class CloudantFixed(
 			"ssm" to ssm,
 			"session" to session
 		).forEach { (name, value) ->
-			value?.let { query(name, it.toString()) }
+			if (value != null) {
+				query(name, value.toString())
+			}
 		}
 	}
 }

@@ -42,6 +42,6 @@ object FileUtils {
 		val mbbb = FileChannel.open(file2).use { fc2 ->
 			fc2.map(FileChannel.MapMode.READ_ONLY, 0, fc2.size())
 		}
-		return mbba.equals(mbbb)
+		return mbba == mbbb
 	}
 }
