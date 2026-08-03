@@ -55,7 +55,8 @@ open class FabricGatewayBuilder(
                 contract
             }
         } catch (e: Throwable) {
-            logger.error("Error while querying of channel [$channelId]", e)
+            val sanitizedChannelId = channelId.replace("\n", "_").replace("\r", "_")
+            logger.error("Error while querying of channel [$sanitizedChannelId]", e)
             throw e
         }
     }
@@ -78,14 +79,16 @@ open class FabricGatewayBuilder(
         val organizationName = channelConfig.user.org
 
         val fabricConfig = loader.getFabricConfig(channelId)
-        val organizationConfig = fabricConfig.network.organisations[organizationName]!!
+        val organizationConfig = fabricConfig.network.organisations[organizationName]
+            ?: error("Organisation [$organizationName] not found in fabric config of channel [$channelId]")
         val trustManager = organizationConfig.ca.getTlsCacertsAsUrl(cryptoConfigBase)
         val credentials = TlsChannelCredentials.newBuilder()
             .trustManager(trustManager.openStream())
             .build()
         return channelConfig.endorsers.map { endorser ->
             val peerConfig = organizationConfig.peers[endorser.peer]
-            val requests = peerConfig!!.requests.removePrefix("grpcs://")
+                ?: error("Peer [${endorser.peer}] not found in organisation [$organizationName]")
+            val requests = peerConfig.requests.removePrefix("grpcs://")
             val channel = Grpc.newChannelBuilder(requests, credentials).build()
 
             Gateway.newInstance()

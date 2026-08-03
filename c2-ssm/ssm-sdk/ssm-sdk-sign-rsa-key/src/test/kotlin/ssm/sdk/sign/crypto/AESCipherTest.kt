@@ -1,6 +1,8 @@
 package ssm.sdk.sign.crypto
 
 import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -10,48 +12,61 @@ import java.security.NoSuchAlgorithmException
 import java.util.Base64
 import javax.crypto.SecretKey
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration
 import org.bouncycastle.crypto.CryptoException
 import org.junit.jupiter.api.Test
 import ssm.sdk.sign.FileUtils
 
-
 internal class AESCipherTest {
 
 	companion object {
 		const val FILE_TO_COMMIT_TXT = "crypto/fileToCommit.txt"
-		const val FILE_TO_COMMIT_ENCRYPTED = "crypto/fileToCommit.encrypted"
+		const val KEY_B64 = "+cRaRuaSK1/RObE9oEOm6Q=="
 	}
 
 	@Test
 	@Throws(IOException::class, CryptoException::class)
-	fun encrypt() {
+	fun encryptThenDecryptFileRestoresContent() {
 		val fileToEncrypt: File = FileUtils.getFile(FILE_TO_COMMIT_TXT)
 		val encryptedFile = File.createTempFile("enc_", "tmp")
-		val encryptedFileProof: File = FileUtils.getFile(FILE_TO_COMMIT_ENCRYPTED)
 		try {
-			val os = FileOutputStream(encryptedFile)
-			val key: SecretKey = AESCipher.secretKeyFromBase64("+cRaRuaSK1/RObE9oEOm6Q==")
-			AESCipher.encrypt(fileToEncrypt, os, key)
-			val te = FileUtils.sameContent(encryptedFile.toPath(), encryptedFileProof.toPath())
-			Assertions.assertThat(te).isTrue
-		} finally {
-			encryptedFile.delete()
-		}
-	}
-
-	@Test
-	@Throws(IOException::class, CryptoException::class)
-	fun decrypt() {
-		val encryptedFile: File = FileUtils.getFile(FILE_TO_COMMIT_ENCRYPTED)
-		try {
-			val key: SecretKey = AESCipher.secretKeyFromBase64("+cRaRuaSK1/RObE9oEOm6Q==")
+			val key: SecretKey = AESCipher.secretKeyFromBase64(KEY_B64)
+			FileOutputStream(encryptedFile).use { os ->
+				AESCipher.encrypt(fileToEncrypt, os, key)
+			}
+			Assertions.assertThat(FileUtils.sameContent(fileToEncrypt.toPath(), encryptedFile.toPath())).isFalse
 			val decryptedStream: InputStream = AESCipher.decrypt(FileInputStream(encryptedFile), key)
 			val value = decryptedStream.bufferedReader().use(BufferedReader::readText)
 			Assertions.assertThat(value).isEqualTo("to commit")
 		} finally {
 			encryptedFile.delete()
 		}
+	}
+
+	@Test
+	@Throws(CryptoException::class)
+	fun encryptProducesDifferentCiphertextForEachCall() {
+		val key: SecretKey = AESCipher.secretKeyFromBase64(KEY_B64)
+		val first = ByteArrayOutputStream()
+		val second = ByteArrayOutputStream()
+		AESCipher.encrypt(ByteArrayInputStream("payload".toByteArray()), first, key)
+		AESCipher.encrypt(ByteArrayInputStream("payload".toByteArray()), second, key)
+		Assertions.assertThat(first.toByteArray()).isNotEqualTo(second.toByteArray())
+	}
+
+	@Test
+	@Throws(CryptoException::class)
+	fun decryptWithWrongKeyFails() {
+		val key: SecretKey = AESCipher.secretKeyFromBase64(KEY_B64)
+		val output = ByteArrayOutputStream()
+		AESCipher.encrypt(ByteArrayInputStream("payload".toByteArray()), output, key)
+
+		val wrongKey: SecretKey = AESCipher.generateSecretKey()
+		assertThatThrownBy {
+			AESCipher.decrypt(ByteArrayInputStream(output.toByteArray()), wrongKey)
+				.bufferedReader().use(BufferedReader::readText)
+		}.isInstanceOf(Exception::class.java)
 	}
 
 	@Test
@@ -68,6 +83,12 @@ internal class AESCipherTest {
 		Assertions.assertThat(key.algorithm).isEqualTo(keyBuilt.algorithm)
 		Assertions.assertThat(key.encoded).isEqualTo(keyBuilt.encoded)
 		Assertions.assertThat(key.format).isEqualTo(keyBuilt.format)
+	}
 
+	@Test
+	fun generateSecretKeyProducesDistinctKeys() {
+		val first = AESCipher.generateSecretKey()
+		val second = AESCipher.generateSecretKey()
+		Assertions.assertThat(first.encoded).isNotEqualTo(second.encoded)
 	}
 }

@@ -2,6 +2,7 @@
 
 package ssm.sdk.sign.crypto
 
+import java.io.DataInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -15,16 +16,20 @@ import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import org.bouncycastle.crypto.CryptoException
 
 object AESCipher {
 	private const val ALGO = "AES"
+	private const val TRANSFORMATION = "AES/GCM/NoPadding"
+	private const val GCM_IV_LENGTH_BYTES = 12
+	private const val GCM_TAG_LENGTH_BITS = 128
 
 	@Throws(NoSuchAlgorithmException::class)
 	fun generateSecretKey(): SecretKey {
 		val kg = KeyGenerator.getInstance(ALGO)
-		kg.init(SecureRandom(byteArrayOf(0x00.toByte(), 0x01.toByte(), 0x02.toByte())))
+		kg.init(SecureRandom())
 		return kg.generateKey()
 	}
 
@@ -79,8 +84,10 @@ object AESCipher {
 	@Throws(CryptoException::class)
 	private fun getDecryptCipher(key: SecretKey, fileInput: InputStream): CipherInputStream {
 		try {
-			val cipher = Cipher.getInstance(ALGO)
-			cipher.init(Cipher.DECRYPT_MODE, key)
+			val iv = ByteArray(GCM_IV_LENGTH_BYTES)
+			DataInputStream(fileInput).readFully(iv)
+			val cipher = Cipher.getInstance(TRANSFORMATION)
+			cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
 			return CipherInputStream(fileInput, cipher)
 		} catch (e: Exception) {
 			throw CryptoException("Error decrypting", e)
@@ -90,8 +97,10 @@ object AESCipher {
 	@Throws(CryptoException::class)
 	private fun getEncryptCipher(fileOutput: OutputStream?, key: SecretKey?): CipherOutputStream {
 		try {
-			val cipher = Cipher.getInstance(ALGO)
-			cipher.init(Cipher.ENCRYPT_MODE, key)
+			val iv = ByteArray(GCM_IV_LENGTH_BYTES).also(SecureRandom()::nextBytes)
+			val cipher = Cipher.getInstance(TRANSFORMATION)
+			cipher.init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
+			fileOutput!!.write(iv)
 			return CipherOutputStream(fileOutput, cipher)
 		} catch (e: Exception) {
 			throw CryptoException("Error encrypting", e)

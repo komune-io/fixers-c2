@@ -9,12 +9,12 @@ import javax.crypto.Cipher
 import org.bouncycastle.crypto.CryptoException
 
 object RSACipher {
-	private const val ALGO = "RSA"
+	private const val TRANSFORMATION = "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"
 
 	@Throws(CryptoException::class)
 	fun encrypt(value: ByteArray?, publicKey: PublicKey?): String {
 		try {
-			val cipher = Cipher.getInstance(ALGO)
+			val cipher = Cipher.getInstance(TRANSFORMATION)
 			cipher.init(Cipher.ENCRYPT_MODE, publicKey)
 			val enc = cipher.doFinal(value)
 			return Base64.getEncoder().encodeToString(enc)
@@ -27,7 +27,7 @@ object RSACipher {
 	fun decrypt(value: String?, privateKey: PrivateKey?): String {
 		try {
 			val bytVal = Base64.getDecoder().decode(value)
-			val cipher = Cipher.getInstance(ALGO)
+			val cipher = Cipher.getInstance(TRANSFORMATION)
 			cipher.init(Cipher.DECRYPT_MODE, privateKey)
 			val dec = cipher.doFinal(bytVal)
 			return String(dec)

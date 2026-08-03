@@ -52,7 +52,7 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
 				Assertions.assertThat(dataTable.asCucumberChanges().size).isEqualTo(lastChanges?.items?.size ?: 0.0)
 				val tt = lastChanges!!.items.associateBy { it.objectId }
 				dataTable.asCucumberChanges().forEachIndexed { _, clog ->
-					val log = tt[clog.objectId.contextualize(bag)]!!
+					val log = tt.getValue(clog.objectId.contextualize(bag))
 					Assertions.assertThat(log.objectId).isEqualTo(clog.objectId.contextualize(bag))
 					Assertions.assertThat(log.docType!!.name).isEqualTo(clog.docType)
 				}
@@ -70,8 +70,8 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
 	fun DataTable.asCucumberChanges(): List<CucumberChanges> {
 		return asMaps().map { columns ->
 			CucumberChanges(
-				objectId = columns[CucumberChanges::objectId.name]!!,
-				docType = columns[CucumberChanges::docType.name]!!,
+				objectId = columns.getValue(CucumberChanges::objectId.name),
+				docType = columns.getValue(CucumberChanges::docType.name),
 			)
 		}
 	}

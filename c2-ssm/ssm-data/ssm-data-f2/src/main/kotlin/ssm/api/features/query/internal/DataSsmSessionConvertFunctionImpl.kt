@@ -7,6 +7,8 @@ import io.komune.c2.chaincode.dsl.Transaction
 import io.komune.c2.chaincode.dsl.TransactionId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
@@ -37,7 +39,8 @@ class DataSsmSessionConvertFunctionImpl(
 				flow.map { it.sessionState.session }.getSessionLogs(ssmUri, ssmGetSessionLogsQueryFunction)
 			allSessionLogs.map { sessionLogs ->
 				val transactions = sessionLogs.logs.map { it.txId }.getTransactions(ssmUri.asChaincodeUri())
-				val state = allSessionState[sessionLogs.sessionName]!!
+				val state = allSessionState[sessionLogs.sessionName]
+					?: error("No session state found for session [${sessionLogs.sessionName}]")
 				sessionLogs.toDataSession(ssmUri, state, transactions)
 			}
 		}.asFlow().flattenConcurrently()
@@ -81,18 +84,19 @@ class DataSsmSessionConvertFunctionImpl(
 		return ssmGetTransactionQueryFunction.invoke(queries.asFlow()).mapNotNull { it.item }.toList()
 	}
 
-	suspend fun List<SessionName>.getSessionLogs(
+	fun List<SessionName>.getSessionLogs(
 		ssmUri: SsmUri,
 		ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
-	): Flow<SsmGetSessionLogsQueryResult> = map { sessionName ->
-		SsmGetSessionLogsQuery(
-			chaincodeUri = ssmUri.chaincodeUri,
-			sessionName = sessionName,
-			ssmName = ssmUri.ssmName
-		)
-	}.let {
-		ssmGetSessionLogsQueryFunction.invoke(it.asFlow())
-	}.map { it }
+	): Flow<SsmGetSessionLogsQueryResult> = flow {
+		val queries = map { sessionName ->
+			SsmGetSessionLogsQuery(
+				chaincodeUri = ssmUri.chaincodeUri,
+				sessionName = sessionName,
+				ssmName = ssmUri.ssmName
+			)
+		}
+		emitAll(ssmGetSessionLogsQueryFunction.invoke(queries.asFlow()))
+	}
 
 
 }
