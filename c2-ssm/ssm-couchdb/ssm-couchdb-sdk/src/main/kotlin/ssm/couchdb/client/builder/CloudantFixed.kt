@@ -13,7 +13,7 @@ import com.ibm.cloud.sdk.core.util.Validator
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmName
 
-class CloudantFixed(
+open class CloudantFixed(
 	serviceName: String,
 	authenticator: Authenticator
 ) : Cloudant(serviceName, authenticator) {

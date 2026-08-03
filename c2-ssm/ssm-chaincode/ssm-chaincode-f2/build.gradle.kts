@@ -9,4 +9,7 @@ dependencies {
 
 	testImplementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-bdd"))
 	testImplementation(project(":c2-ssm:ssm-tx:ssm-tx-bdd"))
+	testImplementation("io.ktor:ktor-client-mock")
+	testImplementation(libs.bundles.ktor)
+	testImplementation(libs.bundles.test)
 }
