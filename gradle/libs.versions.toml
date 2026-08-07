@@ -6,7 +6,7 @@ grpc = "1.83.1"
 protobuf = "4.35.1"
 bouncycastle = "1.70"
 cloudant = "0.10.20"
-mockk = "1.13.13"
+mockk = "1.14.11"
 
 [libraries]
 # S2 modules
