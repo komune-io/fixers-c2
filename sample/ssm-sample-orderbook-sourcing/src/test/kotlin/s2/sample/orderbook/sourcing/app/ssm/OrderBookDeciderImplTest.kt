@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -57,7 +56,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	lateinit var orderBookDeciderImpl: OrderBookDeciderImpl
 
 	@Test
-	fun `should create order book`(): Unit = runTest {
+	suspend fun `should create order book`() {
 		val event = orderBookDeciderImpl.orderBookCreateDecider()
 			.invoke(OrderBookCreateCommand("TheNewOrderBook"))
  		orderBookDeciderImpl.orderBookUpdateDecider()
@@ -68,7 +67,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 		assertThat(events).hasSize(4)
 	}
 	@Test
-	fun `should create flow(24-6) of order book`(): Unit = runTest {
+	suspend fun `should create flow(24-6) of order book`() {
 		(0..24).asFlow().map {
 			OrderBookCreateCommand("TheNewOrderBook$it")
 		}.let {
@@ -92,7 +91,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should create flow(4-6) of order book`(): Unit = runTest {
+	suspend fun `should create flow(4-6) of order book`() {
 		(0..4).asFlow().map {
 			OrderBookCreateCommand("TheNewOrderBook$it")
 		}.let {
@@ -116,7 +115,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should replay event to build entity`(): Unit = runTest {
+	suspend fun `should replay event to build entity`() {
 		var exception: Exception? = null
 		val event = create(OrderBookCreateCommand("TheNewOrderBook"))
 
@@ -135,7 +134,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should flow event to build entity`(): Unit = runTest {
+	suspend fun `should flow event to build entity`() {
 		val all = flowOf(
 			OrderBookCreateCommand("TheNewOrderBook"),
 			OrderBookCreateCommand("TheNewOrderBook1"),

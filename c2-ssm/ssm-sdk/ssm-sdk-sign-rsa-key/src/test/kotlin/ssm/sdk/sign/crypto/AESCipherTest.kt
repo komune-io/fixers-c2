@@ -44,14 +44,10 @@ internal class AESCipherTest {
 	@Throws(IOException::class, CryptoException::class)
 	fun decrypt() {
 		val encryptedFile: File = FileUtils.getFile(FILE_TO_COMMIT_ENCRYPTED)
-		try {
-			val key: SecretKey = AESCipher.secretKeyFromBase64("+cRaRuaSK1/RObE9oEOm6Q==")
-			val decryptedStream: InputStream = AESCipher.decrypt(FileInputStream(encryptedFile), key)
-			val value = decryptedStream.bufferedReader().use(BufferedReader::readText)
-			Assertions.assertThat(value).isEqualTo("to commit")
-		} finally {
-			encryptedFile.delete()
-		}
+		val key: SecretKey = AESCipher.secretKeyFromBase64("+cRaRuaSK1/RObE9oEOm6Q==")
+		val decryptedStream: InputStream = AESCipher.decrypt(FileInputStream(encryptedFile), key)
+		val value = decryptedStream.bufferedReader().use(BufferedReader::readText)
+		Assertions.assertThat(value).isEqualTo("to commit")
 	}
 
 	@Test

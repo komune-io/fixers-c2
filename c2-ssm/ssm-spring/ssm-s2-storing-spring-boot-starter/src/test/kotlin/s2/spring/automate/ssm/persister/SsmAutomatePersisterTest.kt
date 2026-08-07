@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -197,7 +196,7 @@ class SsmAutomatePersisterTest {
 	}
 
 	@Test
-	fun `persistWithOutcomes maps mixed v2 results to per-item PersistOutcome`() = runTest {
+	suspend fun `persistWithOutcomes maps mixed v2 results to per-item PersistOutcome`() {
 		// Stub v2 perform: items whose commandId contains "id-3" return Rejected, others Committed.
 		// commandId pattern is "${sessionId}:${iteration + 1}" per SsmAutomatePersister source.
 		val v2Perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction =
@@ -252,7 +251,7 @@ class SsmAutomatePersisterTest {
 	}
 
 	@Test
-	fun `persistWithOutcomes emits Rejected for sessions missing from chaincode (lookup branch)`() = runTest {
+	suspend fun `persistWithOutcomes emits Rejected for sessions missing from chaincode (lookup branch)`() {
 		val performCommandsSeen = mutableListOf<String>()
 
 		// v2 perform: capture which commands were sent, return Committed for each

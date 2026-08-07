@@ -19,6 +19,7 @@ ENV coop_user_org="${coop_user_org}"
 ENV coop_endorsers="${coop_endorsers}"
 ENV coop_user_name="${ca__ADMIN}"
 # Sandbox dev credentials only
+# hadolint ignore=DL3064
 ENV coop_user_password="${ca__PASSWD}"
 ENV coop_config_file="file:/opt/rest-coop/config.json"
 ENV coop_config_crypto="file:/opt/rest-coop"

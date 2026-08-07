@@ -1,9 +1,16 @@
 package ssm.couchdb.client
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import ssm.couchdb.client.test.CouchDbSandbox
 import ssm.couchdb.client.test.DataTest
 
 internal class SsmCouchDbClientTest {
+
+	@BeforeEach
+	fun requireCouchDb() {
+		CouchDbSandbox.assumeAvailable()
+	}
 
 	@Test
 	fun `verify lastEventId is working`() {

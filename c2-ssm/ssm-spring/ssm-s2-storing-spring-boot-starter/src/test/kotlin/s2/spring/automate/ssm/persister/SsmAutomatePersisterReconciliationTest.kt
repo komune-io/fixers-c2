@@ -5,7 +5,6 @@ import f2.dsl.fnc.F2Function
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import s2.automate.core.config.S2BatchProperties
@@ -153,7 +152,7 @@ class SsmAutomatePersisterReconciliationTest {
     // ── START ───────────────────────────────────────────────────────────────────
 
     @Test
-    fun `START Rejected is reconciled to Success when the session already exists with matching state`() = runTest {
+    suspend fun `START Rejected is reconciled to Success when the session already exists with matching state`() {
         val entity = IterableEntity("id-1", status = 1, iteration = 0)
         val onChainPublic = om.writeValueAsString(entity)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
@@ -175,7 +174,7 @@ class SsmAutomatePersisterReconciliationTest {
     }
 
     @Test
-    fun `START Rejected stays Rejected when the on-chain state does not match`() = runTest {
+    suspend fun `START Rejected stays Rejected when the on-chain state does not match`() {
         val entity = IterableEntity("id-2", status = 1, iteration = 0)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
             q.toList()
@@ -195,7 +194,7 @@ class SsmAutomatePersisterReconciliationTest {
     }
 
     @Test
-    fun `START Committed never triggers a reconciliation query`() = runTest {
+    suspend fun `START Committed never triggers a reconciliation query`() {
         val entity = IterableEntity("id-ok", status = 1, iteration = 0)
         val p = persister(
             start = F2Function { c -> c.toList().map { committed(it.msgId, "tx-committed") }.asFlow() },
@@ -211,7 +210,7 @@ class SsmAutomatePersisterReconciliationTest {
     // ── PERFORM ─────────────────────────────────────────────────────────────────
 
     @Test
-    fun `PERFORM Conflict is reconciled to Success when the target iteration is already on chain`() = runTest {
+    suspend fun `PERFORM Conflict is reconciled to Success when the target iteration is already on chain`() {
         val entity = IterableEntity("id-3", status = 1, iteration = 0)
         val onChainPublic = om.writeValueAsString(entity)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
@@ -232,7 +231,7 @@ class SsmAutomatePersisterReconciliationTest {
     }
 
     @Test
-    fun `PERFORM Transient is never reconciled and never queries the chain`() = runTest {
+    suspend fun `PERFORM Transient is never reconciled and never queries the chain`() {
         val entity = IterableEntity("id-4", status = 1, iteration = 0)
         val p = persister(
             start = F2Function { _ -> error("start not used") },

@@ -3,7 +3,6 @@ package s2.sample.orderbook.sourcing.app.ssm
 import f2.dsl.fnc.invoke
 import java.util.UUID
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -52,7 +51,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	lateinit var orderBookDeciderImpl: OrderBookDeciderImpl
 
 	@Test
-	fun `should create order book`(): Unit = runTest {
+	suspend fun `should create order book`() {
 		val event = orderBookDeciderImpl.orderBookCreateDecider().invoke(OrderBookCreateCommand("TheNewOrderBook"))
 		orderBookDeciderImpl.orderBookUpdateDecider().invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
 		orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
@@ -63,7 +62,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should replay event to build entity`(): Unit = runTest {
+	suspend fun `should replay event to build entity`() {
 		val event = create(OrderBookCreateCommand("TheNewOrderBook"))
 		update(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
 		publish(OrderBookPublishCommand(id = event.id))

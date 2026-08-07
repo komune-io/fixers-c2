@@ -15,4 +15,5 @@ dependencies {
 	implementation(libs.slf4j.api)
 
 	testImplementation(project(":c2-ssm:ssm-bdd:ssm-bdd-spring-autoconfigure"))
+	testImplementation(libs.bundles.test)
 }

@@ -9,7 +9,8 @@ data class InvokeRequest(
     val chaincodeid: ChaincodeId? = null,
     val cmd: InvokeRequestType,
     val fcn: String,
-    val args: Array<String>
+    val args: Array<String>,
+    val timestamp: Long? = null,
 )
 
 @Suppress("EnumNaming")
@@ -23,6 +24,6 @@ fun List<InvokeRequest>.toInvokeArgs(): List<InvokeArgs> = map {
 }
 
 fun InvokeRequest.toInvokeArgs(): InvokeArgs {
-    return InvokeArgs(InvokeFunction(fcn), args.toList())
+    return InvokeArgs(InvokeFunction(fcn), args.toList(), timestamp = timestamp)
 }
 

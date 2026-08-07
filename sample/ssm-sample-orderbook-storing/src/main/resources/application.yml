@@ -8,8 +8,8 @@ ssm:
       key: user/ssm-admin
   couchdb:
     url: http://localhost:5984
-    username: couchdb
-    password: couchdb
+    username: ${BCLAN_COUCH_USER:couchdb}
+    password: ${BCLAN_COUCH_PASS:couchdb}
     serviceName: s2-sample-did
   chaincode:
     url: http://localhost:9090

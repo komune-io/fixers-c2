@@ -5,7 +5,6 @@ import f2.dsl.fnc.F2Function
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import s2.automate.core.config.S2BatchProperties
@@ -95,7 +94,7 @@ class SsmAutomatePersisterLoadIterationTest {
         )
 
     @Test
-    fun `loadWithOutcomes stamps the on-chain iteration onto the loaded entity`() = runTest {
+    suspend fun `loadWithOutcomes stamps the on-chain iteration onto the loaded entity`() {
         // public carries a STALE iteration (0); the chain head log is at iteration 7.
         val publicJson = """{"id":"s1","status":1,"iteration":0}"""
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->

@@ -60,7 +60,7 @@ open class FabricGatewayBuilder(
         }
     }
 
-    fun gateway(channelId: ChannelId): Gateway {
+    open fun gateway(channelId: ChannelId): Gateway {
         return gateways(channelId).shuffled().first()
     }
 

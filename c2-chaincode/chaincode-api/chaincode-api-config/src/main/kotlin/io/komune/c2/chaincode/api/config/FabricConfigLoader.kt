@@ -8,7 +8,7 @@ class FabricConfigLoader(
 ) {
 
 	fun getChannelConfig(channelId: ChannelId): ChannelConfig {
-		return coopConfig.getChannelChaincodes().get(channelId)
+		return coopConfig.getChannelChaincodes()[channelId]
 			?: throw ChannelConfigNotFoundException(channelId)
 	}
 

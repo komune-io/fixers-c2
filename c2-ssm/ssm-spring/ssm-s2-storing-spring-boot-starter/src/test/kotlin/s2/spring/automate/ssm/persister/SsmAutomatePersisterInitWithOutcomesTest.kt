@@ -5,7 +5,6 @@ import f2.dsl.fnc.F2Function
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import s2.automate.core.config.S2BatchProperties
@@ -141,7 +140,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `persistInitWithOutcomes maps Committed outcomes correctly`() = runTest {
+    suspend fun `persistInitWithOutcomes maps Committed outcomes correctly`() {
         val persister = buildPersister(listOf(
             CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-123", blockNumber = 42L),
         ))
@@ -157,7 +156,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes maps Rejected outcomes correctly`() = runTest {
+    suspend fun `persistInitWithOutcomes maps Rejected outcomes correctly`() {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Rejected",
@@ -177,7 +176,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes maps Transient outcomes correctly`() = runTest {
+    suspend fun `persistInitWithOutcomes maps Transient outcomes correctly`() {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Transient",
@@ -197,7 +196,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes maps Indeterminate outcomes correctly`() = runTest {
+    suspend fun `persistInitWithOutcomes maps Indeterminate outcomes correctly`() {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Indeterminate",
@@ -217,7 +216,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes maps Conflict outcomes correctly`() = runTest {
+    suspend fun `persistInitWithOutcomes maps Conflict outcomes correctly`() {
         val persister = buildPersister(listOf(
             CommandOutcome(
                 outcome = "Conflict",
@@ -237,7 +236,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes preserves commandId per input`() = runTest {
+    suspend fun `persistInitWithOutcomes preserves commandId per input`() {
         val persister = buildPersister(listOf(
             CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-A", blockNumber = 1L),
             CommandOutcome(outcome = "Rejected",  msgId = "", errorCode = "ERR", errorMessage = "err"),
@@ -254,7 +253,35 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     }
 
     @Test
-    fun `persistInitWithOutcomes emits one outcome per input`() = runTest {
+    suspend fun `persistInitWithOutcomes stamps the start command with timestampProvider of the msg`() {
+        val capturedTimestamps = mutableListOf<Long?>()
+        val capturingStart: ssm.chaincode.f2.features.command.SsmTxSessionStartFunction =
+            F2Function { commands ->
+                val list = commands.toList()
+                list.forEach { capturedTimestamps += it.timestamp }
+                list.map {
+                    CommandOutcome(outcome = "Committed", msgId = it.msgId, transactionId = "tx", blockNumber = 1L)
+                }.asFlow()
+            }
+        val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
+            ssmSessionStartFunction = capturingStart,
+            ssmSessionPerformActionFunction = F2Function { _ -> error("perform should NOT be called") },
+            ssmGetSessionLogsQueryFunction = F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() },
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            entityType = IterableEntity::class.java,
+            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            objectMapper = ObjectMapper(),
+            batch = S2BatchProperties(),
+            timestampProvider = { msg -> if (msg is TestInitCommand) 1_623_715_200_000L else null },
+        )
+
+        persister.persistInitWithOutcomes(flowOf(makeInitTransitionContext(IterableEntity("e-ts", 1, 0)))).toList()
+
+        assertThat(capturedTimestamps).containsExactly(1_623_715_200_000L)
+    }
+
+    @Test
+    suspend fun `persistInitWithOutcomes emits one outcome per input`() {
         val scripted = listOf(
             CommandOutcome(outcome = "Committed",     msgId = "", transactionId = "tx-1", blockNumber = 1L),
             CommandOutcome(outcome = "Rejected",      msgId = "", errorCode = "E", errorMessage = "m"),

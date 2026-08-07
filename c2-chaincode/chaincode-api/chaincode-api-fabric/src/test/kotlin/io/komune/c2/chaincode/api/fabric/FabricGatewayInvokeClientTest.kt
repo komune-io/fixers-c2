@@ -7,7 +7,6 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.Proposal
@@ -65,7 +64,7 @@ class FabricGatewayInvokeClientTest {
     // ---------------------------------------------------------------------------
 
     @Test
-    fun `invoke returns list with same size as input, no exception escapes`() = runTest {
+    suspend fun `invoke returns list with same size as input, no exception escapes`() {
         val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val outcomes = client.invoke(
@@ -88,7 +87,7 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
-    fun `invoke preserves per-item commandId in outcomes`() = runTest {
+    suspend fun `invoke preserves per-item commandId in outcomes`() {
         val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val outcomes = client.invoke(
@@ -107,7 +106,7 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
-    fun `commandIds size mismatch throws IllegalArgumentException before any Fabric call`() = runTest {
+    suspend fun `commandIds size mismatch throws IllegalArgumentException before any Fabric call`() {
         val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
 
         val thrown = runCatching {
@@ -124,7 +123,7 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
-    fun `one item failure does not cancel sibling items (supervisorScope)`() = runTest {
+    suspend fun `one item failure does not cancel sibling items (supervisorScope)`() {
         val callCount = AtomicInteger(0)
         val countingContract: Contract = object : Contract {
             override fun getChaincodeName(): String = "stub"
@@ -163,7 +162,7 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
-    fun `parallelism caps the number of concurrently executing items`() = runTest {
+    suspend fun `parallelism caps the number of concurrently executing items`() {
         val inFlight = AtomicInteger(0)
         val maxInFlight = AtomicInteger(0)
         val calls = AtomicInteger(0)
@@ -208,7 +207,7 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
-    fun `query evaluates each item on the shared dispatcher and returns the payloads in order`() = runTest {
+    suspend fun `query evaluates each item on the shared dispatcher and returns the payloads in order`() {
         val evaluatingContract: Contract = object : Contract {
             override fun getChaincodeName(): String = "stub"
             override fun getContractName(): Optional<String> = Optional.empty()

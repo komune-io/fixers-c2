@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,7 +28,7 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 	lateinit var orderBookDeciderImpl: OrderBookDeciderEventImpl
 
 	@Test
-	fun `should create order book`(): Unit = runTest {
+	suspend fun `should create order book`() {
 		val event = orderBookDeciderImpl.orderBookCreateDecider()
 			.invoke(OrderBookCreateCommand("TheNewOrderBook"))
  		orderBookDeciderImpl.orderBookUpdateDecider()
@@ -45,7 +44,7 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 		assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
 	}
 	@Test
-	fun `should create flow(24-6) of order book`(): Unit = runTest {
+	suspend fun `should create flow(24-6) of order book`() {
 		(0..24).asFlow().map {
 			OrderBookCreateCommand("TheNewOrderBook$it")
 		}.let {
@@ -73,7 +72,7 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should create flow(4-6) of order book`(): Unit = runTest {
+	suspend fun `should create flow(4-6) of order book`() {
 		(0..4).asFlow().map {
 			OrderBookCreateCommand("TheNewOrderBook$it")
 		}.let {
@@ -102,7 +101,7 @@ internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 	}
 
 	@Test
-	fun `should flow event to build entity`(): Unit = runTest {
+	suspend fun `should flow event to build entity`() {
 		val all = flowOf(
 			OrderBookCreateCommand("TheNewOrderBook"),
 			OrderBookCreateCommand("TheNewOrderBook1"),

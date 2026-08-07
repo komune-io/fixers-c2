@@ -10,4 +10,5 @@ data class SsmPerformCommand(
     val context: SsmContext,
     val chaincodeUri: ChaincodeUri,
     val signerName: AgentName,
+    val timestamp: Long? = null,
 )

@@ -12,6 +12,8 @@ ENV ORDERER_GENERAL_GENESISFILE="/etc/hyperledger/config/genesis.block"
 ENV ORDERER_GENERAL_LOCALMSPID="BlockchainLANOrdererMSP"
 ENV ORDERER_GENERAL_LOCALMSPDIR="/etc/hyperledger/msp/"
 ENV ORDERER_GENERAL_TLS_ENABLED="true"
+# Path to the TLS key file, not a secret value
+# hadolint ignore=DL3064
 ENV ORDERER_GENERAL_TLS_PRIVATEKEY="/etc/hyperledger/tls/server.key"
 ENV ORDERER_GENERAL_TLS_CERTIFICATE="/etc/hyperledger/tls/server.crt"
 ENV ORDERER_GENERAL_TLS_ROOTCAS="[/etc/hyperledger/tls/ca.crt]"

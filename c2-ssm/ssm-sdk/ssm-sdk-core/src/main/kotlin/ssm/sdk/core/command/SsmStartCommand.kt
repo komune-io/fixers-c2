@@ -9,4 +9,5 @@ data class SsmStartCommand(
     val session: SsmSession,
     val chaincodeUri: ChaincodeUri,
     val signerName: AgentName,
+    val timestamp: Long? = null,
 )
