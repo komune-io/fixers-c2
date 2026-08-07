@@ -36,3 +36,7 @@ updates:
     directory: "/c2-sandbox/c2-sandbox-ssm-gateway"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "docker-compose"
+    directory: "/infra/docker-compose"
+    schedule:
+      interval: "weekly"
