@@ -27,7 +27,6 @@ build:
  		--platform=linux/amd64 \
 		--no-cache \
     	--build-arg SSM_VERSION=$$SSM_VERSION \
-    	--build-arg VERSION_FABRIC=$$VERSION_FABRIC \
     	--build-arg VERSION_CHAINCODE_API=$$VERSION \
     	--build-arg COOP_CA_DOMAIN=$$orderer_org \
     	--build-arg COOP_PEER=peer0 \

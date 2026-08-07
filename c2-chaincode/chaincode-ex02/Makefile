@@ -1,5 +1,3 @@
-include ../../.env_version
-
 EX02_CHAINCODE_DOCKERFILE 	:= Dockerfile
 EX02_CHAINCODE_NAME 		:= c2-chaincode-ex02
 EX02_CHAINCODE_IMG 			:= ${EX02_CHAINCODE_NAME}:${VERSION}
@@ -18,8 +16,6 @@ build:
  		--platform=linux/amd64 \
 		--no-cache \
 		--build-arg VERSION=${VERSION} \
-		--build-arg VERSION_FABRIC=${VERSION_FABRIC} \
-		--build-arg VERSION_ALPINE=${VERSION_ALPINE} \
 		-f ${EX02_CHAINCODE_DOCKERFILE} \
 		-t ${EX02_CHAINCODE_IMG} .
 

@@ -1,4 +1,3 @@
-include ../../.env_version
 include ../config/.env
 export
 
@@ -20,7 +19,6 @@ build:
 	@docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		 --platform=linux/amd64 \
 		 --no-cache \
-		--build-arg VERSION_FABRIC=$$VERSION_FABRIC \
 		--build-arg DOCKER_REPOSITORY=$$DOCKER_REPOSITORY \
 		--build-arg COOP_PEER=peer0 \
     	--build-arg COOP_PEER_MSP=$$peer_msp \

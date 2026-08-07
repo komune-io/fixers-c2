@@ -1,5 +1,3 @@
-include ../../.env_version
-
 SSM_CHAINCODE_DOCKERFILE 	:= Dockerfile
 SSM_CHAINCODE_NAME 			:= c2-chaincode-ssm
 SSM_CHAINCODE_IMG 			:= ${SSM_CHAINCODE_NAME}:${VERSION}
@@ -17,8 +15,6 @@ build:
 	docker buildx build --output type=docker,compression=gzip,force-compression=true \
 		--platform=linux/amd64 \
 		--no-cache \
-		--build-arg VERSION_FABRIC=${VERSION_FABRIC} \
-		--build-arg VERSION_ALPINE=${VERSION_ALPINE} \
 		--build-arg VERSION=${VERSION} \
 		-f ${SSM_CHAINCODE_DOCKERFILE} \
 		-t ${SSM_CHAINCODE_IMG} .
