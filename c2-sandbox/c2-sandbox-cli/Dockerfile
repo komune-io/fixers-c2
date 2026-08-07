@@ -7,6 +7,8 @@ FROM hyperledger/fabric-tools:${VERSION_FABRIC}
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
 
+RUN useradd -u 1000 -U -m -d /home/fabric -s /bin/bash fabric
+
 ARG DOCKER_REPOSITORY
 ARG COOP_PEER
 ARG COOP_PEER_DOMAIN
@@ -27,27 +29,33 @@ ENV CORE_PEER_TLS_CERT_FILE="/etc/hyperledger/user/tls/client.crt"
 ENV CORE_PEER_TLS_ROOTCERT_FILE="/etc/hyperledger/user/tls/ca.crt"
 ENV GOPATH="/opt/gopath"
 
-COPY ./config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/users/${CLI_USER}@${COOP_PEER_DOMAIN}/ /etc/hyperledger/user
-COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/tlsca/ /etc/hyperledger/orderer/
+COPY --chown=fabric:fabric ./config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/users/${CLI_USER}@${COOP_PEER_DOMAIN}/ /etc/hyperledger/user
+COPY --chown=fabric:fabric ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/tlsca/ /etc/hyperledger/orderer/
 # orderer-org admin MSP — required to sign channel Orderer-group config updates (set_batch_config.sh).
 # Dev-sandbox crypto only: this MSP is already committed in-repo and baked into the orderer image,
 # so this introduces no new secret exposure. Real deployments inject crypto at runtime, not via this image.
-COPY ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/users/Admin@${COOP_CA_DOMAIN}/msp /etc/hyperledger/orderer-admin/msp
-COPY ./config/fabric/config /etc/hyperledger/config
+COPY --chown=fabric:fabric ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/users/Admin@${COOP_CA_DOMAIN}/msp /etc/hyperledger/orderer-admin/msp
+COPY --chown=fabric:fabric ./config/fabric/config /etc/hyperledger/config
 
-COPY ./config/chaincode /opt/c2-sandbox/chaincode
+COPY --chown=fabric:fabric ./config/chaincode /opt/c2-sandbox/chaincode
 
-COPY ./config/user /opt/c2-sandbox/user
-COPY ./config/.env /opt/c2-sandbox
+COPY --chown=fabric:fabric ./config/user /opt/c2-sandbox/user
+COPY --chown=fabric:fabric ./config/.env /opt/c2-sandbox
 
 ENV PATH="/opt/c2-sandbox/chaincode/bin:${PATH}"
 
 ENV SSM_PATH="/opt/chaincode/ssm"
-COPY --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/ssm-*.pak ${SSM_PATH}/ssm.pak
-COPY --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/env_ssm ${SSM_PATH}/env_ssm
-COPY --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/bin ${SSM_PATH}/bin
+COPY --chown=fabric:fabric --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/ssm-*.pak ${SSM_PATH}/ssm.pak
+COPY --chown=fabric:fabric --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/env_ssm ${SSM_PATH}/env_ssm
+COPY --chown=fabric:fabric --from=c2-chaincode-ssm:__SSM_VERSION__ ${SSM_PATH}/bin ${SSM_PATH}/bin
 
 
 ENV EX02_PATH="/opt/chaincode/ex02"
-COPY --from=c2-chaincode-ex02:__EX02_VERSION__ ${EX02_PATH}/ex02-*.pak ${EX02_PATH}/ex02.pak
-COPY --from=c2-chaincode-ex02:__EX02_VERSION__ ${EX02_PATH}/env_ex02 ${EX02_PATH}/env_ex02
+COPY --chown=fabric:fabric --from=c2-chaincode-ex02:__EX02_VERSION__ ${EX02_PATH}/ex02-*.pak ${EX02_PATH}/ex02.pak
+COPY --chown=fabric:fabric --from=c2-chaincode-ex02:__EX02_VERSION__ ${EX02_PATH}/env_ex02 ${EX02_PATH}/env_ex02
+
+WORKDIR /home/fabric
+
+# DL3066 ignored: username is intentional; uid 1000 is fixed by the useradd above.
+# hadolint ignore=DL3066
+USER fabric

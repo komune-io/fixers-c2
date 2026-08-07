@@ -24,5 +24,12 @@ ENV coop_user_password="${ca__PASSWD}"
 ENV coop_config_file="file:/opt/rest-coop/config.json"
 ENV coop_config_crypto="file:/opt/rest-coop"
 
-COPY ./config/fabric/config.json /opt/rest-coop/config.json
-COPY ./config/fabric/crypto-config /opt/rest-coop/crypto-config
+COPY --chown=cnb:cnb ./config/fabric/config.json /opt/rest-coop/config.json
+COPY --chown=cnb:cnb ./config/fabric/crypto-config /opt/rest-coop/crypto-config
+
+# DL3066 ignored: `cnb` is the account this Paketo/Cloud-Native-Buildpacks base
+# image already runs as by default (uid=1002 gid=1001, verified via `docker
+# inspect`/`/etc/passwd`) - declaring it by name here only makes Trivy's static
+# DS-0002 check pass; it changes nothing about how the container actually runs.
+# hadolint ignore=DL3066
+USER cnb
