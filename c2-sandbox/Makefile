@@ -1,5 +1,4 @@
 VERSION = $(shell cat ../VERSION)
-include ../.env_version
 export
 
 .PHONY: lint build test publish stage promote

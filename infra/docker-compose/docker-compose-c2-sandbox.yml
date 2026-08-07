@@ -17,7 +17,7 @@ services:
 
   couchdb.bc-coop.bclan:
     container_name: couchdb-bclan-network-it
-    image: couchdb:3.1.2
+    image: couchdb:3.4.3
     environment:
       - COUCHDB_USER=${BCLAN_COUCH_USER}
       - COUCHDB_PASSWORD=${BCLAN_COUCH_PASS}

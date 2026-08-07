@@ -1,5 +1,3 @@
-
-include ../.env_version
 export
 
 .PHONY: lint build test publish promote
