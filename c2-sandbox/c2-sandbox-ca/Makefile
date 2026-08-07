@@ -1,4 +1,3 @@
-include ../../.env_version
 include ../config/.env
 export
 
@@ -24,7 +23,6 @@ build:
 		 --platform=linux/amd64 \
 		 --no-cache \
          --build-arg VERSION=$$VERSION \
-         --build-arg VERSION_FABRIC_CA=$$VERSION_FABRIC_CA \
          --build-arg COOP_CA_HOSTNAME=$$CA_HOSTNAME \
          --build-arg COOP_PEER_DOMAIN=$$cli_ORGA \
          --build-arg ca__CA_KEYFILE=$$ca__CA_KEYFILE \
