@@ -56,5 +56,6 @@ COPY --chown=fabric:fabric --from=c2-chaincode-ex02:__EX02_VERSION__ ${EX02_PATH
 
 WORKDIR /home/fabric
 
+# DL3066 ignored: username is intentional; uid 1000 is fixed by the useradd above.
 # hadolint ignore=DL3066
 USER fabric

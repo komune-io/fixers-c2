@@ -26,6 +26,8 @@ COPY --chown=fabric:fabric ./config/fabric/config /etc/hyperledger/config
 COPY --chown=fabric:fabric ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/orderers/${COOP_ORDERER_HOSTNAME}.${COOP_CA_DOMAIN}/msp /etc/hyperledger/msp
 COPY --chown=fabric:fabric ./config/fabric/crypto-config/ordererOrganizations/${COOP_CA_DOMAIN}/orderers/${COOP_ORDERER_HOSTNAME}.${COOP_CA_DOMAIN}/tls /etc/hyperledger/tls
 
+# DL3066 ignored: username is intentional; uid 1000 is fixed by the useradd above.
+# hadolint ignore=DL3066
 USER fabric
 
 CMD ["orderer"]

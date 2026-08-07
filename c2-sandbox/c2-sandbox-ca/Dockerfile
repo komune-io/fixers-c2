@@ -35,6 +35,8 @@ RUN mkdir -p "$FABRIC_CA_HOME" && chown -R fabric:fabric "$FABRIC_CA_HOME"
 COPY --chown=fabric:fabric ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/ca /etc/hyperledger/ca
 COPY --chown=fabric:fabric ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/tlsca /etc/hyperledger/tlsca
 
+# DL3066 ignored: username is intentional; uid 1000 is fixed by the useradd above.
+# hadolint ignore=DL3066
 USER fabric
 
 CMD ["sh", "-c", "fabric-ca-server start -b \"$CA_ADMIN:$CA_PASSWD\""]

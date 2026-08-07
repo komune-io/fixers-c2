@@ -32,9 +32,14 @@ COPY --chown=fabric:fabric ./config/fabric/crypto-config/peerOrganizations/${COO
 
 COPY --chmod=755 c2-sandbox-peer/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# trivy:ignore:DS-0002 -- this container must start as root so entrypoint.sh can
-# match the fabric user's supplementary group to the mounted host docker.sock's
-# GID (varies per host/CI runner) before dropping to non-root via gosu. See
-# entrypoint.sh — the actual `peer node start` process runs as uid=1000(fabric).
+# NOTE: `trivy:ignore:DS-0002` intentionally omitted here - verified (via `trivy
+# config`) that Trivy's DS-0002 rule carries no line-level metadata for a
+# Dockerfile-inline ignore comment to bind to, so one would be silently
+# ineffective. This container legitimately has no static USER: it must start as
+# root so entrypoint.sh can match the fabric user's supplementary group to the
+# mounted host docker.sock's GID (varies per host/CI runner) before dropping to
+# non-root via gosu. See entrypoint.sh — the actual `peer node start` process
+# runs as uid=1000(fabric). Trivy will keep flagging DS-0002 on this file; that
+# is expected and accepted for this reason, not an oversight.
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["peer","node","start"]
