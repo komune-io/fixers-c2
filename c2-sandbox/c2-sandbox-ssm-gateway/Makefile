@@ -1,4 +1,3 @@
-include ../../.env_version
 include ../config/.env
 export
 
