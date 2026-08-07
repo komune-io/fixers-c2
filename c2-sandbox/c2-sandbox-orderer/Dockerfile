@@ -1,4 +1,4 @@
-ARG VERSION_FABRIC=2.5.7
+ARG VERSION_FABRIC=2.5.16
 
 FROM hyperledger/fabric-orderer:${VERSION_FABRIC}
 
