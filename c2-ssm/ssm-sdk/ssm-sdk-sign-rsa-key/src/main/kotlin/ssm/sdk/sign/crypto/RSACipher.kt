@@ -38,7 +38,8 @@ object RSACipher {
 	const val VERSION_PREFIX = "v2:"
 
 	private const val RSA_OAEP = "RSA/ECB/OAEPPadding"
-	private const val RSA_LEGACY_PKCS1 = "RSA/ECB/PKCS1Padding"
+	/** Legacy transformation. Read-only: see [decryptLegacy]. Must never be used to encrypt. */
+	private const val RSA_LEGACY_PKCS1_DECRYPT_ONLY = "RSA/ECB/PKCS1Padding"
 	private const val AES = "AES"
 	private const val AES_GCM = "AES/GCM/NoPadding"
 	private const val AES_KEY_SIZE_BITS = 256
@@ -83,21 +84,40 @@ object RSACipher {
 
 	private fun decryptEnvelope(base64Envelope: String, privateKey: PrivateKey?): ByteArray {
 		val buffer = ByteBuffer.wrap(Base64.getDecoder().decode(base64Envelope))
-		val wrappedKey = ByteArray(buffer.short.toInt())
-		buffer.get(wrappedKey)
-		val iv = ByteArray(GCM_IV_SIZE)
-		buffer.get(iv)
-		val cipherText = ByteArray(buffer.remaining())
-		buffer.get(cipherText)
+		val wrappedKey = buffer.readBytes(buffer.short.toInt())
+		val iv = buffer.readBytes(GCM_IV_SIZE)
+		val cipherText = buffer.readBytes(buffer.remaining())
 		return aesGcm(Cipher.DECRYPT_MODE, unwrapKey(wrappedKey, privateKey), iv).doFinal(cipherText)
 	}
 
-	/** Reads ciphertexts produced by the previous raw RSA/PKCS#1 v1.5 scheme. Never used to encrypt. */
+	/** Bulk-reads [size] bytes starting at the buffer's current position. */
+	private fun ByteBuffer.readBytes(size: Int): ByteArray = ByteArray(size).also { this[it] }
+
+	/**
+	 * Reads ciphertexts produced by the previous raw RSA/PKCS#1 v1.5 scheme.
+	 *
+	 * PKCS#1 v1.5 is not an acceptable padding for *encryption* (it is vulnerable to Bleichenbacher
+	 * padding-oracle attacks), which is why [encrypt] uses RSA-OAEP + AES-GCM exclusively. This path
+	 * exists only to keep reading ciphertexts that were written before that change: they live on the
+	 * ledger, are immutable, and can never be re-encrypted. The cipher below is created and
+	 * initialised in a single expression that hardcodes [Cipher.DECRYPT_MODE], and the transformation
+	 * constant is referenced nowhere else, so this padding cannot be reached from an encryption path.
+	 *
+	 * `kotlin:S5542` ("Use a secure padding scheme") is suppressed here for that reason: legacy read
+	 * path only, never used for new encryption.
+	 */
+	@Suppress("kotlin:S5542")
 	private fun decryptLegacy(value: String?, privateKey: PrivateKey?): ByteArray {
-		val cipher = Cipher.getInstance(RSA_LEGACY_PKCS1)
-		cipher.init(Cipher.DECRYPT_MODE, privateKey)
+		val cipher = legacyPkcs1DecryptCipher(privateKey)
 		return cipher.doFinal(Base64.getDecoder().decode(value))
 	}
+
+	/** Only ever returns a [Cipher.DECRYPT_MODE] cipher: there is no legacy encryption counterpart. */
+	@Suppress("kotlin:S5542")
+	private fun legacyPkcs1DecryptCipher(privateKey: PrivateKey?): Cipher =
+		Cipher.getInstance(RSA_LEGACY_PKCS1_DECRYPT_ONLY).apply {
+			init(Cipher.DECRYPT_MODE, privateKey)
+		}
 
 	private fun generateSecretKey(): SecretKey = KeyGenerator.getInstance(AES)
 		.apply { init(AES_KEY_SIZE_BITS, SecureRandom()) }
