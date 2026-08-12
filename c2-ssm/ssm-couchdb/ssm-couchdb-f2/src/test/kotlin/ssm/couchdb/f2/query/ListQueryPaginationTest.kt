@@ -6,7 +6,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.model.Ssm
@@ -39,7 +38,7 @@ internal class ListQueryPaginationTest {
 	)
 
 	@Test
-	fun `ssm list pushes limit and skip down and reports the unpaged total`() = runTest {
+	suspend fun `ssm list pushes limit and skip down and reports the unpaged total`() {
 		val page = listOf(ssm("ssm-3"), ssm("ssm-4"))
 		every { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
 		every { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
@@ -57,7 +56,7 @@ internal class ListQueryPaginationTest {
 	}
 
 	@Test
-	fun `ssm list without pagination fetches everything and counts the items it returned`() = runTest {
+	suspend fun `ssm list without pagination fetches everything and counts the items it returned`() {
 		val all = listOf(ssm("ssm-1"), ssm("ssm-2"))
 		every { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
 
@@ -74,7 +73,7 @@ internal class ListQueryPaginationTest {
 	}
 
 	@Test
-	fun `session state list pushes the page down and keeps the ssm filter on the count`() = runTest {
+	suspend fun `session state list pushes the page down and keeps the ssm filter on the count`() {
 		val filters = mapOf("ssm" to "CarDealership")
 		val page = listOf(
 			SsmSessionState(
