@@ -1,6 +1,5 @@
 package ssm.couchdb.client
 
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -16,19 +15,19 @@ class CouchDbSsmServiceTest {
 	}
 
 	@Test
-	fun shouldReturnAdmin() = runTest {
+	suspend fun shouldReturnAdmin() {
 		val admin = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Admin)
 		Assertions.assertThat(admin).isNotNull
 	}
 
 	@Test
-	fun shouldReturnSsmCount() = runTest {
+	suspend fun shouldReturnSsmCount() {
 		val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
 		Assertions.assertThat(ssms).isNotNull
 	}
 
 	@Test
-	fun shouldReturnSsm() = runTest {
+	suspend fun shouldReturnSsm() {
 		val ssmCount = DataTest.ssmCouchDbClient.getCount(DataTest.dbSsmName, DocType.Ssm)
 		val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
 		Assertions.assertThat(ssms.size).isEqualTo(ssmCount)

@@ -64,7 +64,7 @@ internal class CouchdbSsmClientTest {
 	private fun document(): Document = mockk(relaxed = true)
 
 	@Test
-	fun `fetchAllByDocType queries by docType and converts every document`() = runTest {
+	suspend fun `fetchAllByDocType queries by docType and converts every document`() {
 		val agents = listOf(mockk<Agent>(), mockk<Agent>())
 		val options = stubFind(document(), document())
 		every { converter.toObject(Agent::class.java, any()) } returnsMany agents
@@ -78,7 +78,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `fetchAllByDocType merges the extra filters into the selector`() = runTest {
+	suspend fun `fetchAllByDocType merges the extra filters into the selector`() {
 		val options = stubFind()
 
 		client.fetchAllByDocType(DB_NAME, DocType.Ssm, mapOf("name" to "ssm-1"))
@@ -89,7 +89,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `fetchAllByDocType drops documents the converter cannot read`() = runTest {
+	suspend fun `fetchAllByDocType drops documents the converter cannot read`() {
 		val agent = mockk<Agent>()
 		stubFind(document(), document())
 		every { converter.toObject(Agent::class.java, any()) } returnsMany listOf(agent, null)
@@ -98,7 +98,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `fetchAll returns the raw documents with an empty selector`() = runTest {
+	suspend fun `fetchAll returns the raw documents with an empty selector`() {
 		val docs = arrayOf(document(), document())
 		val options = stubFind(*docs)
 
@@ -107,7 +107,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `fetchOneByDocTypeAndName selects on docType and name and converts the first hit`() = runTest {
+	suspend fun `fetchOneByDocTypeAndName selects on docType and name and converts the first hit`() {
 		val agent = mockk<Agent>()
 		val options = stubFind(document(), document())
 		every { converter.toObject(Agent::class.java, any()) } returns agent
@@ -118,21 +118,21 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `fetchOneByDocTypeAndName returns null when nothing matches`() = runTest {
+	suspend fun `fetchOneByDocTypeAndName returns null when nothing matches`() {
 		stubFind()
 
 		Assertions.assertThat(client.fetchOneByDocTypeAndName(DB_NAME, DocType.User, "nobody")).isNull()
 	}
 
 	@Test
-	fun `getDatabases returns every database name`() = runTest {
+	suspend fun `getDatabases returns every database name`() {
 		every { cloudant.allDbs } returns serviceCall(listOf("db-a", "db-b"))
 
 		Assertions.assertThat(client.getDatabases()).containsExactly("db-a", "db-b")
 	}
 
 	@Test
-	fun `getDatabase queries the information of the requested database`() = runTest {
+	suspend fun `getDatabase queries the information of the requested database`() {
 		val info = mockk<DatabaseInformation>()
 		val options = slot<GetDatabaseInformationOptions>()
 		every { cloudant.getDatabaseInformation(capture(options)) } returns serviceCall(info)
@@ -142,7 +142,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `getCount reads the counting view and returns the row value`() = runTest {
+	suspend fun `getCount reads the counting view and returns the row value`() {
 		val options = stubView(rowValue = 12)
 
 		Assertions.assertThat(client.getCount(DB_NAME, DocType.State)).isEqualTo(12)
@@ -152,7 +152,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `getCount returns zero when the view has no row`() = runTest {
+	suspend fun `getCount returns zero when the view has no row`() {
 		stubView(rowValue = null)
 
 		Assertions.assertThat(client.getCount(DB_NAME, DocType.Ssm)).isZero()
@@ -169,7 +169,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `installSsmChangesFilter does nothing when the design document already exists`() = runTest {
+	suspend fun `installSsmChangesFilter does nothing when the design document already exists`() {
 		every { cloudant.getDesignDocument(any()) } returns serviceCall(mockk<DesignDocument>())
 
 		Assertions.assertThat(client.installSsmChangesFilter(DB_NAME)).isFalse()
@@ -177,7 +177,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `installSsmChangesFilter creates the filter when the design document is missing`() = runTest {
+	suspend fun `installSsmChangesFilter creates the filter when the design document is missing`() {
 		val put = stubMissingDesignDocument()
 
 		Assertions.assertThat(client.installSsmChangesFilter(DB_NAME)).isTrue()
@@ -203,7 +203,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `getSsmChanges installs the filter and forwards ssm, session and paging`() = runTest {
+	suspend fun `getSsmChanges installs the filter and forwards ssm, session and paging`() {
 		stubMissingDesignDocument()
 		val changes = mockk<ChangesResult>()
 		val options = slot<PostChangesOptions>()
@@ -224,7 +224,7 @@ internal class CouchdbSsmClientTest {
 	}
 
 	@Test
-	fun `getSsmChanges leaves the limit unset when none is given`() = runTest {
+	suspend fun `getSsmChanges leaves the limit unset when none is given`() {
 		every { cloudant.getDesignDocument(any()) } returns serviceCall(mockk<DesignDocument>())
 		val options = slot<PostChangesOptions>()
 		every { cloudant.postChanges(capture(options), any(), any()) } returns serviceCall(mockk<ChangesResult>())
