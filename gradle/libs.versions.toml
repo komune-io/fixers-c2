@@ -4,7 +4,7 @@ fabric = "2.2.26"
 fabricGateway = "1.12.0"
 grpc = "1.83.1"
 protobuf = "4.35.1"
-bouncycastle = "1.70"
+bouncycastle = "1.85.2"
 cloudant = "0.10.20"
 mockk = "1.14.11"
 
@@ -89,7 +89,7 @@ grpc-stub = { group = "io.grpc", name = "grpc-stub" }
 grpc-netty-shaded = { group = "io.grpc", name = "grpc-netty-shaded" }
 protobuf-bom = { group = "com.google.protobuf", name = "protobuf-bom", version.ref = "protobuf" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java" }
-bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bouncycastle" }
+bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 cloudant = { group = "com.ibm.cloud", name = "cloudant", version.ref = "cloudant" }
 
 [bundles]
