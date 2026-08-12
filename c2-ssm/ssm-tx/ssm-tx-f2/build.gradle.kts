@@ -9,4 +9,5 @@ dependencies {
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
 	api(project(":c2-ssm:ssm-sdk:ssm-sdk-core"))
 
+	testImplementation(libs.bundles.test)
 }
