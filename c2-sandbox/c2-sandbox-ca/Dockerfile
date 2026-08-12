@@ -2,6 +2,8 @@ ARG VERSION_FABRIC_CA=1.5.17
 
 FROM hyperledger/fabric-ca:${VERSION_FABRIC_CA}
 
+RUN useradd -u 1000 -U -M -s /usr/sbin/nologin fabric
+
 ARG COOP_CA_HOSTNAME
 ARG COOP_PEER_DOMAIN
 ARG ca__CA_KEYFILE
@@ -28,7 +30,13 @@ ENV FABRIC_CA_SERVER_TLS_ENABLED="true"
 ENV FABRIC_CA_SERVER_TLS_CERTFILE="/etc/hyperledger/tlsca/tlsca.${COOP_PEER_DOMAIN}-cert.pem"
 ENV FABRIC_CA_SERVER_TLS_KEYFILE="/etc/hyperledger/tlsca/${ca__TLS_KEYFILE}"
 
-COPY ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/ca /etc/hyperledger/ca
-COPY ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/tlsca /etc/hyperledger/tlsca
+RUN mkdir -p "$FABRIC_CA_HOME" && chown -R fabric:fabric "$FABRIC_CA_HOME"
+
+COPY --chown=fabric:fabric ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/ca /etc/hyperledger/ca
+COPY --chown=fabric:fabric ../config/fabric/crypto-config/peerOrganizations/${COOP_PEER_DOMAIN}/tlsca /etc/hyperledger/tlsca
+
+# DL3066 ignored: username is intentional; uid 1000 is fixed by the useradd above.
+# hadolint ignore=DL3066
+USER fabric
 
 CMD ["sh", "-c", "fabric-ca-server start -b \"$CA_ADMIN:$CA_PASSWD\""]
