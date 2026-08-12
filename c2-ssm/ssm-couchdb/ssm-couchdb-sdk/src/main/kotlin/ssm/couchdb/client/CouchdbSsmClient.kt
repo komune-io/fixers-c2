@@ -15,6 +15,7 @@ import com.ibm.cloud.sdk.core.http.Response
 import com.ibm.cloud.sdk.core.service.exception.NotFoundException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ssm.chaincode.dsl.model.SessionName
@@ -27,9 +28,15 @@ import ssm.couchdb.dsl.model.DocType
 import ssm.sdk.json.JSONConverter
 
 
+/**
+ * The Cloudant SDK is blocking, so every call is dispatched off the calling thread.
+ * [dispatcher] defaults to [Dispatchers.IO] and is injectable so tests can supply a
+ * deterministic dispatcher.
+ */
 class CouchdbSsmClient(
 	val cloudant: CloudantFixed,
 	private val converter: JSONConverter,
+	private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
 	companion object {
@@ -60,7 +67,7 @@ class CouchdbSsmClient(
 		dbName: String,
 		docType: DocType<T>,
 		filters: Map<String, String> = emptyMap(),
-	): List<T> = withContext(Dispatchers.IO) {
+	): List<T> = withContext(dispatcher) {
 		val selector = mapOf(
 			"docType" to mapOf("\$eq" to docType.name)
 		).plus(filters)
@@ -80,7 +87,7 @@ class CouchdbSsmClient(
 
 	suspend fun fetchAll(
 		dbName: String,
-	): List<Document> = withContext(Dispatchers.IO) {
+	): List<Document> = withContext(dispatcher) {
 		val findOptions = PostFindOptions.Builder()
 			.db(dbName)
 			.selector(emptyMap())
@@ -96,7 +103,7 @@ class CouchdbSsmClient(
 		dbName: String,
 		docType: DocType<T>,
 		name: String,
-	): T? = withContext(Dispatchers.IO) {
+	): T? = withContext(dispatcher) {
 		val selector = mapOf(
 			"docType" to mapOf("\$eq" to docType.name),
 			"name" to name
@@ -115,11 +122,11 @@ class CouchdbSsmClient(
 		}
 	}
 
-	suspend fun getDatabases(): List<String> = withContext(Dispatchers.IO) {
+	suspend fun getDatabases(): List<String> = withContext(dispatcher) {
 		cloudant.allDbs.execute().result
 	}
 
-	suspend fun getDatabase(dbName: String): DatabaseInformation = withContext(Dispatchers.IO) {
+	suspend fun getDatabase(dbName: String): DatabaseInformation = withContext(dispatcher) {
 		val query = GetDatabaseInformationOptions.Builder().db(dbName).build()
 		cloudant.getDatabaseInformation(query).execute().result
 	}
@@ -142,13 +149,13 @@ class CouchdbSsmClient(
 			query.limit(limit)
 		}
 
-		return withContext(Dispatchers.IO) {
+		return withContext(dispatcher) {
 			cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
 		}
 	}
 
 	@Suppress("SwallowedException")
-	suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(Dispatchers.IO) {
+	suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(dispatcher) {
 		suspendCoroutine { continuation ->
 			try {
 				cloudant.getDesignDocument(
@@ -177,7 +184,7 @@ class CouchdbSsmClient(
 		}
 	}
 
-	suspend fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int = withContext(Dispatchers.IO) {
+	suspend fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int = withContext(dispatcher) {
 		val query = PostViewOptions.Builder()
 			.db(dbName)
 			.ddoc(FABRIC_COUNTING_DOC)
