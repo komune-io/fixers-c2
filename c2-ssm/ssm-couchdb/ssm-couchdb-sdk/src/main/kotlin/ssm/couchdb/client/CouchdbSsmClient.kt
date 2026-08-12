@@ -15,6 +15,8 @@ import com.ibm.cloud.sdk.core.http.Response
 import com.ibm.cloud.sdk.core.service.exception.NotFoundException
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmName
 import ssm.couchdb.client.builder.CloudantFixed
@@ -54,11 +56,11 @@ class CouchdbSsmClient(
 		}
 	}
 
-	fun <T : Any> fetchAllByDocType(
+	suspend fun <T : Any> fetchAllByDocType(
 		dbName: String,
 		docType: DocType<T>,
 		filters: Map<String, String> = emptyMap(),
-	): List<T> {
+	): List<T> = withContext(Dispatchers.IO) {
 		val selector = mapOf(
 			"docType" to mapOf("\$eq" to docType.name)
 		).plus(filters)
@@ -71,14 +73,14 @@ class CouchdbSsmClient(
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		return result.result.docs.mapNotNull { document ->
+		result.result.docs.mapNotNull { document ->
 			converter.toObject(docType.clazz.java, document.toString())
 		}
 	}
 
-	fun fetchAll(
+	suspend fun fetchAll(
 		dbName: String,
-	): List<Document> {
+	): List<Document> = withContext(Dispatchers.IO) {
 		val findOptions = PostFindOptions.Builder()
 			.db(dbName)
 			.selector(emptyMap())
@@ -87,14 +89,14 @@ class CouchdbSsmClient(
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		return result.result.docs
+		result.result.docs
 	}
 
-	fun <T : Any> fetchOneByDocTypeAndName(
+	suspend fun <T : Any> fetchOneByDocTypeAndName(
 		dbName: String,
 		docType: DocType<T>,
 		name: String,
-	): T? {
+	): T? = withContext(Dispatchers.IO) {
 		val selector = mapOf(
 			"docType" to mapOf("\$eq" to docType.name),
 			"name" to name
@@ -108,18 +110,18 @@ class CouchdbSsmClient(
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		return result.result.docs.firstOrNull()?.let { document ->
+		result.result.docs.firstOrNull()?.let { document ->
 			converter.toObject(docType.clazz.java, document.toString())
 		}
 	}
 
-	fun getDatabases(): List<String> {
-		return cloudant.allDbs.execute().result
+	suspend fun getDatabases(): List<String> = withContext(Dispatchers.IO) {
+		cloudant.allDbs.execute().result
 	}
 
-	fun getDatabase(dbName: String): DatabaseInformation {
+	suspend fun getDatabase(dbName: String): DatabaseInformation = withContext(Dispatchers.IO) {
 		val query = GetDatabaseInformationOptions.Builder().db(dbName).build()
-		return cloudant.getDatabaseInformation(query).execute().result
+		cloudant.getDatabaseInformation(query).execute().result
 	}
 
 	suspend fun getSsmChanges(
@@ -140,38 +142,42 @@ class CouchdbSsmClient(
 			query.limit(limit)
 		}
 
-		return cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
-	}
-
-	@Suppress("SwallowedException")
-	suspend fun installSsmChangesFilter(dbName: DatabaseName) = suspendCoroutine<Boolean> { continuation ->
-		try {
-			cloudant.getDesignDocument(
-				GetDesignDocumentOptions.Builder()
-					.db(dbName)
-					.ddoc("filters")
-					.build()
-			).execute().result
-			continuation.resume(false)
-		} catch (e: NotFoundException) {
-			val stateSsmNameFilter = PutDesignDocumentOptions.Builder()
-				.db(dbName)
-				.ddoc("filters")
-				.designDocument(
-					DesignDocument.Builder().filters(
-						mapOf(
-							SSM_CHANGES_FILTER to SSM_CHANGES_FILTER_FNC
-						)
-					).build()
-				).build()
-
-			cloudant.putDesignDocument(stateSsmNameFilter).reactiveRequest().doAfterSuccess {
-				continuation.resume(true)
-			}.subscribe()
+		return withContext(Dispatchers.IO) {
+			cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
 		}
 	}
 
-	fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int {
+	@Suppress("SwallowedException")
+	suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(Dispatchers.IO) {
+		suspendCoroutine { continuation ->
+			try {
+				cloudant.getDesignDocument(
+					GetDesignDocumentOptions.Builder()
+						.db(dbName)
+						.ddoc("filters")
+						.build()
+				).execute().result
+				continuation.resume(false)
+			} catch (e: NotFoundException) {
+				val stateSsmNameFilter = PutDesignDocumentOptions.Builder()
+					.db(dbName)
+					.ddoc("filters")
+					.designDocument(
+						DesignDocument.Builder().filters(
+							mapOf(
+								SSM_CHANGES_FILTER to SSM_CHANGES_FILTER_FNC
+							)
+						).build()
+					).build()
+
+				cloudant.putDesignDocument(stateSsmNameFilter).reactiveRequest().doAfterSuccess {
+					continuation.resume(true)
+				}.subscribe()
+			}
+		}
+	}
+
+	suspend fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int = withContext(Dispatchers.IO) {
 		val query = PostViewOptions.Builder()
 			.db(dbName)
 			.ddoc(FABRIC_COUNTING_DOC)
@@ -179,6 +185,6 @@ class CouchdbSsmClient(
 			.groupLevel(1)
 			.key(arrayOf(docType.name))
 			.build()
-		return (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
+		(cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
 	}
 }

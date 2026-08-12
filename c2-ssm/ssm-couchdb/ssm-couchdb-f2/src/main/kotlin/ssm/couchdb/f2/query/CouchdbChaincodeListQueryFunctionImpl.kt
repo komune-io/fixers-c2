@@ -24,8 +24,7 @@ class CouchdbChaincodeListQueryFunctionImpl(
 	override suspend fun invoke(
 		msgs: Flow<CouchdbChaincodeListQueryDTO>
 	): Flow<CouchdbChaincodeListQueryResultDTO> = msgs.map { _ ->
-		couchdbClient.cloudant.allDbs.execute()
-			.result
+		couchdbClient.getDatabases()
 			.asFlow()
 			.filter { it.contains(DB_LSCC) }
 			.flatMapMerge { dbName ->

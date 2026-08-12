@@ -22,8 +22,7 @@ class CouchdbDatabaseListQueryFunctionImpl(
 		val total = 0
 		val filter = listOfNotNull(payload.channelId, "_", payload.chaincodeId).joinToString()
 
-		couchdbClient.cloudant.allDbs.execute()
-			.result
+		couchdbClient.getDatabases()
 			.asFlow()
 			.filter { it.contains(filter) }
 			.toDatabases()
