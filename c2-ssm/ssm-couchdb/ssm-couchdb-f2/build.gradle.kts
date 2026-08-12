@@ -10,4 +10,6 @@ dependencies {
 	implementation(libs.slf4j.api)
 
 	testImplementation(project(":c2-ssm:ssm-couchdb:ssm-couchdb-bdd"))
+	testImplementation(libs.bundles.test)
+	testImplementation(libs.mockk)
 }

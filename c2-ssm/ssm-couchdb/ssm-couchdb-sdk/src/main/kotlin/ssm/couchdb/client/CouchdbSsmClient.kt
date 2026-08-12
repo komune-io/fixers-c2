@@ -49,25 +49,52 @@ class CouchdbSsmClient(
 			  }
 			}"""
 
+		const val ID_FIELD = "_id"
+
 		fun builder(): SsmCouchDbClientBuilder {
 			return SsmCouchDbClientBuilder()
 		}
+
+		internal fun <T : Any> docTypeSelector(
+			docType: DocType<T>,
+			filters: Map<String, String>,
+		): Map<String, Any> = mapOf("docType" to mapOf("\$eq" to docType.name)).plus(filters)
+
+		/**
+		 * Builds the `_find` options. When [limit] is null every matching document is requested
+		 * (`Long.MAX_VALUE`), which is the historical behaviour; a non-null [limit]/[skip] is pushed
+		 * down so CouchDB applies the page itself instead of the caller slicing in memory.
+		 */
+		internal fun buildFindOptions(
+			dbName: String,
+			selector: Map<String, Any>,
+			limit: Long? = null,
+			skip: Long? = null,
+			fields: List<String>? = null,
+		): PostFindOptions = PostFindOptions.Builder()
+			.db(dbName)
+			.selector(selector)
+			.limit(limit ?: Long.MAX_VALUE)
+			.apply {
+				skip?.let { skip(it) }
+				fields?.let { fields(it) }
+			}
+			.build()
 	}
 
+	/**
+	 * @param limit maximum number of documents to return. `null` keeps the previous behaviour of
+	 * fetching every matching document; pass a value to have CouchDB apply the page server-side.
+	 * @param skip number of documents to skip before the page starts.
+	 */
 	fun <T : Any> fetchAllByDocType(
 		dbName: String,
 		docType: DocType<T>,
 		filters: Map<String, String> = emptyMap(),
+		limit: Long? = null,
+		skip: Long? = null,
 	): List<T> {
-		val selector = mapOf(
-			"docType" to mapOf("\$eq" to docType.name)
-		).plus(filters)
-
-		val findOptions = PostFindOptions.Builder()
-			.db(dbName)
-			.selector(selector)
-			.limit(Long.MAX_VALUE)
-			.build()
+		val findOptions = buildFindOptions(dbName, docTypeSelector(docType, filters), limit, skip)
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
@@ -76,14 +103,30 @@ class CouchdbSsmClient(
 		}
 	}
 
+	/**
+	 * Total number of documents matching [docType] and [filters], independently of any page.
+	 * Only `_id` is fetched, so this stays much cheaper than materialising the documents.
+	 */
+	fun <T : Any> countByDocType(
+		dbName: String,
+		docType: DocType<T>,
+		filters: Map<String, String> = emptyMap(),
+	): Int {
+		val findOptions = buildFindOptions(
+			dbName = dbName,
+			selector = docTypeSelector(docType, filters),
+			fields = listOf(ID_FIELD),
+		)
+
+		return cloudant.postFind(findOptions).execute().result.docs.size
+	}
+
 	fun fetchAll(
 		dbName: String,
+		limit: Long? = null,
+		skip: Long? = null,
 	): List<Document> {
-		val findOptions = PostFindOptions.Builder()
-			.db(dbName)
-			.selector(emptyMap())
-			.limit(Long.MAX_VALUE)
-			.build()
+		val findOptions = buildFindOptions(dbName, emptyMap(), limit, skip)
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
@@ -100,11 +143,7 @@ class CouchdbSsmClient(
 			"name" to name
 		)
 
-		val findOptions = PostFindOptions.Builder()
-			.db(dbName)
-			.selector(selector)
-			.limit(Long.MAX_VALUE)
-			.build()
+		val findOptions = buildFindOptions(dbName, selector, limit = 1)
 
 		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
