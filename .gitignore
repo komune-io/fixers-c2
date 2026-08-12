@@ -5,6 +5,9 @@
 .gradle
 **/build/
 !gradle/wrapper/gradle-wrapper.jar
+# Written by `make -f infra/make/libs.mk verify-metadata-dry`; `verify-metadata` moves them into place.
+gradle/verification-metadata.dryrun.xml
+gradle/verification-keyring.dryrun.*
 
 ### STS ###
 .apt_generated
