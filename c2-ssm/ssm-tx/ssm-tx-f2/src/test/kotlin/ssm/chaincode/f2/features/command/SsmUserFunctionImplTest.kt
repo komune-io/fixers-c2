@@ -2,7 +2,6 @@ package ssm.chaincode.f2.features.command
 
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.f2.SsmTxTestFixtures
@@ -27,7 +26,7 @@ internal class SsmUserFunctionImplTest {
 	)
 
 	@Test
-	fun `register sends a signed register invoke and maps the transactionId`() = runTest {
+	suspend fun `register sends a signed register invoke and maps the transactionId`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmUserRegisterFunctionImpl(SsmTxTestFixtures.txService(repository))
 
@@ -43,7 +42,7 @@ internal class SsmUserFunctionImplTest {
 	}
 
 	@Test
-	fun `grant sends a signed register invoke and maps the transactionId`() = runTest {
+	suspend fun `grant sends a signed register invoke and maps the transactionId`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmUserGrantFunctionImpl(SsmTxTestFixtures.txService(repository))
 
@@ -56,7 +55,7 @@ internal class SsmUserFunctionImplTest {
 	}
 
 	@Test
-	fun `register batches several agents into a single invoke call`() = runTest {
+	suspend fun `register batches several agents into a single invoke call`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmUserRegisterFunctionImpl(SsmTxTestFixtures.txService(repository))
 		val names = listOf("bob", "alice")
@@ -70,7 +69,7 @@ internal class SsmUserFunctionImplTest {
 	}
 
 	@Test
-	fun `register maps a missing transactionId to an empty string`() = runTest {
+	suspend fun `register maps a missing transactionId to an empty string`() {
 		val repository = StubSsmChaincodeRepository(onInvoke = { _, msgIds ->
 			msgIds.map { CommandOutcome(outcome = "Indeterminate", msgId = it) }
 		})
@@ -80,7 +79,7 @@ internal class SsmUserFunctionImplTest {
 	}
 
 	@Test
-	fun `grant maps a missing transactionId to an empty string`() = runTest {
+	suspend fun `grant maps a missing transactionId to an empty string`() {
 		val repository = StubSsmChaincodeRepository(onInvoke = { _, msgIds ->
 			msgIds.map { CommandOutcome(outcome = "Indeterminate", msgId = it) }
 		})

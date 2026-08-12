@@ -2,7 +2,6 @@ package ssm.chaincode.f2.features.command
 
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.model.SsmContext
@@ -41,7 +40,7 @@ internal class SsmTxSessionFunctionsTest {
 	)
 
 	@Test
-	fun `start sends a signed start invoke keyed by the command msgId`() = runTest {
+	suspend fun `start sends a signed start invoke keyed by the command msgId`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmTxSessionStartFunctionImpl(SsmTxTestFixtures.txService(repository))
 
@@ -53,7 +52,7 @@ internal class SsmTxSessionFunctionsTest {
 	}
 
 	@Test
-	fun `perform sends the action as the first invoke argument`() = runTest {
+	suspend fun `perform sends the action as the first invoke argument`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmTxSessionPerformActionFunctionImpl(SsmTxTestFixtures.txService(repository))
 
@@ -69,7 +68,7 @@ internal class SsmTxSessionFunctionsTest {
 	}
 
 	@Test
-	fun `business timestamp is carried as transport metadata, never as an on-chain argument`() = runTest {
+	suspend fun `business timestamp is carried as transport metadata, never as an on-chain argument`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmTxSessionStartFunctionImpl(SsmTxTestFixtures.txService(repository))
 
@@ -82,7 +81,7 @@ internal class SsmTxSessionFunctionsTest {
 	}
 
 	@Test
-	fun `outcomes are returned verbatim, including failures`() = runTest {
+	suspend fun `outcomes are returned verbatim, including failures`() {
 		val repository = StubSsmChaincodeRepository(onInvoke = { _, msgIds ->
 			msgIds.map { CommandOutcome(outcome = "Conflict", msgId = it, errorCode = "MVCC_READ_CONFLICT") }
 		})
@@ -95,7 +94,7 @@ internal class SsmTxSessionFunctionsTest {
 	}
 
 	@Test
-	fun `a command signed by an unknown agent is rejected without aborting the batch`() = runTest {
+	suspend fun `a command signed by an unknown agent is rejected without aborting the batch`() {
 		val repository = StubSsmChaincodeRepository()
 		val function = SsmTxSessionStartFunctionImpl(SsmTxTestFixtures.txService(repository))
 		val unsignable = startCommand("unsignable").copy(signerName = "not-a-known-signer")

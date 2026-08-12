@@ -2,7 +2,6 @@ package ssm.chaincode.f2.features.command
 
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.f2.SsmTxTestFixtures
@@ -39,7 +38,7 @@ internal class SsmTxInitFunctionImplTest {
 		key("ssm", ssm.name) to List(times) { SsmTxTestFixtures.json(ssm) }
 
 	@Test
-	fun `registers the agent and creates the ssm when neither exists`() = runTest {
+	suspend fun `registers the agent and creates the ssm when neither exists`() {
 		val repository = StubSsmChaincodeRepository()
 
 		val results = function(repository).invoke(flowOf(command)).toList()
@@ -50,7 +49,7 @@ internal class SsmTxInitFunctionImplTest {
 	}
 
 	@Test
-	fun `invokes nothing when both the agent and the ssm already exist`() = runTest {
+	suspend fun `invokes nothing when both the agent and the ssm already exist`() {
 		val repository = StubSsmChaincodeRepository(mapOf(agentFound(), ssmFound()))
 
 		val results = function(repository).invoke(flowOf(command)).toList()
@@ -62,7 +61,7 @@ internal class SsmTxInitFunctionImplTest {
 	}
 
 	@Test
-	fun `only creates the ssm when the agent already exists`() = runTest {
+	suspend fun `only creates the ssm when the agent already exists`() {
 		val repository = StubSsmChaincodeRepository(mapOf(agentFound()))
 
 		val results = function(repository).invoke(flowOf(command)).toList()
@@ -72,7 +71,7 @@ internal class SsmTxInitFunctionImplTest {
 	}
 
 	@Test
-	fun `swallows a creation failure when a concurrent writer created the agent meanwhile`() = runTest {
+	suspend fun `swallows a creation failure when a concurrent writer created the agent meanwhile`() {
 		// The agent is absent on the first check, the register invoke fails, and the re-check finds it.
 		val repository = StubSsmChaincodeRepository(
 			responses = mapOf(
@@ -91,7 +90,7 @@ internal class SsmTxInitFunctionImplTest {
 	}
 
 	@Test
-	fun `wraps a creation failure in SsmException when the agent is still missing`() = runTest {
+	suspend fun `wraps a creation failure in SsmException when the agent is still missing`() {
 		val repository = StubSsmChaincodeRepository(onInvoke = { _, _ -> error("gateway unavailable") })
 
 		val thrown = runCatching { function(repository).invoke(flowOf(command)).toList() }.exceptionOrNull()
@@ -101,7 +100,7 @@ internal class SsmTxInitFunctionImplTest {
 	}
 
 	@Test
-	fun `wraps a ssm creation failure in SsmException when the ssm is still missing`() = runTest {
+	suspend fun `wraps a ssm creation failure in SsmException when the ssm is still missing`() {
 		val repository = StubSsmChaincodeRepository(
 			responses = mapOf(agentFound()),
 			onInvoke = { _, _ -> error("gateway unavailable") },

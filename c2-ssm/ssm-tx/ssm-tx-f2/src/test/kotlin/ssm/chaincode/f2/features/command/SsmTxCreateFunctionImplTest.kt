@@ -3,7 +3,6 @@ package ssm.chaincode.f2.features.command
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.chaincode.f2.SsmTxTestFixtures
@@ -23,7 +22,7 @@ internal class SsmTxCreateFunctionImplTest {
 	)
 
 	@Test
-	fun `sends a signed create invoke to the chaincode and maps the transactionId`() = runTest {
+	suspend fun `sends a signed create invoke to the chaincode and maps the transactionId`() {
 		val repository = StubSsmChaincodeRepository()
 
 		val results = function(repository).invoke(flowOf(command())).toList()
@@ -44,7 +43,7 @@ internal class SsmTxCreateFunctionImplTest {
 	}
 
 	@Test
-	fun `batches several commands into a single invoke, in order`() = runTest {
+	suspend fun `batches several commands into a single invoke, in order`() {
 		val repository = StubSsmChaincodeRepository()
 		val names = listOf("ssm-A", "ssm-B", "ssm-C")
 
@@ -58,7 +57,7 @@ internal class SsmTxCreateFunctionImplTest {
 	}
 
 	@Test
-	fun `maps a missing transactionId to an empty string`() = runTest {
+	suspend fun `maps a missing transactionId to an empty string`() {
 		val repository = StubSsmChaincodeRepository(onInvoke = { _, msgIds ->
 			msgIds.map { CommandOutcome(outcome = "Rejected", msgId = it, errorCode = "MVCC") }
 		})
@@ -69,7 +68,7 @@ internal class SsmTxCreateFunctionImplTest {
 	}
 
 	@Test
-	fun `signs each command with the signer key so the signature differs per payload`() = runTest {
+	suspend fun `signs each command with the signer key so the signature differs per payload`() {
 		val repository = StubSsmChaincodeRepository()
 
 		function(repository).invoke(flowOf(command("ssm-A"), command("ssm-B"))).toList()
