@@ -1,9 +1,9 @@
 package ssm.couchdb.f2.query
 
 import f2.dsl.cqrs.page.OffsetPagination
-import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import org.assertj.core.api.Assertions.assertThat
@@ -40,8 +40,8 @@ internal class ListQueryPaginationTest {
 	@Test
 	suspend fun `ssm list pushes limit and skip down and reports the unpaged total`() {
 		val page = listOf(ssm("ssm-3"), ssm("ssm-4"))
-		every { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
-		every { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
+		coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
+		coEvery { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
 
 		val result = CouchdbSsmListQueryFunctionImpl(client)
 			.invoke(flowOf(ssmListQuery(OffsetPagination(offset = 2, limit = 2))))
@@ -52,13 +52,13 @@ internal class ListQueryPaginationTest {
 		assertThat(result.total).isEqualTo(7)
 		assertThat(result.pagination?.offset).isEqualTo(2)
 		assertThat(result.pagination?.limit).isEqualTo(2)
-		verify(exactly = 1) { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) }
+		coVerify(exactly = 1) { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) }
 	}
 
 	@Test
 	suspend fun `ssm list without pagination fetches everything and counts the items it returned`() {
 		val all = listOf(ssm("ssm-1"), ssm("ssm-2"))
-		every { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
+		coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
 
 		val result = CouchdbSsmListQueryFunctionImpl(client)
 			.invoke(flowOf(ssmListQuery(null)))
@@ -69,7 +69,7 @@ internal class ListQueryPaginationTest {
 		assertThat(result.total).isEqualTo(2)
 		assertThat(result.pagination).isNull()
 		// No extra count round trip when there is no page to describe.
-		verify(exactly = 0) { client.countByDocType(any(), DocType.Ssm, any()) }
+		coVerify(exactly = 0) { client.countByDocType(any(), DocType.Ssm, any()) }
 	}
 
 	@Test
@@ -87,8 +87,8 @@ internal class ListQueryPaginationTest {
 				iteration = 0,
 			)
 		)
-		every { client.fetchAllByDocType(DB_NAME, DocType.State, filters, 1L, 5L) } returns page
-		every { client.countByDocType(DB_NAME, DocType.State, filters) } returns 42
+		coEvery { client.fetchAllByDocType(DB_NAME, DocType.State, filters, 1L, 5L) } returns page
+		coEvery { client.countByDocType(DB_NAME, DocType.State, filters) } returns 42
 
 		val result = CouchdbSsmSessionStateListQueryFunctionImpl(client)
 			.invoke(
@@ -105,6 +105,6 @@ internal class ListQueryPaginationTest {
 
 		assertThat(result.items).isEqualTo(page)
 		assertThat(result.total).isEqualTo(42)
-		verify(exactly = 1) { client.countByDocType(DB_NAME, DocType.State, filters) }
+		coVerify(exactly = 1) { client.countByDocType(DB_NAME, DocType.State, filters) }
 	}
 }
