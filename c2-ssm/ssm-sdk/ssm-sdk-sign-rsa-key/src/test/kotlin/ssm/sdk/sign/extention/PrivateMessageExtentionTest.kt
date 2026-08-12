@@ -1,5 +1,7 @@
 package ssm.sdk.sign.extention
 
+import java.util.Base64
+import javax.crypto.Cipher
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import ssm.chaincode.dsl.model.Agent
@@ -47,6 +49,17 @@ internal class PrivateMessageExtentionTest {
 		val signer = SignerUser(AGENT_NAME, keyPair)
 		val context = context().addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
 		Assertions.assertThat(context.getPrivateMessage(signer)).isEqualTo(MESSAGE)
+	}
+
+	@Test
+	fun getPrivateMessageShouldReadLegacyPkcs1Ciphertexts() {
+		// Ciphertexts already persisted on-chain were produced with raw RSA/PKCS#1 v1.5.
+		val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
+		cipher.init(Cipher.ENCRYPT_MODE, keyPair.public)
+		val legacy = Base64.getEncoder().encodeToString(cipher.doFinal(MESSAGE.toByteArray()))
+		val context = context().copy(private = mapOf(AGENT_NAME to legacy))
+
+		Assertions.assertThat(context.getPrivateMessage(AGENT_NAME, keyPair.private)).isEqualTo(MESSAGE)
 	}
 
 	@Test

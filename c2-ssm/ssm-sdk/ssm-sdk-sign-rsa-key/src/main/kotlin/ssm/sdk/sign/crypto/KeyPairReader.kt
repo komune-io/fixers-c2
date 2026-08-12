@@ -20,7 +20,7 @@ import ssm.sdk.sign.FileUtils
 
 object KeyPairReader {
 
-	private const val BUFFER = 2048
+	private const val RSA_KEY_SIZE = 2048
 	private const val ERROR_MESSAGE = "key can't be loaded"
 	private const val ERROR_MESSAGE_PRV = "Private $ERROR_MESSAGE"
 	private const val ERROR_MESSAGE_PUB = "Public $ERROR_MESSAGE"
@@ -121,7 +121,7 @@ object KeyPairReader {
 	fun generateRSAKey(): KeyPair {
 		try {
 			val kpg = KeyPairGenerator.getInstance(RSA_KEY)
-			kpg.initialize(BUFFER)
+			kpg.initialize(RSA_KEY_SIZE)
 			return kpg.generateKeyPair()
 		} catch (e: NoSuchAlgorithmException) {
 			throw CryptoException(ERROR_MESSAGE_RSA, e)
