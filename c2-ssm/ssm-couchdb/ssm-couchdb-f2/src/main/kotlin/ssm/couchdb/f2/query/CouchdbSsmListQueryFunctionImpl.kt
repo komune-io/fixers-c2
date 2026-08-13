@@ -14,14 +14,19 @@ class CouchdbSsmListQueryFunctionImpl(
 ) : CouchdbSsmListQueryFunction {
 
 	override suspend fun invoke(msgs: Flow<CouchdbSsmListQuery>): Flow<CouchdbSsmListQueryResult> = msgs.map { payload ->
-		couchdbClient
-			.fetchAllByDocType(chainCodeDbName(payload.channelId, payload.chaincodeId), DocType.Ssm)
-			.let{ list ->
-				CouchdbSsmListQueryResult(
-					items = list,
-					total = list.size,
-					pagination = payload.pagination
-				)
-			}
+		val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+		val pagination = payload.pagination
+		val items = couchdbClient.fetchAllByDocType(
+			dbName = dbName,
+			docType = DocType.Ssm,
+			limit = pagination?.limit?.toLong(),
+			skip = pagination?.offset?.toLong(),
+		)
+		CouchdbSsmListQueryResult(
+			items = items,
+			// Without a requested page everything was fetched, so the item count is the total.
+			total = pagination?.let { couchdbClient.countByDocType(dbName, DocType.Ssm) } ?: items.size,
+			pagination = pagination
+		)
 	}
 }
