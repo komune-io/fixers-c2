@@ -133,6 +133,45 @@ docker.mk ──► [2a] chaincode-ex02 ──► [3d] cli
 | `test` | `./gradlew test` | (none) |
 | `stage` | `./gradlew stage` | Tag + push to `ghcr.io/komune-io/` |
 | `promote` | `./gradlew promote` | Tag + push to `docker.io/komune/` |
+| `verify-metadata` | Regenerate `gradle/verification-metadata.xml` | (none) |
+| `verify-metadata-dry` | Same, into `verification-metadata.dry.xml` | (none) |
+
+## Dependency Verification
+
+`gradle/verification-metadata.xml` pins every resolved artifact and is enforced on every build, so
+**a dependency bump that is not reflected in it fails the build**, in CI as well as locally.
+
+Regenerate it after any change to `gradle/libs.versions.toml` or a plugin version:
+
+```bash
+make -f infra/make/libs.mk verify-metadata   # then review the diff and commit
+```
+
+The target resolves the same task graph as `build`, so every configuration CI touches is covered.
+Gradle merges into the existing file: entries are added and the `<configuration>` block (including
+`<trusted-artifacts>`) is preserved. Use `verify-metadata-dry` first to inspect the delta in
+`gradle/verification-metadata.dry.xml` without touching the real file.
+
+Two verification modes coexist:
+
+- **PGP signatures** — `verify-signatures` is on and `<trusted-keys>` pins a key per group (Kotlin,
+  Jackson, Ktor, JUnit, BouncyCastle, slf4j/logback, …). An artifact signed by a trusted key needs no
+  per-artifact checksum, so version bumps inside those groups leave the file untouched. The keys
+  themselves are committed as `gradle/verification-keyring.keys` (readable) and
+  `gradle/verification-keyring.gpg` (the binary form Gradle loads), so no build depends on a key
+  server being up.
+- **SHA-256 checksums** (`<components>`) — the fallback for anything unsigned or signed by a key that
+  is not trusted. These still change on every bump of the artifacts they cover.
+
+Notes for when the build fails on verification:
+
+- A platform you do not resolve locally (Kotlin/JS, node, native toolchains) pulls artifacts nobody
+  else sees. Regenerate from a machine that resolves them, or add a `<trusted-artifacts>` entry.
+- `-SNAPSHOT` artifacts of sibling `io.komune` libraries are trusted by group, since their checksums
+  change on every publish.
+- `<ignored-keys>` lists keys that could not be fetched when the file was generated; those artifacts
+  stay on checksum verification. Regenerating from a machine with working key server access shrinks
+  that list and moves more artifacts onto signatures.
 
 ## Environment Variables
 
