@@ -55,6 +55,14 @@ internal class SsmCmdSignerSha256RSASignerTest {
 	}
 
 	@Test
+	fun signShouldReportOnlyTheAgentNameOnFailure() {
+		val signer = SsmCmdSignerSha256RSASigner(signerUser)
+		Assertions.assertThatThrownBy { signer.sign(cmd(agentName = "unknown")) }
+			.isInstanceOf(SsmSignException::class.java)
+			.hasMessage("Invalid agent name: unknown")
+	}
+
+	@Test
 	fun rsaSignAsB64ShouldMatchRsaSign() {
 		val raw = Sha256RSASigner.rsaSign("payload", keyPair.private)
 		val b64 = Sha256RSASigner.rsaSignAsB64("payload", keyPair.private)
