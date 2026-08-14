@@ -11,6 +11,14 @@ on:
       - main
       - 'release/*'
 
+# Cancel only superseded pull request runs that cannot publish: PRs labeled
+# 'stage' and versioning/* release PRs run the stage task, so they queue —
+# like pushes, scheduled and manually dispatched runs — instead of being
+# cancelled mid-publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'stage') && !startsWith(github.head_ref, 'versioning/') }}
+
 jobs:
   libs:
     uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main
