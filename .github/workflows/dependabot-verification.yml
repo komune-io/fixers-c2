@@ -1,30 +1,9 @@
 name: Dependabot Verification Metadata
 
-# Regenerates gradle/verification-metadata.xml (+ keyring) on Dependabot PRs so
-# bumps of artifacts whose signing key is not yet trusted don't fail dependency
-# verification. Bumps signed by an already-trusted key pass without this workflow
-# ever committing anything.
-#
-# Why pull_request_target: Dependabot-triggered pull_request runs receive a
-# read-only GITHUB_TOKEN, so they cannot push the regenerated metadata back to
-# the PR branch. This event runs the workflow definition from the BASE branch
-# with a writable token. It is safe here because:
-#   - the job is gated to actor == dependabot[bot] and same-repo head branches,
-#     so the code being built is a Dependabot-authored manifest bump, never a
-#     fork's arbitrary changes;
-#   - the only mutation is a metadata/keyring commit, reviewable in the PR diff.
-#
-# Trust model caveat (deliberate): the regen trusts what the repositories serve
-# at PR time — trust-on-first-use, the same model as the original generation.
-# What CI pins here protects every later resolution of the same artifacts.
-#
-# Two operational notes:
-#   - Pushes made with GITHUB_TOKEN do not trigger workflows, so after pushing
-#     this job dispatches dev.yml on the branch to produce fresh checks (this is
-#     also what makes an infinite loop impossible).
-#   - Once this workflow has pushed to a Dependabot branch, Dependabot refuses
-#     `@dependabot rebase` ("edited by someone other than Dependabot"); use
-#     `@dependabot recreate` instead.
+# Thin caller: all logic lives in the shared reusable workflow (fixers-gradle).
+# The pull_request_target trigger, permissions grant and concurrency group must
+# stay here — they cannot be declared by a reusable workflow. Safety model and
+# operational notes are documented in the reusable's header.
 
 on:
   pull_request_target:
@@ -41,56 +20,4 @@ permissions:
 
 jobs:
   regenerate:
-    if: >-
-      github.actor == 'dependabot[bot]' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      # org-internal action, tracked @main across all komune-io workflows by design
-      # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
-      - uses: komune-io/fixers-gradle/.github/actions/jvm@main
-        with:
-          with-gradle-build-scan-publish: false
-
-      - name: Regenerate verification metadata
-        run: make -f infra/make/libs.mk verify-metadata
-
-      - name: Detect changes
-        id: delta
-        run: |
-          if git status --porcelain -- gradle/verification-metadata.xml gradle/verification-keyring.keys gradle/verification-keyring.gpg | grep -q .; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Verification metadata already covers this bump — nothing to commit."
-          fi
-
-      - name: Commit and push metadata
-        if: steps.delta.outputs.changed == 'true'
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add gradle/verification-metadata.xml gradle/verification-keyring.keys gradle/verification-keyring.gpg
-          git commit -m "build: regenerate dependency verification metadata for dependabot bump"
-          git push origin "HEAD:$HEAD_REF"
-
-      - name: Re-trigger CI on the updated branch
-        if: steps.delta.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: gh workflow run dev.yml --ref "$HEAD_REF" -R "${{ github.repository }}"
-
-      - name: Explain on the PR
-        if: steps.delta.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr comment "${{ github.event.pull_request.number }}" -R "${{ github.repository }}" --body \
-          "Dependency verification metadata regenerated and committed for this bump; a fresh \`Dev\` run was dispatched on the branch. Review the metadata delta before merging. Note: with this extra commit, \`@dependabot rebase\` will be refused — use \`@dependabot recreate\` if the PR needs rebuilding."
+    uses: komune-io/fixers-gradle/.github/workflows/dependabot-verification-workflow.yml@main
