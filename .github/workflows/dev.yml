@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   libs:
-    uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main
+    uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main # NOSONAR(githubactions:S7637) org-internal reusable, tracked @main by convention
     permissions:
       contents: read
       packages: write
@@ -38,7 +38,7 @@ jobs:
       FIXERS_SONAR_TOKEN: ${{ secrets.FIXERS_SONAR_TOKEN }}
 
   docker:
-    uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main
+    uses: komune-io/fixers-gradle/.github/workflows/make-jvm-workflow.yml@main # NOSONAR(githubactions:S7637) org-internal reusable, tracked @main by convention
     permissions:
       contents: read
       packages: write
@@ -57,7 +57,7 @@ jobs:
 
   sec:
     needs: libs
-    uses: komune-io/fixers-gradle/.github/workflows/sec-workflow.yml@main
+    uses: komune-io/fixers-gradle/.github/workflows/sec-workflow.yml@main # NOSONAR(githubactions:S7637) org-internal reusable, tracked @main by convention
     permissions:
       contents: write
       pull-requests: read
