@@ -50,6 +50,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
+      # org-internal action, tracked @main across all komune-io workflows by design
+      # nosemgrep: yaml.github-actions.security.third-party-action-not-pinned-to-commit-sha.third-party-action-not-pinned-to-commit-sha
       - uses: komune-io/fixers-gradle/.github/actions/jvm@main
         with:
           with-gradle-build-scan-publish: false
