@@ -28,10 +28,6 @@ class SsmUserRegisterCommand(
 	 */
 	val signerName: AgentName,
     /**
-	 * Admin signing the transaction
-	 */
-//	val signerAdmin: SignerAdmin,
-    /**
 	 * Initial user of the SSM
 	 */
 	val agent: Agent,

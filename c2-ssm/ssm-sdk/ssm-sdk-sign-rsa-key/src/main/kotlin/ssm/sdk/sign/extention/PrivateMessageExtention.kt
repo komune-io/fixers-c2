@@ -24,19 +24,9 @@ fun SsmContext.addPrivateMessage(value: String, name: String, publicKey: PublicK
 }
 
 @Throws(Exception::class)
-fun SsmSession.addPrivateMessage(value: String, agent: Agent) {
-	addPrivateMessage(value, agent.name, agent.getPubAsKey())
-}
-
-@Throws(Exception::class)
 fun SsmSession.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmSession {
 	val newPrivate = addPrivate(value, publicKey, name)
 	return SsmSession(ssm, session, roles, public, newPrivate)
-}
-
-@Throws(Exception::class)
-fun SsmSessionState.addPrivateMessage(value: String, agent: Agent) {
-	addPrivateMessage(value, agent.name, agent.getPubAsKey())
 }
 
 @Throws(Exception::class)

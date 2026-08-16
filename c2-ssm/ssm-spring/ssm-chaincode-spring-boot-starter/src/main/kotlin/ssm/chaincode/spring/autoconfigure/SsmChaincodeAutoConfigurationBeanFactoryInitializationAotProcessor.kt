@@ -23,7 +23,6 @@ class SsmChaincodeAutoConfigurationBeanFactoryInitializationAotProcessor : BeanF
             hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
 
             hints.reflection().registerType(SsmChaincodeProperties::class.java)
-            hints.reflection().registerType(SsmChaincodeProperties::class.java)
         }
     }
 }
