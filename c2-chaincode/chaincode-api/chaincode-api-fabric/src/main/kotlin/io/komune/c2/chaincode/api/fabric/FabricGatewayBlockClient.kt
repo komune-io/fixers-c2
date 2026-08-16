@@ -21,13 +21,6 @@ import io.komune.c2.chaincode.dsl.Transaction as TransactionDsl
 class FabricGatewayBlockClient(
     private val fabricGatewayBuilder: FabricGatewayBuilder,
 ) {
-//    val GETCHAININFO: String = "GetChainInfo"
-//    val GETBLOCKBYNUMBER: String = "GetBlockByNumber"
-//    val GETBLOCKBYHASH: String = "GetBlockByHash"
-//    val GETTRANSACTIONBYID: String = "GetTransactionByID"
-//    val GETBLOCKBYTXID: String = "GetBlockByTxID"
-
-
     fun queryAllBlocksIds(channelId: ChannelId): List<Long> {
         val gateway = fabricGatewayBuilder.gateway(channelId)
         val network = gateway.getNetwork(channelId)

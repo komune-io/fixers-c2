@@ -33,10 +33,8 @@ interface SsmCouchDbQueries {
 
 	fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
 
-//	fun couchdbAdminGetQueryFunction(config: SsmCouchdbConfig): CouchdbAdminGetQueryFunction
 	fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
 
-//	fun couchdbUserGetQueryFunction(config: SsmCouchdbConfig): CouchdbUserGetQueryFunction
 	fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction
 
 	fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction

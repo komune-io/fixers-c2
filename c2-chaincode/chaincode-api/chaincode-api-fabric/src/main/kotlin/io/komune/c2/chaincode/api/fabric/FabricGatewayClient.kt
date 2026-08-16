@@ -250,8 +250,3 @@ class FabricGatewayClient(
         private const val NANOS_PER_MILLI = 1_000_000L
     }
 }
-
-class Transaction(
-    val transactionId: String,
-    val body: String
-)
