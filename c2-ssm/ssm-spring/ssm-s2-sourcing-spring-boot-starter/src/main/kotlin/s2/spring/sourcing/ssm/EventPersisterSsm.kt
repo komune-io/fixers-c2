@@ -36,7 +36,6 @@ import ssm.data.dsl.features.query.DataSsmSessionListQuery
 import ssm.data.dsl.features.query.DataSsmSessionListQueryFunction
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
-import ssm.sdk.dsl.CommandOutcome
 import java.util.UUID
 
 class EventPersisterSsm<EVENT, ID>(
@@ -88,8 +87,8 @@ EVENT: WithS2Id<ID>
 				it.action
 			}.flatMap { (action, eventsByAction) ->
 				when(action) {
-					Action.CREATE -> eventsByAction.asFlow().initFlow().collect()
-					Action.UPDATE -> eventsByAction.asFlow().updateFlow().collect()
+					Action.CREATE -> eventsByAction.asFlow().startSessions()
+					Action.UPDATE -> eventsByAction.asFlow().performActions()
 				}
 				eventsByAction.map { it.event }
 			}
@@ -121,15 +120,17 @@ EVENT: WithS2Id<ID>
 		return event
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.initFlow(): Flow<CommandOutcome> =
+	private suspend fun Flow<ExecutableAction<EVENT>>.startSessions() {
 		map { startCommandFor(it.event) }.let {
 			ssmSessionStartFunction.invoke(it)
-		}
+		}.collect()
+	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<CommandOutcome> =
+	private suspend fun Flow<ExecutableAction<EVENT>>.performActions() {
 		map { performCommandFor(it.event, it.iteration ?: 0) }.let { toUpdated ->
 			ssmSessionPerformActionFunction.invoke(toUpdated)
-		}
+		}.collect()
+	}
 
 	private suspend fun init(event: EVENT): EVENT {
 		ssmSessionStartFunction.invoke(startCommandFor(event))

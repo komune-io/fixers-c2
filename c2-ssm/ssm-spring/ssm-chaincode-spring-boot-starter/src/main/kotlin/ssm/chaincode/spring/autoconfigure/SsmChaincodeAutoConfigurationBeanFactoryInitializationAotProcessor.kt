@@ -14,10 +14,13 @@ class SsmChaincodeAutoConfigurationBeanFactoryInitializationAotProcessor : BeanF
     override fun processAheadOfTime(bf: ConfigurableListableBeanFactory): BeanFactoryInitializationAotContribution {
         return BeanFactoryInitializationAotContribution {
                 ctx: GenerationContext, _: BeanFactoryInitializationCode? ->
+            // The @Bean method's parameter is SsmChaincodeConfiguration (not SsmChaincodeProperties,
+            // which is its return type) — findMethod matches on parameter types.
             registerConfigMethodHints(
                 ctx.runtimeHints,
                 SsmChaincodeAutoConfiguration::class.java,
                 SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name,
+                SsmChaincodeConfiguration::class.java,
                 SsmChaincodeProperties::class.java,
             )
         }

@@ -46,6 +46,14 @@ class SsmRequester(
 		return JsonUtils.toObject(request, clazz)
 	}
 
+	@Deprecated(
+		message = "Renamed for clarity — this queries session logs, it is not a logging utility.",
+		replaceWith = ReplaceWith("queryLogs(chaincodeUri, value, query, clazz)"),
+	)
+	suspend fun <T> logger(
+		chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: TypeReference<List<T>>
+	): List<T> = queryLogs(chaincodeUri, value, query, clazz)
+
 	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
 		val args = query.queryArgs(value)
 		val request = ssmChaincodeRepository.query(
