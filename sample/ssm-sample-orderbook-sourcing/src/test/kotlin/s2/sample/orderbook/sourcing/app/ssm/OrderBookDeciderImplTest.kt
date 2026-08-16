@@ -128,9 +128,12 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 			exception = e
 		}
 
+		// Since s2's ERROR_DUPLICATE_COMMAND_IDS, duplicate ids in a batch are rejected by the
+		// automate engine itself, before EventPersisterSsm's own SSM-limitation guard can fire.
 		assertThat(exception)
 			.isNotNull()
-			.hasMessageContaining("Duplicate events detected: ${event.id}, cannot be processed due to SSM limitations.")
+			.hasMessageContaining("ERROR_DUPLICATE_COMMAND_IDS")
+			.hasMessageContaining(event.id)
 	}
 
 	@Test
