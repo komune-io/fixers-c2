@@ -58,21 +58,25 @@ EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 		val automate = automate()
 		val signer = signerAgent()
 		val chaincodeUri = chaincodeUri()
-		EventPersisterSsm(automate, entityType(), batchParams).also { ee ->
-			ee.ssmSessionStartFunction = ssmSessionStartFunction
-			ee.ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction
-			ee.ssmSessionPerformActionFunction = ssmSessionPerformActionFunction
-			ee.dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction
-			ee.dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction
-			ee.chaincodeUri = chaincodeUri
-			ee.agentSigner = signer
-			ee.json = json()
-			ee.versioning = versioning
+		EventPersisterSsm(
+			s2Automate = automate,
+			eventType = entityType(),
+			batchParams = batchParams,
+			ssmSessionStartFunction = ssmSessionStartFunction,
+			ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
+			dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction,
+			ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
+			dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction,
+			chaincodeUri = chaincodeUri,
+			agentSigner = signer,
+			json = json(),
+			versioning = versioning,
+		).also {
 			ssmTxInitFunction.invoke(
 				SsmInitCommand(
 					signerName = signer.name,
 					ssm = automate.toSsm(permissive),
-					agent = ee.agentSigner,
+					agent = signer,
 					chaincodeUri = chaincodeUri
 				)
 			)

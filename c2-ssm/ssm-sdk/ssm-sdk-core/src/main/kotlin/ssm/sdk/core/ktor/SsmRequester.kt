@@ -24,7 +24,9 @@ class SsmRequester(
 
 	private val logger = LoggerFactory.getLogger(SsmRequester::class.java)
 
-	suspend fun <T> logger(
+	// Note: queryLogs logs BEFORE performing the request, while query/list log AFTER —
+	// a historical inconsistency preserved as-is (renamed from `logger`, behavior unchanged).
+	suspend fun <T> queryLogs(
         chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: TypeReference<List<T>>
 	): List<T> {
 		val args = query.queryArgs(value)
@@ -41,9 +43,7 @@ class SsmRequester(
 			channelId = chaincodeUri.channelId,
 			chaincodeId = chaincodeUri.chaincodeId,
 		)
-		return request.let {
-			JsonUtils.toObject(it, clazz)
-		}
+		return JsonUtils.toObject(request, clazz)
 	}
 
 	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
@@ -61,12 +61,12 @@ class SsmRequester(
 			args.function,
 			args.values
 		)
-		return request.let {
-			jsonConverter.toCompletableObject(clazz, it)
-		}
+		return jsonConverter.toCompletableObject(clazz, request)
 	}
 
-	private fun <T> List<T>.logger(type: String, total: Int, toChaincode: (T) -> ChaincodeUri) = map(toChaincode).toSet()
+	private fun <T> List<T>.logChaincodes(
+		type: String, total: Int, toChaincode: (T) -> ChaincodeUri
+	) = map(toChaincode).toSet()
 	.joinToString { "[${it.channelId}:${it.chaincodeId}]]" }
 	.let { chaincodeUri ->
 		logger.info(
@@ -83,7 +83,7 @@ class SsmRequester(
 	): List<List<T>> = queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
 
 	private suspend fun List<SsmApiQuery>.fetchEach(): List<String> = coroutineScope {
-		logger("Query", size) { it.chaincodeUri }
+		logChaincodes("Query", size) { it.chaincodeUri }
 		map { query ->
 			async {
 				val args = query.query.queryArgs(query.value)
@@ -124,7 +124,7 @@ class SsmRequester(
 			"msgIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
 		}
 		val total = cmds.size
-		cmds.logger("Invoke", total) { it.chaincodeUri }
+		cmds.logChaincodes("Invoke", total) { it.chaincodeUri }
 
 		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
 		return ssmChaincodeRepository.invoke(args, msgIds)

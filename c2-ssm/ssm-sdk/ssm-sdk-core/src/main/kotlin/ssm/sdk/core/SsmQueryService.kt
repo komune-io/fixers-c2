@@ -62,7 +62,7 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
 	override suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog> {
 		val query = LogQuery()
-		return ssmRequester.logger(chaincodeUri, sessionName, query, object : TypeReference<List<SsmSessionStateLog>>() {})
+		return ssmRequester.queryLogs(chaincodeUri, sessionName, query, object : TypeReference<List<SsmSessionStateLog>>() {})
 	}
 
 
@@ -91,59 +91,57 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 		return ssmRequester.query(chaincodeUri, blockId.toString(), query, Block::class.java)
 	}
 
+	// The `.filterNotNull()` difference below is deliberate and preserved:
+	// getAdmins/getAgents/getSsms/getBlocks drop missing entries, while
+	// getSessions/getTransactions keep the per-query nulls in their result lists.
+
 	override suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent> {
 		val query = AdminQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<Agent?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.username, query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<Agent?>() {})
 		}.filterNotNull()
 	}
 
 	override suspend fun getAgents(queries: List<GetAgentQuery>): List<Agent> {
 		val query = AgentQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<Agent?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.agentName, query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<Agent?>() {})
 		}.filterNotNull()
 	}
 
 	override suspend fun getSsms(queries: List<GetSsmQuery>): List<Ssm> {
 		val query = SsmQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<Ssm?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.name, query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<Ssm?>() {})
 		}.filterNotNull()
 	}
 
 	override suspend fun getSessions(queries: List<GetSessionQuery>): List<SsmSessionState?> {
 		val query = SessionQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<SsmSessionState?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.sessionName, query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<SsmSessionState?>() {})
 		}
 	}
 
 	override suspend fun getTransactions(queries: List<GetTransactionQuery>): List<Transaction?> {
 		val query = TransactionQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<Transaction?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.txId, query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<Transaction?>() {})
 		}
 	}
 
 	override suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block> {
 		val query = BlockQuery()
-		return queries.map {
+		return queryEachOf(queries, object : TypeReference<Block?>() {}) {
 			SsmApiQuery(it.chaincodeUri, it.blockId.toString(), query)
-		}.let {
-			ssmRequester.queryEach(it, object : TypeReference<Block?>() {})
 		}.filterNotNull()
 	}
+
+	private suspend fun <QUERY, RESULT> queryEachOf(
+		queries: List<QUERY>,
+		type: TypeReference<RESULT?>,
+		toApiQuery: (QUERY) -> SsmApiQuery,
+	): List<RESULT?> = queries.map(toApiQuery).let { ssmRequester.queryEach(it, type) }
 
 	override suspend fun getLogs(queries: List<GetLogQuery>): List<List<SsmSessionStateLog>> {
 		val query = LogQuery()

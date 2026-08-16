@@ -13,9 +13,11 @@ import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
 import s2.dsl.automate.model.WithS2Id
+import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 import ssm.chaincode.dsl.model.SsmTransition
+import ssm.chaincode.dsl.model.uri.ChaincodeUri
 
 class EventPersisterSsmTest {
 
@@ -45,14 +47,21 @@ class EventPersisterSsmTest {
 		)
 	}
 
-	private fun createPersister(): EventPersisterSsm<TestEvent, String> {
+	private fun createPersister(versioning: Boolean = false): EventPersisterSsm<TestEvent, String> {
 		return EventPersisterSsm(
 			s2Automate = automateWithTransitions(),
 			eventType = TestEvent::class,
 			batchParams = s2.automate.core.config.S2BatchProperties(),
-		).also {
-			it.json = json
-		}
+			ssmSessionStartFunction = { error("not used in this test") },
+			ssmSessionPerformActionFunction = { error("not used in this test") },
+			dataSsmSessionGetQueryFunction = { error("not used in this test") },
+			ssmGetSessionLogsQueryFunction = { error("not used in this test") },
+			dataSsmSessionListQueryFunction = { error("not used in this test") },
+			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+			agentSigner = Agent(name = "signer", pub = ByteArray(0)),
+			json = json,
+			versioning = versioning,
+		)
 	}
 
 	@Suppress("UNCHECKED_CAST")
@@ -126,16 +135,14 @@ class EventPersisterSsmTest {
 
 	@Test
 	fun `buildSessionName without versioning returns plain id`() {
-		val persister = createPersister()
-		persister.versioning = false
+		val persister = createPersister(versioning = false)
 		val result = invokeBuildSessionName(persister, "event-123")
 		assertThat(result).isEqualTo("event-123")
 	}
 
 	@Test
 	fun `buildSessionName with versioning returns prefixed name`() {
-		val persister = createPersister()
-		persister.versioning = true
+		val persister = createPersister(versioning = true)
 		val result = invokeBuildSessionName(persister, "event-123")
 		assertThat(result).isEqualTo("TestAutomate-event-123")
 	}
