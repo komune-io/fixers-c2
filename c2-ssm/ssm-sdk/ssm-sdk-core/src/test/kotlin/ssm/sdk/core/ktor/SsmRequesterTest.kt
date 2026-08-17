@@ -137,9 +137,8 @@ class SsmRequesterTest {
             .hasMessageContaining("msgIds.size=2 must match cmds.size=1")
     }
 
-    @Suppress("DEPRECATION") // the deprecated alias must keep delegating until it is removed
     @Test
-    suspend fun `deprecated logger alias delegates to queryLogs`() {
+    suspend fun `queryLogs returns parsed session logs`() {
         val logsJson = """
             [
               {
@@ -161,12 +160,11 @@ class SsmRequesterTest {
         val query = StubGetQuery(ssm.sdk.core.invoke.query.SsmQueryName.LOG)
         val type = object : tools.jackson.core.type.TypeReference<List<ssm.chaincode.dsl.model.SsmSessionStateLog>>() {}
 
-        val viaDeprecated = buildMockRequester(logsJson).logger(chaincodeUri, "session-1", query, type)
-        val viaRenamed = buildMockRequester(logsJson).queryLogs(chaincodeUri, "session-1", query, type)
+        val logs = buildMockRequester(logsJson).queryLogs(chaincodeUri, "session-1", query, type)
 
-        assertThat(viaDeprecated).hasSize(1)
-        assertThat(viaDeprecated[0].txId).isEqualTo("tx-42")
-        assertThat(viaDeprecated).isEqualTo(viaRenamed)
+        assertThat(logs).hasSize(1)
+        assertThat(logs[0].txId).isEqualTo("tx-42")
+        assertThat(logs[0].state.iteration).isEqualTo(3)
     }
 
     @Test
