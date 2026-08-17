@@ -102,6 +102,7 @@ include(
 
 include(
 	"sample:ssm-sample-orderbook-sourcing-domain",
+	"sample:ssm-sample-orderbook-sourcing-common",
 	"sample:ssm-sample-orderbook-sourcing",
 	"sample:ssm-sample-orderbook-sourcing-permissive",
 	"sample:ssm-sample-orderbook-storing",

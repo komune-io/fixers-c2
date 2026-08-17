@@ -5,14 +5,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.springframework.context.annotation.Configuration
-import org.springframework.stereotype.Service
 import s2.sample.orderbook.sourcing.app.ssm.OrderBookModelView
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
 import s2.sample.subautomate.domain.orderBook.OrderBookEvent
 import s2.sample.subautomate.domain.orderBookAutomate
-import s2.spring.automate.sourcing.S2AutomateDeciderSpring
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
 import s2.spring.sourcing.ssm.S2SourcingSsmAdapter
 import ssm.chaincode.dsl.model.Agent
@@ -54,6 +52,3 @@ class OrderBookAutomateSsmPermissiveConfig(orderBookS2Aggregate: OrderBookS2Aggr
 
 	override var permissive: Boolean = true
 }
-
-@Service
-class OrderBookS2Aggregate : S2AutomateDeciderSpring<OrderBook, OrderBookState, OrderBookEvent, OrderBookId>()
