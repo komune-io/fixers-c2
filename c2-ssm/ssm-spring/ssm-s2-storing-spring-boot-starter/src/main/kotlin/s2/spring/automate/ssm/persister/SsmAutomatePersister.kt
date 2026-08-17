@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
 import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
+import s2.automate.core.error.asException
 import s2.automate.core.persist.AutomatePersister
 import s2.automate.core.persist.LoadOutcome
 import s2.automate.core.persist.PersistOutcome
@@ -213,12 +213,19 @@ ENTITY : WithS2Id<ID> {
 			}
 		}
 
+	/**
+	 * Legacy init persist — collapses [persistInitWithOutcomes] for callers that don't go
+	 * through the outcomes path. A [PersistOutcome.Failure] throws its error as an
+	 * [s2.automate.core.error.AutomateException] (matching s2's SpringData persisters,
+	 * which let repository failures propagate) instead of being silently dropped:
+	 * dropping would under-emit and desynchronise the caller's command/event pairing.
+	 */
 	override suspend fun persistInit(
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).mapNotNull { outcome ->
+	): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).map { outcome ->
 		when (outcome) {
 			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> null
+			is PersistOutcome.Failure -> throw outcome.error.asException()
 		}
 	}
 
@@ -414,12 +421,31 @@ ENTITY : WithS2Id<ID> {
 		ssmGetSessionLogsQueryFunction.invoke(it)
 	}
 
+	/**
+	 * Legacy persist — collapses [persistWithOutcomes] for the legacy engine path.
+	 *
+	 * The [AutomatePersister.persist] contract requires exactly one event per received
+	 * context, in the same order: the legacy engine correlates events to contexts
+	 * positionally ([s2.automate.core.engine.S2AutomateEngineImpl.doTransition] guards
+	 * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] therefore
+	 * throws its error as an [s2.automate.core.error.AutomateException] (matching s2's
+	 * SpringData persisters, which let repository failures propagate) instead of being
+	 * silently dropped — dropping shifted every later event one position left,
+	 * misrouting the engine's end-of-transition application events before its
+	 * under-emit guard finally fired.
+	 *
+	 * [persistWithOutcomes] emits failed session lookups before any chaincode command
+	 * is emitted, so a mixed batch fails before a single success event is emitted:
+	 * the error is deterministic and no event is misrouted. A command-level rejection
+	 * (chaincode says no) throws in position, keeping the already-emitted prefix
+	 * correctly correlated.
+	 */
 	override suspend fun persist(
 		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistWithOutcomes(transitionContexts).mapNotNull { outcome ->
+	): Flow<EVENT> = persistWithOutcomes(transitionContexts).map { outcome ->
 		when (outcome) {
 			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> null
+			is PersistOutcome.Failure -> throw outcome.error.asException()
 		}
 	}
 
