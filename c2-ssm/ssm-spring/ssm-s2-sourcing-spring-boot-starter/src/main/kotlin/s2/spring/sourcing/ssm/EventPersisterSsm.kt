@@ -27,6 +27,7 @@ import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.toSsmUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQuery
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
+import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
 import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction
 import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.data.dsl.features.query.DataSsmSessionGetQuery
@@ -35,29 +36,25 @@ import ssm.data.dsl.features.query.DataSsmSessionListQuery
 import ssm.data.dsl.features.query.DataSsmSessionListQueryFunction
 import ssm.sdk.core.command.SsmPerformCommand
 import ssm.sdk.core.command.SsmStartCommand
-import ssm.sdk.dsl.CommandOutcome
 import java.util.UUID
 
 class EventPersisterSsm<EVENT, ID>(
 	private val s2Automate: S2Automate,
 	private val eventType: KClass<EVENT>,
 	private val batchParams: S2BatchProperties,
+	private val ssmSessionStartFunction: SsmTxSessionStartFunction,
+	private val ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction,
+	private val dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction,
+	private val ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
+	private val dataSsmSessionListQueryFunction: DataSsmSessionListQueryFunction,
+	private val chaincodeUri: ChaincodeUri,
+	private val agentSigner: Agent,
+	private val json: Json,
+	private val versioning: Boolean = false,
 ) : EventRepository<EVENT, ID> where
 EVENT: Evt,
 EVENT: WithS2Id<ID>
 {
-
-	internal lateinit var ssmSessionStartFunction: SsmTxSessionStartFunction
-	internal lateinit var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction
-
-	internal lateinit var dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
-	internal lateinit var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction
-	internal lateinit var dataSsmSessionListQueryFunction: DataSsmSessionListQueryFunction
-
-	internal lateinit var chaincodeUri: ChaincodeUri
-	internal lateinit var agentSigner: Agent
-	internal lateinit var json: Json
-	internal var versioning: Boolean = false
 
 	override suspend fun load(id: ID): Flow<EVENT> {
 		val sessionName = buildSessionName(id)
@@ -90,8 +87,8 @@ EVENT: WithS2Id<ID>
 				it.action
 			}.flatMap { (action, eventsByAction) ->
 				when(action) {
-					Action.CREATE -> eventsByAction.asFlow().initFlow().collect()
-					Action.UPDATE -> eventsByAction.asFlow().updateFlow().collect()
+					Action.CREATE -> eventsByAction.asFlow().startSessions()
+					Action.UPDATE -> eventsByAction.asFlow().performActions()
 				}
 				eventsByAction.map { it.event }
 			}
@@ -115,86 +112,59 @@ EVENT: WithS2Id<ID>
 	override suspend fun persist(event: EVENT): EVENT {
 		val sessionName = buildSessionName(event)
 		val iteration = getIteration(sessionName)
-		val action = event::class.simpleName!!
 		if(iteration == null) {
 			init(event)
 		} else {
-			@OptIn(InternalSerializationApi::class)
-			val public = json.encodeToString(eventType.serializer(), event)
-			val context = SsmPerformCommand(
-				msgId = UUID.randomUUID().toString(),
-				action = action,
-				context = SsmContext(
-					session = sessionName,
-					public = public,
-					private = mapOf(),
-					iteration = iteration,
-				),
-				signerName = agentSigner.name,
-				chaincodeUri = chaincodeUri
-			)
-			ssmSessionPerformActionFunction.invoke(context)
+			ssmSessionPerformActionFunction.invoke(performCommandFor(event, iteration))
 		}
 		return event
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.initFlow( ): Flow<CommandOutcome> = map { event ->
-		val sessionName = buildSessionName(event.event)
-		@OptIn(InternalSerializationApi::class)
-		val public = json.encodeToString(eventType.serializer(), event.event)
-		SsmStartCommand(
-			msgId = UUID.randomUUID().toString(),
-			session = SsmSession(
-				ssm = s2Automate.name,
-				session = sessionName,
-				roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
-				public = public,
-				private = mapOf()
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri
-		)
-	}.let {
-		ssmSessionStartFunction.invoke(it)
+	private suspend fun Flow<ExecutableAction<EVENT>>.startSessions() {
+		map { startCommandFor(it.event) }.let {
+			ssmSessionStartFunction.invoke(it)
+		}.collect()
 	}
 
-	private suspend fun Flow<ExecutableAction<EVENT>>.updateFlow(): Flow<CommandOutcome> = map { event ->
-		val sessionName = buildSessionName(event.event)
-		val action = event.event::class.simpleName!!
-		@OptIn(InternalSerializationApi::class)
-		SsmPerformCommand(
-			msgId = UUID.randomUUID().toString(),
-			action = action,
-			context = SsmContext(
-				session = sessionName,
-				public = json.encodeToString(eventType.serializer(), event.event),
-				private = mapOf(),
-				iteration = event.iteration ?: 0,
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri
-		)
-	}.let { toUpdated ->
-		ssmSessionPerformActionFunction.invoke(toUpdated)
+	private suspend fun Flow<ExecutableAction<EVENT>>.performActions() {
+		map { performCommandFor(it.event, it.iteration ?: 0) }.let { toUpdated ->
+			ssmSessionPerformActionFunction.invoke(toUpdated)
+		}.collect()
 	}
 
 	private suspend fun init(event: EVENT): EVENT {
-		@OptIn(InternalSerializationApi::class)
-		val ssmStart = SsmStartCommand(
-			msgId = UUID.randomUUID().toString(),
-			session = SsmSession(
-				ssm = s2Automate.name,
-				session = buildSessionName(event),
-				roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
-				public = json.encodeToString(eventType.serializer(), event),
-				private = mapOf()
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri
-		)
-		ssmSessionStartFunction.invoke(ssmStart)
+		ssmSessionStartFunction.invoke(startCommandFor(event))
 		return event
 	}
+
+	private fun startCommandFor(event: EVENT) = SsmStartCommand(
+		msgId = UUID.randomUUID().toString(),
+		session = SsmSession(
+			ssm = s2Automate.name,
+			session = buildSessionName(event),
+			roles = mapOf(agentSigner.name to s2Automate.transitions.first().role.name),
+			public = encode(event),
+			private = mapOf()
+		),
+		signerName = agentSigner.name,
+		chaincodeUri = chaincodeUri
+	)
+
+	private fun performCommandFor(event: EVENT, iteration: Int) = SsmPerformCommand(
+		msgId = UUID.randomUUID().toString(),
+		action = event::class.simpleName!!,
+		context = SsmContext(
+			session = buildSessionName(event),
+			public = encode(event),
+			private = mapOf(),
+			iteration = iteration,
+		),
+		signerName = agentSigner.name,
+		chaincodeUri = chaincodeUri
+	)
+
+	@OptIn(InternalSerializationApi::class)
+	private fun encode(event: EVENT): String = json.encodeToString(eventType.serializer(), event)
 
 	private fun buildSessionName(id: ID): String {
 		return if(versioning) {
@@ -222,7 +192,7 @@ EVENT: WithS2Id<ID>
 
 	private suspend fun getSessions(
 		sessionNames: Collection<SessionName>,
-	) = sessionNames.map { sessionName ->
+	): List<SsmGetSessionLogsQueryResult> = sessionNames.map { sessionName ->
 		SsmGetSessionLogsQuery(
 			sessionName = sessionName,
 			chaincodeUri = chaincodeUri,
@@ -234,15 +204,7 @@ EVENT: WithS2Id<ID>
 
 	private suspend fun getSessionLogs(
 		sessionIds: List<SessionName>,
-	): List<SsmSessionStateLog> = sessionIds.map { sessionId ->
-		SsmGetSessionLogsQuery(
-			sessionName = sessionId,
-			chaincodeUri = chaincodeUri,
-			ssmName = s2Automate.name
-		)
-	}.let{
-		ssmGetSessionLogsQueryFunction.invoke(it.asFlow())
-	}.toList().flatMap { it.logs }
+	): List<SsmSessionStateLog> = getSessions(sessionIds).flatMap { it.logs }
 
 	private suspend fun listSessions() = DataSsmSessionListQuery(
 		ssmUri = chaincodeUri.toSsmUri(s2Automate.name)

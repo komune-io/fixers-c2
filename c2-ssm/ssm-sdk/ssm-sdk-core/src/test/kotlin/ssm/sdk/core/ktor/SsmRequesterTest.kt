@@ -138,6 +138,36 @@ class SsmRequesterTest {
     }
 
     @Test
+    suspend fun `queryLogs returns parsed session logs`() {
+        val logsJson = """
+            [
+              {
+                "txId": "tx-42",
+                "state": {
+                  "ssm": "ssmName1",
+                  "session": "session-1",
+                  "roles": {"alice": "Buyer"},
+                  "public": "some-public-state",
+                  "private": {},
+                  "origin": null,
+                  "current": 2,
+                  "iteration": 3
+                }
+              }
+            ]
+        """.trimIndent()
+        val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
+        val query = StubGetQuery(ssm.sdk.core.invoke.query.SsmQueryName.LOG)
+        val type = object : tools.jackson.core.type.TypeReference<List<ssm.chaincode.dsl.model.SsmSessionStateLog>>() {}
+
+        val logs = buildMockRequester(logsJson).queryLogs(chaincodeUri, "session-1", query, type)
+
+        assertThat(logs).hasSize(1)
+        assertThat(logs[0].txId).isEqualTo("tx-42")
+        assertThat(logs[0].state.iteration).isEqualTo(3)
+    }
+
+    @Test
     suspend fun `invokeAll handles Transient outcome with isRetryable predicate`() {
         val responseJson = "[" + ceItem(
             subject = "cmd-retry",

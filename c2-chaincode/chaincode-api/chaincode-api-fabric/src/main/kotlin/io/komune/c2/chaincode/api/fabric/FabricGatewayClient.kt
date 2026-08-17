@@ -8,7 +8,6 @@ import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.lang.System.currentTimeMillis
-import java.util.StringJoiner
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -220,29 +219,27 @@ class FabricGatewayClient(
         }
     }
 
-    @Suppress("ReturnCount")
     internal fun extractErrorMessage(e: EndorseException): String {
         val cause = e.cause
-        if (cause is StatusRuntimeException) {
-            val grpcStatusDetailsKey =
-                Metadata.Key.of("grpc-status-details-bin", Metadata.BINARY_BYTE_MARSHALLER)
-            val errors = StringJoiner(";")
-            cause.trailers?.get(grpcStatusDetailsKey)?.let {
-                val status: Status = Status.parseFrom(it)
-                for (detail in status.detailsList) {
-                    if (detail.typeUrl == "type.googleapis.com/gateway.ErrorDetail") {
-                        val details = ErrorDetail.parseFrom(detail.value)
-                        errors.add(details.message.replace("chaincode response 500, ", ""))
-                    }
-                }
-            }
-            val parsed = errors.toString()
-            if (parsed.isNotEmpty()) return parsed
-            return cause.status.description
-                ?: cause.message
-                ?: ""
-        }
-        return e.message ?: e::class.simpleName ?: ""
+        if (cause !is StatusRuntimeException) return e.message ?: e::class.simpleName ?: ""
+        return grpcErrorDetails(cause)?.takeIf { it.isNotEmpty() }
+            ?: cause.status.description
+            ?: cause.message
+            ?: ""
+    }
+
+    /**
+     * Joins the gateway [ErrorDetail] messages carried in the gRPC `grpc-status-details-bin` trailer,
+     * or null when the trailer is absent. The `"chaincode response 500, "` prefix strip and the `;`
+     * separator are part of the emitted error-message contract — do not change them.
+     */
+    private fun grpcErrorDetails(cause: StatusRuntimeException): String? {
+        val grpcStatusDetailsKey =
+            Metadata.Key.of("grpc-status-details-bin", Metadata.BINARY_BYTE_MARSHALLER)
+        val statusBytes = cause.trailers?.get(grpcStatusDetailsKey) ?: return null
+        return Status.parseFrom(statusBytes).detailsList
+            .filter { it.typeUrl == "type.googleapis.com/gateway.ErrorDetail" }
+            .joinToString(";") { ErrorDetail.parseFrom(it.value).message.replace("chaincode response 500, ", "") }
     }
 
     companion object {

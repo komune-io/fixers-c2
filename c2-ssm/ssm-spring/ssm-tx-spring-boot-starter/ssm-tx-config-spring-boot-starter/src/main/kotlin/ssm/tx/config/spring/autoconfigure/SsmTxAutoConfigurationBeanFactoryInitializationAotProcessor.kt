@@ -1,8 +1,8 @@
 package ssm.tx.config.spring.autoconfigure
 
-import java.lang.reflect.Method
 import org.springframework.aot.generate.GenerationContext
 import org.springframework.aot.hint.ExecutableMode
+import org.springframework.aot.hint.RuntimeHints
 import org.springframework.beans.factory.aot.BeanFactoryInitializationAotContribution
 import org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor
 import org.springframework.beans.factory.aot.BeanFactoryInitializationCode
@@ -12,22 +12,39 @@ import ssm.chaincode.dsl.config.SsmChaincodeProperties
 
 class SsmTxAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFactoryInitializationAotProcessor {
     override fun processAheadOfTime(bf: ConfigurableListableBeanFactory): BeanFactoryInitializationAotContribution {
-        return  BeanFactoryInitializationAotContribution {
+        return BeanFactoryInitializationAotContribution {
                 ctx: GenerationContext, _: BeanFactoryInitializationCode? ->
             val hints = ctx.runtimeHints
-            val method: Method = ReflectionUtils.findMethod(
+            registerConfigMethodHints(
+                hints,
                 SsmTxAutoConfiguration::class.java,
                 SsmTxAutoConfiguration::chaincodeSsmConfig.name,
-                SsmTxProperties::class.java
-            )!!
-            hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
-
-            hints.reflection().registerType(SsmTxProperties::class.java)
-            hints.reflection().registerType(SsmChaincodeProperties::class.java)
-
-            SsmTxProperties.SignerAgentFileConfig::class.java.getDeclaredConstructors().forEach {
+                SsmTxProperties::class.java,
+                SsmChaincodeProperties::class.java,
+            )
+            SsmTxProperties.SignerAgentFileConfig::class.java.declaredConstructors.forEach {
                 hints.reflection().registerConstructor(it, ExecutableMode.INVOKE)
             }
         }
     }
+}
+
+/**
+ * Registers the reflection hints needed to invoke a config `@Bean` method ahead of time:
+ * the method itself ([ExecutableMode.INVOKE]) plus its properties class and any extra types.
+ *
+ * Deliberately duplicated in each ssm-spring starter: the starters share no Spring-aware
+ * module in this repo, and a dedicated module for one helper would add a dependency edge.
+ */
+private fun registerConfigMethodHints(
+    hints: RuntimeHints,
+    configClass: Class<*>,
+    methodName: String,
+    propsClass: Class<*>,
+    vararg extraTypes: Class<*>,
+) {
+    val method = ReflectionUtils.findMethod(configClass, methodName, propsClass)!!
+    hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
+    hints.reflection().registerType(propsClass)
+    extraTypes.forEach { hints.reflection().registerType(it) }
 }

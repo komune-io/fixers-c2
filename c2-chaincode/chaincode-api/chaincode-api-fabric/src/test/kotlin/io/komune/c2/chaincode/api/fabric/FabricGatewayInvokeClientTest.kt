@@ -123,6 +123,68 @@ class FabricGatewayInvokeClientTest {
     }
 
     @Test
+    suspend fun `a non-gRPC failure is categorised as Transient UNEXPECTED with the exception message`() {
+        val unexpectedContract: Contract = object : Contract {
+            override fun getChaincodeName(): String = "stub"
+            override fun getContractName(): Optional<String> = Optional.empty()
+
+            override fun newProposal(transactionName: String): Proposal.Builder {
+                throw IllegalStateException("boom")
+            }
+
+            override fun submitTransaction(name: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+        }
+        val client = FabricGatewayClient(stubBuilder(unexpectedContract), parallelism = 1)
+
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+            commandIds = listOf("cmd-1"),
+        )
+
+        val transient = outcomes.single() as TxOutcome.Transient
+        assertThat(transient.msgId).isEqualTo("cmd-1")
+        assertThat(transient.errorCode).isEqualTo("UNEXPECTED")
+        assertThat(transient.errorMessage).isEqualTo("boom")
+    }
+
+    @Test
+    suspend fun `a non-gRPC failure without message falls back to the exception class name`() {
+        val messagelessContract: Contract = object : Contract {
+            override fun getChaincodeName(): String = "stub"
+            override fun getContractName(): Optional<String> = Optional.empty()
+
+            override fun newProposal(transactionName: String): Proposal.Builder {
+                throw IllegalStateException()
+            }
+
+            override fun submitTransaction(name: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun submitTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
+            override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
+        }
+        val client = FabricGatewayClient(stubBuilder(messagelessContract), parallelism = 1)
+
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+        )
+
+        val transient = outcomes.single() as TxOutcome.Transient
+        assertThat(transient.errorCode).isEqualTo("UNEXPECTED")
+        assertThat(transient.errorMessage).isEqualTo("IllegalStateException")
+    }
+
+    @Test
     suspend fun `one item failure does not cancel sibling items (supervisorScope)`() {
         val callCount = AtomicInteger(0)
         val countingContract: Contract = object : Contract {

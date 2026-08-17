@@ -3,6 +3,7 @@ package s2.spring.automate.ssm.persister
 import f2.dsl.fnc.operators.batchFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
@@ -225,37 +226,94 @@ ENTITY : WithS2Id<ID> {
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
 	): Flow<PersistOutcome<EVENT>> = flow {
 		val collectedContexts = transitionContexts.toList()
+		emitReconciled(
+			items = collectedContexts,
+			buildCommand = ::startCommandFor,
+			msgIdOf = SsmStartCommand::msgId,
+			invoke = { ssmSessionStartFunction.invoke(it) },
+			eventOf = { it.event },
+			toCandidate = ::startCandidate,
+		)
+	}
 
-		val commands = collectedContexts.map { ctx ->
-			val entity = ctx.entity
-			val automate = ctx.automateContext.automate
-			SsmStartCommand(
-				msgId = "start:${entity.s2Id()}",
-				session = SsmSession(
-					ssm = automate.name,
-					session = entity.s2Id().toString(),
-					roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
-					public = objectMapper.writeValueAsString(entity),
-					private = mapOf(),
-				),
-				signerName = agentSigner.name,
-				chaincodeUri = chaincodeUri,
-				timestamp = timestampProvider(ctx.msg),
-			)
-		}
+	/** Pairs an init context with the on-chain state its start command intends to write. */
+	private fun startCandidate(
+		ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+		cmd: SsmStartCommand,
+		base: PersistOutcome<EVENT>,
+	): ReconcileCandidate<EVENT> = ReconcileCandidate(
+		sessionName = ctx.entity.s2Id().toString(),
+		targetIteration = START_ITERATION,
+		intendedPublic = cmd.session.public,
+		event = ctx.event,
+		automateContext = ctx.automateContext,
+		base = base,
+	)
 
-		val outcomes = ssmSessionStartFunction.invoke(commands.asFlow()).toList()
-		val byId = outcomes.associateBy { it.msgId }
+	/** Builds the session-start command for an init transition. msgId scheme `start:<id>` is load-bearing. */
+	private fun startCommandFor(
+		ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+	): SsmStartCommand {
+		val entity = ctx.entity
+		val automate = ctx.automateContext.automate
+		return SsmStartCommand(
+			msgId = "start:${entity.s2Id()}",
+			session = SsmSession(
+				ssm = automate.name,
+				session = entity.s2Id().toString(),
+				roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
+				public = objectMapper.writeValueAsString(entity),
+				private = mapOf(),
+			),
+			signerName = agentSigner.name,
+			chaincodeUri = chaincodeUri,
+			timestamp = timestampProvider(ctx.msg),
+		)
+	}
 
-		val candidates = collectedContexts.zip(commands).map { (ctx, cmd) ->
-			ReconcileCandidate(
-				sessionName = ctx.entity.s2Id().toString(),
-				targetIteration = START_ITERATION,
-				intendedPublic = cmd.session.public,
-				event = ctx.event,
-				automateContext = ctx.automateContext,
-				base = toPersistOutcome(cmd.msgId, ctx.event, byId[cmd.msgId]),
-			)
+	/** Builds the perform command for a transition. msgId scheme `<sessionId>:<iteration+1>` is load-bearing. */
+	private fun performCommandFor(
+		result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
+	): SsmPerformCommand {
+		val entity = result.transitionContext.entity
+		val withEventAsAction = result.transitionContext.automateContext.automate.withResultAsAction
+		val action = result.transitionContext.event?.takeIf { withEventAsAction } ?: result.transitionContext.msg
+		return SsmPerformCommand(
+			msgId = "${result.sessionId}:${result.iteration + 1}",
+			action = action::class.simpleName!!,
+			context = SsmContext(
+				session = entity.s2Id().toString(),
+				public = objectMapper.writeValueAsString(entity),
+				private = mapOf(),
+				iteration = result.iteration,
+			),
+			signerName = agentSigner.name,
+			chaincodeUri = chaincodeUri,
+			timestamp = timestampProvider(result.transitionContext.msg),
+		)
+	}
+
+	/**
+	 * Shared 5-phase persist pipeline used by [persistInitWithOutcomes] and [persistWithOutcomes]:
+	 * 1. build one command per item ([buildCommand] — this is where the msgId scheme lives);
+	 * 2. invoke the chaincode function on the whole batch;
+	 * 3. index the outcomes by msgId;
+	 * 4. pair each item with its [ReconcileCandidate] and run [reconcileFailures];
+	 * 5. emit — in item order — the reconciled outcome when present, the base outcome otherwise.
+	 */
+	private suspend fun <ITEM, COMMAND> FlowCollector<PersistOutcome<EVENT>>.emitReconciled(
+		items: List<ITEM>,
+		buildCommand: (ITEM) -> COMMAND,
+		msgIdOf: (COMMAND) -> String,
+		invoke: suspend (Flow<COMMAND>) -> Flow<CommandOutcome>,
+		eventOf: (ITEM) -> EVENT,
+		toCandidate: (ITEM, COMMAND, PersistOutcome<EVENT>) -> ReconcileCandidate<EVENT>,
+	) {
+		val commands = items.map(buildCommand)
+		val outcomesById = invoke(commands.asFlow()).toList().associateBy { it.msgId }
+		val candidates = items.zip(commands).map { (item, command) ->
+			val msgId = msgIdOf(command)
+			toCandidate(item, command, toPersistOutcome(msgId, eventOf(item), outcomesById[msgId]))
 		}
 		val reconciled = reconcileFailures(candidates)
 		candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
@@ -265,57 +323,67 @@ ENTITY : WithS2Id<ID> {
 		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
 	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> {
 		return if (WithS2Iteration::class.java.isAssignableFrom(entityType)) {
-			query.map {
-				val entity = it.transitionContext.entity as WithS2Iteration
-				val iteration = entity.s2Iteration()
-				GetSessionResult(
-					transitionContext = it.transitionContext,
-					sessionId = it.sessionId,
-					iteration = iteration,
-				)
-			}
+			iterationsFromEntity(query)
 		} else {
-			query.batchFlow(batch.asBatch()) { list ->
-				val bySession = list.associateBy { it.sessionId }
-				val sessions = getSessions(list).toList()
-				val foundIds = sessions.map { it.sessionName }.toSet()
-				val happy = sessions.map { session ->
-					val context = bySession.getValue(session.sessionName)
-					val iteration = session.logs.maxOfOrNull { it.state.iteration } ?: -1
-					if (iteration < 0) {
-						GetSessionResult(
-							transitionContext = context.transitionContext,
-							sessionId = context.sessionId,
-							iteration = 0,
-							failure = PersistOutcome.Rejected(
-								msgId = commandIdFor(context),
-								error = s2error(
-									code = "NO_LOGS",
-									description = "No logs for session ${session.sessionName}",
-								),
-							),
-						)
-					} else {
-						GetSessionResult(context.transitionContext, context.sessionId, iteration)
-					}
-				}
-				val missing = list.filterNot { it.sessionId in foundIds }.map { miss ->
-					GetSessionResult(
-						transitionContext = miss.transitionContext,
-						sessionId = miss.sessionId,
-						iteration = 0,
-						failure = PersistOutcome.Rejected(
-							msgId = commandIdFor(miss),
-							error = s2error(
-								code = "SESSION_NOT_FOUND",
-								description = "Session ${miss.sessionId} not on chaincode",
-							),
+			iterationsFromChain(query)
+		}
+	}
+
+	/** Iterations already carried by the entity ([WithS2Iteration]) — no chaincode round-trip needed. */
+	private fun iterationsFromEntity(
+		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
+	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.map {
+		val entity = it.transitionContext.entity as WithS2Iteration
+		val iteration = entity.s2Iteration()
+		GetSessionResult(
+			transitionContext = it.transitionContext,
+			sessionId = it.sessionId,
+			iteration = iteration,
+		)
+	}
+
+	/** Iterations resolved from the chain's session logs, batched; missing/log-less sessions become failures. */
+	private fun iterationsFromChain(
+		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
+	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.batchFlow(batch.asBatch()) { list ->
+		val bySession = list.associateBy { it.sessionId }
+		val sessions = getSessions(list).toList()
+		val foundIds = sessions.map { it.sessionName }.toSet()
+		val happy = sessions.map { session ->
+			val context = bySession.getValue(session.sessionName)
+			val iteration = session.logs.maxOfOrNull { it.state.iteration } ?: -1
+			if (iteration < 0) {
+				GetSessionResult(
+					transitionContext = context.transitionContext,
+					sessionId = context.sessionId,
+					iteration = 0,
+					failure = PersistOutcome.Rejected(
+						msgId = commandIdFor(context),
+						error = s2error(
+							code = "NO_LOGS",
+							description = "No logs for session ${session.sessionName}",
 						),
-					)
-				}
-				(happy + missing).asFlow()
+					),
+				)
+			} else {
+				GetSessionResult(context.transitionContext, context.sessionId, iteration)
 			}
 		}
+		val missing = list.filterNot { it.sessionId in foundIds }.map { miss ->
+			GetSessionResult(
+				transitionContext = miss.transitionContext,
+				sessionId = miss.sessionId,
+				iteration = 0,
+				failure = PersistOutcome.Rejected(
+					msgId = commandIdFor(miss),
+					error = s2error(
+						code = "SESSION_NOT_FOUND",
+						description = "Session ${miss.sessionId} not on chaincode",
+					),
+				),
+			)
+		}
+		(happy + missing).asFlow()
 	}
 
 	private fun commandIdFor(query: GetSessionQuery<STATE, ID, ENTITY, EVENT>): String {
@@ -370,42 +438,29 @@ ENTITY : WithS2Id<ID> {
 			emit(failed.failure!! as PersistOutcome<EVENT>)
 		}
 
-		val good = sessionResults.filter { it.failure == null }
-		val commands = good.map { sr ->
-			val entity = sr.transitionContext.entity
-			val withEventAsAction = sr.transitionContext.automateContext.automate.withResultAsAction
-			val action = sr.transitionContext.event?.takeIf { withEventAsAction } ?: sr.transitionContext.msg
-			SsmPerformCommand(
-				msgId = "${sr.sessionId}:${sr.iteration + 1}",
-				action = action::class.simpleName!!,
-				context = SsmContext(
-					session = entity.s2Id().toString(),
-					public = objectMapper.writeValueAsString(entity),
-					private = mapOf(),
-					iteration = sr.iteration,
-				),
-				signerName = agentSigner.name,
-				chaincodeUri = chaincodeUri,
-				timestamp = timestampProvider(sr.transitionContext.msg),
-			)
-		}
-
-		val outcomes = ssmSessionPerformActionFunction.invoke(commands.asFlow()).toList()
-		val byId = outcomes.associateBy { it.msgId }
-
-		val candidates = good.zip(commands).map { (sr, cmd) ->
-			ReconcileCandidate(
-				sessionName = sr.sessionId,
-				targetIteration = sr.iteration + 1,
-				intendedPublic = cmd.context.public,
-				event = sr.transitionContext.event,
-				automateContext = sr.transitionContext.automateContext,
-				base = toPersistOutcome(cmd.msgId, sr.transitionContext.event, byId[cmd.msgId]),
-			)
-		}
-		val reconciled = reconcileFailures(candidates)
-		candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
+		emitReconciled(
+			items = sessionResults.filter { it.failure == null },
+			buildCommand = ::performCommandFor,
+			msgIdOf = SsmPerformCommand::msgId,
+			invoke = { ssmSessionPerformActionFunction.invoke(it) },
+			eventOf = { it.transitionContext.event },
+			toCandidate = ::performCandidate,
+		)
 	}
+
+	/** Pairs a transition's session result with the on-chain state its perform command intends to write. */
+	private fun performCandidate(
+		result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
+		cmd: SsmPerformCommand,
+		base: PersistOutcome<EVENT>,
+	): ReconcileCandidate<EVENT> = ReconcileCandidate(
+		sessionName = result.sessionId,
+		targetIteration = result.iteration + 1,
+		intendedPublic = cmd.context.public,
+		event = result.transitionContext.event,
+		automateContext = result.transitionContext.automateContext,
+		base = base,
+	)
 
 	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
 		if (outcome == null) {
@@ -417,6 +472,10 @@ ENTITY : WithS2Id<ID> {
 				),
 			)
 		}
+		val error = s2error(
+			code = outcome.errorCode.orEmpty(),
+			description = outcome.errorMessage.orEmpty(),
+		)
 		return when (outcome.outcome) {
 			"Committed" -> PersistOutcome.Success(
 				msgId = msgId,
@@ -426,34 +485,10 @@ ENTITY : WithS2Id<ID> {
 					outcome.blockNumber?.let { put("blockNumber", it.toString()) }
 				},
 			)
-			"Rejected" -> PersistOutcome.Rejected(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Transient" -> PersistOutcome.Transient(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Indeterminate" -> PersistOutcome.Indeterminate(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Conflict" -> PersistOutcome.Conflict(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
+			"Rejected" -> PersistOutcome.Rejected(msgId = msgId, error = error)
+			"Transient" -> PersistOutcome.Transient(msgId = msgId, error = error)
+			"Indeterminate" -> PersistOutcome.Indeterminate(msgId = msgId, error = error)
+			"Conflict" -> PersistOutcome.Conflict(msgId = msgId, error = error)
 			else -> PersistOutcome.Indeterminate(
 				msgId = msgId,
 				error = s2error(
