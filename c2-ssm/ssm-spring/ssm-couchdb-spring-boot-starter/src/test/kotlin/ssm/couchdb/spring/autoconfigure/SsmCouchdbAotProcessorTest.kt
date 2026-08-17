@@ -29,8 +29,10 @@ class SsmCouchdbAotProcessorTest {
 		val reflection = generationContext.runtimeHints.reflection()
 		val configHint = reflection.getTypeHint(TypeReference.of(SsmCouchdbAutoConfiguration::class.java))
 		assertThat(configHint).isNotNull
-		assertThat(configHint!!.methods().map { it.name }.toList())
-			.contains(SsmCouchdbAutoConfiguration::couchdbConfig.name)
+		val methodHint = configHint!!.methods().toList()
+			.single { it.name == SsmCouchdbAutoConfiguration::couchdbConfig.name }
+		assertThat(methodHint.parameterTypes)
+			.containsExactly(TypeReference.of(SsmCouchdbProperties::class.java))
 		assertThat(reflection.getTypeHint(TypeReference.of(SsmCouchdbProperties::class.java))).isNotNull
 		val couchdbConfigHint = reflection.getTypeHint(TypeReference.of(SsmCouchdbConfig::class.java))
 		assertThat(couchdbConfigHint).isNotNull

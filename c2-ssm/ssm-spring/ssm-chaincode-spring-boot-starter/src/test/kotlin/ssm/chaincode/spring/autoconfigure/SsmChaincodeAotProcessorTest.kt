@@ -29,8 +29,10 @@ class SsmChaincodeAotProcessorTest {
 		val reflection = generationContext.runtimeHints.reflection()
 		val configHint = reflection.getTypeHint(TypeReference.of(SsmChaincodeAutoConfiguration::class.java))
 		assertThat(configHint).isNotNull
-		assertThat(configHint!!.methods().map { it.name }.toList())
-			.contains(SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name)
+		val methodHint = configHint!!.methods().toList()
+			.single { it.name == SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name }
+		assertThat(methodHint.parameterTypes)
+			.containsExactly(TypeReference.of(SsmChaincodeConfiguration::class.java))
 		assertThat(reflection.getTypeHint(TypeReference.of(SsmChaincodeConfiguration::class.java))).isNotNull
 		assertThat(reflection.getTypeHint(TypeReference.of(SsmChaincodeProperties::class.java))).isNotNull
 	}

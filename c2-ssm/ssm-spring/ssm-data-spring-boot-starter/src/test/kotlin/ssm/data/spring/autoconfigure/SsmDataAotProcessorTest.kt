@@ -31,10 +31,14 @@ class SsmDataAotProcessorTest {
 		val reflection = hints.reflection()
 		val configHint = reflection.getTypeHint(TypeReference.of(DataSsmAutoConfiguration::class.java))
 		assertThat(configHint).isNotNull
-		assertThat(configHint!!.methods().map { it.name }.toList()).contains(
+		listOf(
 			DataSsmAutoConfiguration::dataCouchdbSsmConfig.name,
 			DataSsmAutoConfiguration::ssmChaincodeConfig.name,
-		)
+		).forEach { methodName ->
+			val methodHint = configHint!!.methods().toList().single { it.name == methodName }
+			assertThat(methodHint.parameterTypes)
+				.containsExactly(TypeReference.of(SsmDataProperties::class.java))
+		}
 		listOf(
 			SsmDataProperties::class.java,
 			SsmCouchdbConfig::class.java,

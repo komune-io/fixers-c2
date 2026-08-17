@@ -232,18 +232,23 @@ ENTITY : WithS2Id<ID> {
 			msgIdOf = SsmStartCommand::msgId,
 			invoke = { ssmSessionStartFunction.invoke(it) },
 			eventOf = { it.event },
-			toCandidate = { ctx, cmd, base ->
-				ReconcileCandidate(
-					sessionName = ctx.entity.s2Id().toString(),
-					targetIteration = START_ITERATION,
-					intendedPublic = cmd.session.public,
-					event = ctx.event,
-					automateContext = ctx.automateContext,
-					base = base,
-				)
-			},
+			toCandidate = ::startCandidate,
 		)
 	}
+
+	/** Pairs an init context with the on-chain state its start command intends to write. */
+	private fun startCandidate(
+		ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+		cmd: SsmStartCommand,
+		base: PersistOutcome<EVENT>,
+	): ReconcileCandidate<EVENT> = ReconcileCandidate(
+		sessionName = ctx.entity.s2Id().toString(),
+		targetIteration = START_ITERATION,
+		intendedPublic = cmd.session.public,
+		event = ctx.event,
+		automateContext = ctx.automateContext,
+		base = base,
+	)
 
 	/** Builds the session-start command for an init transition. msgId scheme `start:<id>` is load-bearing. */
 	private fun startCommandFor(
@@ -439,18 +444,23 @@ ENTITY : WithS2Id<ID> {
 			msgIdOf = SsmPerformCommand::msgId,
 			invoke = { ssmSessionPerformActionFunction.invoke(it) },
 			eventOf = { it.transitionContext.event },
-			toCandidate = { sr, cmd, base ->
-				ReconcileCandidate(
-					sessionName = sr.sessionId,
-					targetIteration = sr.iteration + 1,
-					intendedPublic = cmd.context.public,
-					event = sr.transitionContext.event,
-					automateContext = sr.transitionContext.automateContext,
-					base = base,
-				)
-			},
+			toCandidate = ::performCandidate,
 		)
 	}
+
+	/** Pairs a transition's session result with the on-chain state its perform command intends to write. */
+	private fun performCandidate(
+		result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
+		cmd: SsmPerformCommand,
+		base: PersistOutcome<EVENT>,
+	): ReconcileCandidate<EVENT> = ReconcileCandidate(
+		sessionName = result.sessionId,
+		targetIteration = result.iteration + 1,
+		intendedPublic = cmd.context.public,
+		event = result.transitionContext.event,
+		automateContext = result.transitionContext.automateContext,
+		base = base,
+	)
 
 	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
 		if (outcome == null) {
@@ -462,6 +472,10 @@ ENTITY : WithS2Id<ID> {
 				),
 			)
 		}
+		val error = s2error(
+			code = outcome.errorCode.orEmpty(),
+			description = outcome.errorMessage.orEmpty(),
+		)
 		return when (outcome.outcome) {
 			"Committed" -> PersistOutcome.Success(
 				msgId = msgId,
@@ -471,34 +485,10 @@ ENTITY : WithS2Id<ID> {
 					outcome.blockNumber?.let { put("blockNumber", it.toString()) }
 				},
 			)
-			"Rejected" -> PersistOutcome.Rejected(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Transient" -> PersistOutcome.Transient(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Indeterminate" -> PersistOutcome.Indeterminate(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
-			"Conflict" -> PersistOutcome.Conflict(
-				msgId = msgId,
-				error = s2error(
-					code = outcome.errorCode.orEmpty(),
-					description = outcome.errorMessage.orEmpty(),
-				),
-			)
+			"Rejected" -> PersistOutcome.Rejected(msgId = msgId, error = error)
+			"Transient" -> PersistOutcome.Transient(msgId = msgId, error = error)
+			"Indeterminate" -> PersistOutcome.Indeterminate(msgId = msgId, error = error)
+			"Conflict" -> PersistOutcome.Conflict(msgId = msgId, error = error)
 			else -> PersistOutcome.Indeterminate(
 				msgId = msgId,
 				error = s2error(

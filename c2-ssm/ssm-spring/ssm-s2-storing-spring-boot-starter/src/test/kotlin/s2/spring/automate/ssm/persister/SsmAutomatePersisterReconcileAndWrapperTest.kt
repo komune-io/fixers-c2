@@ -262,6 +262,52 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 		assertThat(rejected.msgId).isEqualTo("sess-1:lookup")
 	}
 
+	/**
+	 * Documents the emission semantics for a mixed batch (one valid context, one failed
+	 * iteration lookup): exactly one outcome per input context, correlated by msgId —
+	 * NOT by position. Lookup failures are emitted before the chaincode-invoked outcomes
+	 * (behavior unchanged since the pre-refactor implementation). The only consumer of
+	 * this method, s2's S2AutomateOutcomeEngineImpl, keys outcomes by msgId and wraps
+	 * them in random-id envelopes, so emission order carries no contract. If this order
+	 * ever becomes load-bearing, this test is the tripwire.
+	 */
+	@Test
+	suspend fun `persistWithOutcomes emits one msgId-correlated outcome per context, lookup failures first`() {
+		val logs: SsmGetSessionLogsQueryFunction = F2Function { queries ->
+			queries.map { query ->
+				val sessionLogs = if (query.sessionName == "ok") listOf(ssmLog("tx-prev", iteration = 1)) else emptyList()
+				SsmGetSessionLogsQueryResult(ssmName = "test-ssm", sessionName = query.sessionName, logs = sessionLogs)
+			}
+		}
+		val perform: SsmTxSessionPerformActionFunction = F2Function { commands ->
+			commands.map { cmd ->
+				CommandOutcome(outcome = "Committed", msgId = cmd.msgId, transactionId = "tx-ok", blockNumber = 2L)
+			}
+		}
+		val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
+			ssmSessionStartFunction = F2Function { _ -> error("start not expected") },
+			ssmSessionPerformActionFunction = perform,
+			ssmGetSessionLogsQueryFunction = logs,
+			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+			entityType = SimpleEntity::class.java,
+			agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+			objectMapper = objectMapper,
+			batch = S2BatchProperties(),
+		)
+		val valid = makeSimpleTransitionContext(SimpleEntity("ok", 1))
+		val noLogs = makeSimpleTransitionContext(SimpleEntity("empty", 1))
+
+		val outcomes = persister.persistWithOutcomes(flowOf(valid, noLogs)).toList()
+
+		assertThat(outcomes).hasSize(2)
+		val rejected = outcomes[0] as PersistOutcome.Rejected<TestEvt>
+		assertThat(rejected.msgId).isEqualTo("empty:lookup")
+		assertThat(rejected.error.type).isEqualTo("NO_LOGS")
+		val success = outcomes[1] as PersistOutcome.Success<TestEvt>
+		assertThat(success.msgId).isEqualTo("ok:2")
+		assertThat(success.event).isEqualTo(TestEvt(id = "ok"))
+	}
+
 	// ------------------------------------------------------------------
 	// toPersistOutcome — MISSING_OUTCOME / UNKNOWN_OUTCOME
 	// ------------------------------------------------------------------
