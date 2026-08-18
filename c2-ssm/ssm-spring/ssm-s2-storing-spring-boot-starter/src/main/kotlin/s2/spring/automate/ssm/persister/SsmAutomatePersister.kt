@@ -9,17 +9,19 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
 import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
 import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.context.asBatch
+import s2.automate.core.error.asException
 import s2.automate.core.persist.AutomatePersister
 import s2.automate.core.persist.LoadOutcome
 import s2.automate.core.persist.PersistOutcome
+import s2.dsl.automate.ErrorCategory
 import s2.dsl.automate.S2Automate
+import s2.dsl.automate.S2ErrorBase
 import s2.dsl.automate.S2State
 import s2.dsl.automate.model.WithS2Id
 import s2.dsl.automate.s2error
@@ -213,12 +215,17 @@ ENTITY : WithS2Id<ID> {
 			}
 		}
 
+	/**
+	 * Legacy init persist — collapses [persistInitWithOutcomes] for callers that don't go
+	 * through the outcomes path. A [PersistOutcome.Failure] must throw rather than be
+	 * dropped: dropping it under-emits and desynchronises the caller's command/event pairing.
+	 */
 	override suspend fun persistInit(
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).mapNotNull { outcome ->
+	): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).map { outcome ->
 		when (outcome) {
 			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> null
+			is PersistOutcome.Failure -> throw outcome.asCategorizedException()
 		}
 	}
 
@@ -414,12 +421,22 @@ ENTITY : WithS2Id<ID> {
 		ssmGetSessionLogsQueryFunction.invoke(it)
 	}
 
+	/**
+	 * Legacy persist — collapses [persistWithOutcomes] for the legacy engine path.
+	 *
+	 * The [AutomatePersister.persist] contract requires exactly one event per received
+	 * context, in the same order: the legacy engine correlates events to contexts
+	 * positionally ([s2.automate.core.engine.S2AutomateEngineImpl.doTransition] guards
+	 * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] must therefore
+	 * throw rather than be dropped — a dropped event shifts every later event one
+	 * position left and misroutes the engine's end-of-transition application events.
+	 */
 	override suspend fun persist(
 		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistWithOutcomes(transitionContexts).mapNotNull { outcome ->
+	): Flow<EVENT> = persistWithOutcomes(transitionContexts).map { outcome ->
 		when (outcome) {
 			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> null
+			is PersistOutcome.Failure -> throw outcome.asCategorizedException()
 		}
 	}
 
@@ -569,6 +586,36 @@ ENTITY : WithS2Id<ID> {
 }
 
 private const val START_ITERATION = 0
+
+/** Payload key under which the legacy persist paths carry [PersistOutcome.Failure.category]. */
+internal const val CATEGORY_PAYLOAD_KEY = "category"
+
+/**
+ * Collapses a [PersistOutcome.Failure] into the [s2.automate.core.error.AutomateException] that the
+ * legacy [AutomatePersister.persist] / [AutomatePersister.persistInit] contract throws, carrying the
+ * outcome's [ErrorCategory] into the error payload under [CATEGORY_PAYLOAD_KEY].
+ *
+ * Throwing `error.asException()` bare would drop the category, collapsing all four failure variants
+ * into one opaque exception. On a ledger that distinction is load-bearing: [ErrorCategory.Transient]
+ * is safe to retry, whereas [ErrorCategory.Indeterminate] means the command may already have
+ * committed, so a blind retry risks a duplicate on-chain transition — and [ErrorCategory.Rejected] is
+ * permanent, so retrying is pointless. Legacy callers only see the exception, never the outcome, so
+ * the payload is the sole remaining channel for that signal.
+ *
+ * Built via [S2ErrorBase] rather than the `s2error` factory because the factory hardcodes `date = ""`;
+ * everything but the added payload entry is copied verbatim.
+ *
+ * Internal rather than private so the module's tests can pin the merge contract directly — the
+ * persister never builds a failure with a non-empty payload, so an end-to-end test cannot prove
+ * that pre-existing payload entries survive.
+ */
+internal fun PersistOutcome.Failure<*>.asCategorizedException() = S2ErrorBase(
+	type = error.type,
+	description = error.description,
+	date = error.date,
+	payload = error.payload + (CATEGORY_PAYLOAD_KEY to category.name),
+	cause = error.cause,
+).asException()
 
 /**
  * A failure the chain might already hold, so worth a state-check. Excludes [PersistOutcome.Transient]:

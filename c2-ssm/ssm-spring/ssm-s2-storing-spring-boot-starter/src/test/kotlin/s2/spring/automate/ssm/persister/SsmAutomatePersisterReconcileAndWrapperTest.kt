@@ -8,10 +8,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import s2.automate.core.config.S2BatchProperties
 import s2.automate.core.context.AutomateContext
 import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
+import s2.automate.core.error.AutomateException
 import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
@@ -195,7 +197,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 	}
 
 	@Test
-	suspend fun `persistInit keeps committed events and drops failures`() {
+	suspend fun `persistInit keeps committed events and throws on failure instead of dropping it`() {
 		val start: SsmTxSessionStartFunction = F2Function { commands ->
 			commands.map { cmd ->
 				if (cmd.msgId == "start:ok") {
@@ -209,13 +211,17 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 		val ok = makeInitTransitionContext(IterableEntity("ok", 1, 0))
 		val down = makeInitTransitionContext(IterableEntity("down", 1, 0))
 
-		val events = persister.persistInit(flowOf(ok, down)).toList()
+		val events = mutableListOf<TestEvt>()
+		val exception = assertThrows<AutomateException> {
+			persister.persistInit(flowOf(ok, down)).toList(events)
+		}
 
 		assertThat(events).containsExactly(TestEvt(id = "ok"))
+		assertThat(exception.errors.single().type).isEqualTo("GRPC_UNAVAILABLE")
 	}
 
 	@Test
-	suspend fun `persist keeps committed events and drops failures`() {
+	suspend fun `persist keeps committed events and throws on failure instead of dropping it`() {
 		val perform = scriptedPerform { msgId ->
 			if (msgId.startsWith("ok:")) {
 				CommandOutcome(outcome = "Committed", msgId = msgId, transactionId = "tx-1", blockNumber = 1L)
@@ -227,9 +233,13 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 		val ok = makeTransitionContext(IterableEntity("ok", 1, 0))
 		val down = makeTransitionContext(IterableEntity("down", 1, 0))
 
-		val events = persister.persist(flowOf(ok, down)).toList()
+		val events = mutableListOf<TestEvt>()
+		val exception = assertThrows<AutomateException> {
+			persister.persist(flowOf(ok, down)).toList(events)
+		}
 
 		assertThat(events).containsExactly(TestEvt(id = "ok"))
+		assertThat(exception.errors.single().type).isEqualTo("GRPC_UNAVAILABLE")
 	}
 
 	// ------------------------------------------------------------------
