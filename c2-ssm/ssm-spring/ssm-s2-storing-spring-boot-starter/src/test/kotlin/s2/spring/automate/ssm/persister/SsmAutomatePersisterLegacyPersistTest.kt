@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import s2.automate.core.config.S2BatchProperties
@@ -14,7 +15,10 @@ import s2.automate.core.context.AutomateContext
 import s2.automate.core.context.InitTransitionAppliedContext
 import s2.automate.core.context.TransitionAppliedContext
 import s2.automate.core.error.AutomateException
+import s2.automate.core.persist.PersistOutcome
+import s2.dsl.automate.ErrorCategory
 import s2.dsl.automate.S2Automate
+import s2.dsl.automate.S2ErrorBase
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2InitCommand
 import s2.dsl.automate.S2RoleValue
@@ -112,14 +116,17 @@ class SsmAutomatePersisterLegacyPersistTest {
 
 	private fun performFunction(
 		rejectedIdFragment: String? = null,
+		failureOutcome: String = "Rejected",
+		failureCode: String = "MVCC_READ_CONFLICT",
+		failureMessage: String = "stale read",
 	): ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction = F2Function { commands ->
 		commands.map { cmd ->
 			if (rejectedIdFragment != null && cmd.msgId.contains(rejectedIdFragment)) {
 				CommandOutcome(
-					outcome = "Rejected",
+					outcome = failureOutcome,
 					msgId = cmd.msgId,
-					errorCode = "MVCC_READ_CONFLICT",
-					errorMessage = "stale read",
+					errorCode = failureCode,
+					errorMessage = failureMessage,
 				)
 			} else {
 				CommandOutcome(
@@ -134,14 +141,17 @@ class SsmAutomatePersisterLegacyPersistTest {
 
 	private fun startFunction(
 		rejectedIdFragment: String? = null,
+		failureOutcome: String = "Rejected",
+		failureCode: String = "SESSION_ALREADY_EXISTS",
+		failureMessage: String = "session exists",
 	): ssm.chaincode.f2.features.command.SsmTxSessionStartFunction = F2Function { commands ->
 		commands.map { cmd ->
 			if (rejectedIdFragment != null && cmd.msgId.contains(rejectedIdFragment)) {
 				CommandOutcome(
-					outcome = "Rejected",
+					outcome = failureOutcome,
 					msgId = cmd.msgId,
-					errorCode = "SESSION_ALREADY_EXISTS",
-					errorMessage = "session exists",
+					errorCode = failureCode,
+					errorMessage = failureMessage,
 				)
 			} else {
 				CommandOutcome(
@@ -207,6 +217,7 @@ class SsmAutomatePersisterLegacyPersistTest {
 
 		assertThat(received).containsExactly(TestEvt("id-1"), TestEvt("id-2"))
 		assertThat(exception.errors.single().type).isEqualTo("MVCC_READ_CONFLICT")
+		assertThat(exception.errors.single().payload).containsEntry("category", "Rejected")
 	}
 
 	@Test
@@ -248,6 +259,7 @@ class SsmAutomatePersisterLegacyPersistTest {
 
 		assertThat(received).isEmpty()
 		assertThat(exception.errors.single().type).isEqualTo("SESSION_NOT_FOUND")
+		assertThat(exception.errors.single().payload).containsEntry("category", "Rejected")
 		assertThat(performCommandsSeen).isEmpty()
 	}
 
@@ -281,6 +293,157 @@ class SsmAutomatePersisterLegacyPersistTest {
 
 		assertThat(received).containsExactly(TestEvt("id-1"))
 		assertThat(exception.errors.single().type).isEqualTo("SESSION_ALREADY_EXISTS")
+		assertThat(exception.errors.single().payload).containsEntry("category", "Rejected")
+	}
+
+	// -------------------------------------------------------------------------
+	// ErrorCategory survives the legacy collapse
+	//
+	// PersistOutcome.Failure carries both an S2Error and an ErrorCategory, but the
+	// legacy paths can only throw. Dropping the category would make a retryable
+	// Transient indistinguishable from an Indeterminate (command may already have
+	// committed — a blind retry risks a duplicate on-chain transition) and from a
+	// permanent Rejected. It is therefore carried in the thrown error's payload.
+	// -------------------------------------------------------------------------
+
+	@Test
+	suspend fun `persist Transient failure stays distinguishable via the category payload`() {
+		val persister = persister(
+			IterableEntity::class.java,
+			perform = performFunction(
+				rejectedIdFragment = "id-2",
+				failureOutcome = "Transient",
+				failureCode = "GRPC_UNAVAILABLE",
+				failureMessage = "peer unavailable",
+			),
+		)
+		val contexts = listOf("id-1", "id-2").map { makeContext(IterableEntity(it, status = 1, iteration = 0)) }
+
+		val received = mutableListOf<TestEvt>()
+		val exception = assertThrows<AutomateException> {
+			persister.persist(contexts.asFlow()).toList(received)
+		}
+
+		assertThat(received).containsExactly(TestEvt("id-1"))
+		val error = exception.errors.single()
+		assertThat(error.type).isEqualTo("GRPC_UNAVAILABLE")
+		assertThat(error.description).isEqualTo("peer unavailable")
+		assertThat(error.payload).containsEntry("category", ErrorCategory.Transient.name)
+	}
+
+	@Test
+	suspend fun `persist Indeterminate failure stays distinguishable via the category payload`() {
+		val persister = persister(
+			IterableEntity::class.java,
+			perform = performFunction(
+				rejectedIdFragment = "id-2",
+				failureOutcome = "Indeterminate",
+				failureCode = "COMMIT_TIMEOUT",
+				failureMessage = "no commit event received",
+			),
+		)
+		val contexts = listOf("id-1", "id-2").map { makeContext(IterableEntity(it, status = 1, iteration = 0)) }
+
+		val received = mutableListOf<TestEvt>()
+		val exception = assertThrows<AutomateException> {
+			persister.persist(contexts.asFlow()).toList(received)
+		}
+
+		assertThat(received).containsExactly(TestEvt("id-1"))
+		val error = exception.errors.single()
+		assertThat(error.type).isEqualTo("COMMIT_TIMEOUT")
+		assertThat(error.description).isEqualTo("no commit event received")
+		assertThat(error.payload).containsEntry("category", ErrorCategory.Indeterminate.name)
+	}
+
+	@Test
+	suspend fun `persistInit Transient failure stays distinguishable via the category payload`() {
+		val persister = persister(
+			IterableEntity::class.java,
+			start = startFunction(
+				rejectedIdFragment = "id-2",
+				failureOutcome = "Transient",
+				failureCode = "GRPC_UNAVAILABLE",
+				failureMessage = "peer unavailable",
+			),
+		)
+		val contexts = listOf("id-1", "id-2").map { makeInitContext(IterableEntity(it, status = 1, iteration = 0)) }
+
+		val exception = assertThrows<AutomateException> {
+			persister.persistInit(contexts.asFlow()).toList()
+		}
+
+		val error = exception.errors.single()
+		assertThat(error.type).isEqualTo("GRPC_UNAVAILABLE")
+		assertThat(error.payload).containsEntry("category", ErrorCategory.Transient.name)
+	}
+
+	@Test
+	suspend fun `persistInit Indeterminate failure stays distinguishable via the category payload`() {
+		val persister = persister(
+			IterableEntity::class.java,
+			start = startFunction(
+				rejectedIdFragment = "id-2",
+				failureOutcome = "Indeterminate",
+				failureCode = "COMMIT_TIMEOUT",
+				failureMessage = "no commit event received",
+			),
+		)
+		val contexts = listOf("id-1", "id-2").map { makeInitContext(IterableEntity(it, status = 1, iteration = 0)) }
+
+		val exception = assertThrows<AutomateException> {
+			persister.persistInit(contexts.asFlow()).toList()
+		}
+
+		val error = exception.errors.single()
+		assertThat(error.type).isEqualTo("COMMIT_TIMEOUT")
+		assertThat(error.payload).containsEntry("category", ErrorCategory.Indeterminate.name)
+	}
+
+	/**
+	 * The persister never builds a failure with a non-empty payload, so only a direct call can
+	 * prove the category is *merged into* the original payload rather than replacing it. Also pins
+	 * that type, description, date and cause are copied through untouched.
+	 */
+	@Test
+	fun `asCategorizedException merges the category into the original payload`() {
+		val cause = IllegalStateException("boom")
+		val outcome = PersistOutcome.Indeterminate<TestEvt>(
+			msgId = "msg-1",
+			error = S2ErrorBase(
+				type = "COMMIT_TIMEOUT",
+				description = "no commit event received",
+				date = "2026-01-01",
+				payload = mapOf("sessionName" to "sess-1", "txId" to "tx-1"),
+				cause = cause,
+			),
+		)
+
+		val error = outcome.asCategorizedException().errors.single()
+
+		assertThat(error.type).isEqualTo("COMMIT_TIMEOUT")
+		assertThat(error.description).isEqualTo("no commit event received")
+		assertThat(error.date).isEqualTo("2026-01-01")
+		assertThat(error.cause).isSameAs(cause)
+		assertThat(error.payload).containsOnly(
+			entry("sessionName", "sess-1"),
+			entry("txId", "tx-1"),
+			entry("category", ErrorCategory.Indeterminate.name),
+		)
+	}
+
+	/** All four categories map to a distinct payload value — the whole point of carrying it. */
+	@Test
+	fun `asCategorizedException carries every category distinctly`() {
+		val error = S2ErrorBase(type = "E", description = "d", date = "", payload = emptyMap())
+		val categoryOf = { outcome: PersistOutcome.Failure<TestEvt> ->
+			outcome.asCategorizedException().errors.single().payload["category"]
+		}
+
+		assertThat(categoryOf(PersistOutcome.Rejected("m", error))).isEqualTo("Rejected")
+		assertThat(categoryOf(PersistOutcome.Transient("m", error))).isEqualTo("Transient")
+		assertThat(categoryOf(PersistOutcome.Indeterminate("m", error))).isEqualTo("Indeterminate")
+		assertThat(categoryOf(PersistOutcome.Conflict("m", error))).isEqualTo("Conflict")
 	}
 
 	private fun ssmLog(txId: String, iteration: Int): SsmSessionStateLog {
