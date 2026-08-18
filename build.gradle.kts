@@ -16,7 +16,6 @@ plugins {
 
 fixers {
 	bundle {
-		id = "fixers-c2"
 		group = "io.komune.c2"
 		name = "Chaincode Api and signed state machine"
 		description = "Aggregate all ssm data source to optimize request"
