@@ -215,10 +215,8 @@ ENTITY : WithS2Id<ID> {
 
 	/**
 	 * Legacy init persist — collapses [persistInitWithOutcomes] for callers that don't go
-	 * through the outcomes path. A [PersistOutcome.Failure] throws its error as an
-	 * [s2.automate.core.error.AutomateException] (matching s2's SpringData persisters,
-	 * which let repository failures propagate) instead of being silently dropped:
-	 * dropping would under-emit and desynchronise the caller's command/event pairing.
+	 * through the outcomes path. A [PersistOutcome.Failure] must throw rather than be
+	 * dropped: dropping it under-emits and desynchronises the caller's command/event pairing.
 	 */
 	override suspend fun persistInit(
 		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
@@ -427,18 +425,9 @@ ENTITY : WithS2Id<ID> {
 	 * The [AutomatePersister.persist] contract requires exactly one event per received
 	 * context, in the same order: the legacy engine correlates events to contexts
 	 * positionally ([s2.automate.core.engine.S2AutomateEngineImpl.doTransition] guards
-	 * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] therefore
-	 * throws its error as an [s2.automate.core.error.AutomateException] (matching s2's
-	 * SpringData persisters, which let repository failures propagate) instead of being
-	 * silently dropped — dropping shifted every later event one position left,
-	 * misrouting the engine's end-of-transition application events before its
-	 * under-emit guard finally fired.
-	 *
-	 * [persistWithOutcomes] emits failed session lookups before any chaincode command
-	 * is emitted, so a mixed batch fails before a single success event is emitted:
-	 * the error is deterministic and no event is misrouted. A command-level rejection
-	 * (chaincode says no) throws in position, keeping the already-emitted prefix
-	 * correctly correlated.
+	 * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] must therefore
+	 * throw rather than be dropped — a dropped event shifts every later event one
+	 * position left and misroutes the engine's end-of-transition application events.
 	 */
 	override suspend fun persist(
 		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>

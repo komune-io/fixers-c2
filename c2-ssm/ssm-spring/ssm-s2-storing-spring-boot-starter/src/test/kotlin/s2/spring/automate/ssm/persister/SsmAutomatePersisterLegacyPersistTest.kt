@@ -35,13 +35,9 @@ import tools.jackson.databind.ObjectMapper
 
 /**
  * Pins the legacy [SsmAutomatePersister.persist] / [SsmAutomatePersister.persistInit]
- * collapse of the outcomes pipeline.
- *
- * The s2 legacy engine correlates events to contexts positionally and expects exactly
- * one event per received context, in order. A failure must therefore surface as a
- * thrown [AutomateException] — never as a silent under-emit (the previous `mapNotNull`
- * behavior), which shifted every later event one position left and misrouted the
- * engine's end-of-transition application events.
+ * collapse of the outcomes pipeline: exactly one event per context in order, a failure
+ * surfacing as a thrown [AutomateException] rather than a silent under-emit (which the
+ * legacy engine, correlating events to contexts positionally, cannot detect in time).
  */
 class SsmAutomatePersisterLegacyPersistTest {
 
@@ -114,7 +110,6 @@ class SsmAutomatePersisterLegacyPersistTest {
 			entity = entity,
 		)
 
-	/** Perform stub: rejects commands whose msgId contains [rejectedIdFragment], commits the rest. */
 	private fun performFunction(
 		rejectedIdFragment: String? = null,
 	): ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction = F2Function { commands ->
@@ -210,7 +205,6 @@ class SsmAutomatePersisterLegacyPersistTest {
 			persister.persist(contexts.asFlow()).toList(received)
 		}
 
-		// Events before the failing item are emitted in position; nothing after it leaks out.
 		assertThat(received).containsExactly(TestEvt("id-1"), TestEvt("id-2"))
 		assertThat(exception.errors.single().type).isEqualTo("MVCC_READ_CONFLICT")
 	}
@@ -252,8 +246,6 @@ class SsmAutomatePersisterLegacyPersistTest {
 			persister.persist(contexts.asFlow()).toList(received)
 		}
 
-		// Lookup failures are emitted before any chaincode command: deterministic error,
-		// zero events emitted, zero commands sent — nothing is misrouted.
 		assertThat(received).isEmpty()
 		assertThat(exception.errors.single().type).isEqualTo("SESSION_NOT_FOUND")
 		assertThat(performCommandsSeen).isEmpty()
