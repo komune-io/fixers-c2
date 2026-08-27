@@ -104,6 +104,16 @@ class FabricGatewayClient(
                 ?: proposal
             effectiveProposal.endorse()
         } catch (e: EndorseException) {
+            // The gateway's own concurrency limiter also throws via EndorseException — a pure
+            // backpressure signal, not a chaincode-level rejection, so it must not zero out the
+            // caller's retry budget the way a real ENDORSEMENT_POLICY_FAILURE-style Rejected does.
+            if (e.status.code == io.grpc.Status.Code.RESOURCE_EXHAUSTED) {
+                return TxOutcome.Transient(
+                    msgId = msgId,
+                    errorCode = "ENDORSE_THROTTLED",
+                    errorMessage = extractErrorMessage(e),
+                )
+            }
             return TxOutcome.Rejected(
                 msgId = msgId,
                 errorCode = "ENDORSE_FAILED",

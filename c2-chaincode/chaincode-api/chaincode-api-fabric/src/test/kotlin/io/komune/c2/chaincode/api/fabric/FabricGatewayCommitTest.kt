@@ -210,6 +210,52 @@ class FabricGatewayCommitTest {
     }
 
     @Test
+    suspend fun `endorse throttling yields a Transient outcome, not Rejected`() {
+        val proposal = object : Proposal {
+            override fun getTransactionId() = "tx-1"
+            override fun getBytes() = proposedTxBytes()
+            override fun getDigest() = ByteArray(0)
+            override fun evaluate(options: UnaryOperator<CallOptions>?) = ByteArray(0)
+            override fun endorse(options: UnaryOperator<CallOptions>?): Transaction =
+                throw EndorseException(
+                    "tx-1",
+                    StatusRuntimeException(
+                        GrpcStatus.RESOURCE_EXHAUSTED.withDescription(
+                            "too many requests for /gateway.Gateway, exceeding concurrency limit (512)",
+                        ),
+                    ),
+                )
+        }
+        val client = FabricGatewayClient(builder(stubContract(proposal)), parallelism = 1)
+
+        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+
+        val outcome = outcomes.single() as TxOutcome.Transient
+        assertThat(outcome.errorCode).isEqualTo("ENDORSE_THROTTLED")
+    }
+
+    @Test
+    suspend fun `a business-rule endorse rejection other than RESOURCE_EXHAUSTED still yields Rejected`() {
+        val proposal = object : Proposal {
+            override fun getTransactionId() = "tx-1"
+            override fun getBytes() = proposedTxBytes()
+            override fun getDigest() = ByteArray(0)
+            override fun evaluate(options: UnaryOperator<CallOptions>?) = ByteArray(0)
+            override fun endorse(options: UnaryOperator<CallOptions>?): Transaction =
+                throw EndorseException(
+                    "tx-1",
+                    StatusRuntimeException(GrpcStatus.FAILED_PRECONDITION.withDescription("no valid transition")),
+                )
+        }
+        val client = FabricGatewayClient(builder(stubContract(proposal)), parallelism = 1)
+
+        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+
+        val outcome = outcomes.single() as TxOutcome.Rejected
+        assertThat(outcome.errorCode).isEqualTo("ENDORSE_FAILED")
+    }
+
+    @Test
     suspend fun `submit failure yields an Indeterminate outcome`() {
         val throwingTx = object : Transaction {
             override fun getResult() = ByteArray(0)
