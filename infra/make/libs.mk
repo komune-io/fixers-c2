@@ -9,7 +9,7 @@ lint:
 	./gradlew detekt
 
 build:
-	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test -x jvmTest -x jsTest -x jsBrowserTest
+	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test -x jvmTest -x jsTest -x jsBrowserTest -x kotlinStoreYarnLock
 
 test-pre:
 	@#make dev pull
