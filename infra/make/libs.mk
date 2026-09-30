@@ -9,7 +9,7 @@ lint:
 	./gradlew detekt
 
 build:
-	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test
+	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test -x jvmTest -x jsTest -x jsBrowserTest
 
 test-pre:
 	@#make dev pull
@@ -30,7 +30,7 @@ test-pre:
 	sudo echo "127.0.0.1 orderer.bclan" | sudo tee -a /etc/hosts
 
 test:
-	./gradlew test
+	./gradlew allTests test
 
 test-post:
 	@make dev down
