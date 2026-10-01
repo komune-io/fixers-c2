@@ -159,20 +159,23 @@ abstract class SsmCommandStep {
 		}
 	}
 
+	private fun Map<String?, String?>.cell(name: String): String =
+		requireNotNull(this[name]) { "Missing value for column '$name'" }
+
 	private fun DataTable.asStartSessionRole(): Map<String, AgentName> {
 		return asMaps().associate { columns ->
-			columns.getValue("userName").contextualize(bag) to columns.getValue("role")
+			columns.cell("userName").contextualize(bag) to columns.cell("role")
 		}
 	}
 
 	private fun DataTable.asPerformAction(): List<PerformAction> {
 		return asMaps().map { columns ->
 			PerformAction(
-				sessionName = columns.getValue(PerformAction::sessionName.name).contextualize(bag),
-				userName = columns.getValue(PerformAction::userName.name).contextualize(bag),
-				action = columns.getValue(PerformAction::action.name),
-				iteration = columns.getValue(PerformAction::iteration.name).toInt(),
-				public = columns.getValue(PerformAction::public.name),
+				sessionName = columns.cell(PerformAction::sessionName.name).contextualize(bag),
+				userName = columns.cell(PerformAction::userName.name).contextualize(bag),
+				action = columns.cell(PerformAction::action.name),
+				iteration = columns.cell(PerformAction::iteration.name).toInt(),
+				public = columns.cell(PerformAction::public.name),
 				)
 		}
 	}
@@ -188,10 +191,10 @@ abstract class SsmCommandStep {
 	fun DataTable.asTransitions(): List<SsmTransition> {
 		return asMaps().map { columns ->
 			SsmTransition(
-				from = columns.getValue(SsmTransition::from.name).toInt(),
-				to = columns.getValue(SsmTransition::to.name).toInt(),
-				role = columns.getValue(SsmTransition::role.name),
-				action = columns.getValue(SsmTransition::action.name),
+				from = columns.cell(SsmTransition::from.name).toInt(),
+				to = columns.cell(SsmTransition::to.name).toInt(),
+				role = columns.cell(SsmTransition::role.name),
+				action = columns.cell(SsmTransition::action.name),
 			)
 		}
 	}
