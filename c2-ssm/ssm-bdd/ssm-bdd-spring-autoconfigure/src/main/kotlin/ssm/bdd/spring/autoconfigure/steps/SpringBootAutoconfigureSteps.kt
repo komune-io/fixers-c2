@@ -16,6 +16,9 @@ open class SpringBootAutoconfigureSteps : En {
 	init {
 		Given("The application parameters") { table: DataTable ->
 			applicationParameters = table.asMap(String::class.java, String::class.java)
+				.entries.associate { (key, value) ->
+					requireNotNull(key) to requireNotNull(value) { "Missing value for application parameter '$key'" }
+				}
 		}
 		When("I build a valid spring application context") {
 			contextBuilder = ApplicationContextRunnerBuilder()
