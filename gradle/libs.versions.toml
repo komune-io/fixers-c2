@@ -1,5 +1,5 @@
 [versions]
-fixers = "0.44.0-SNAPSHOT"
+fixers = "0.44.0"
 fabric = "2.2.26"
 fabricGateway = "1.12.1"
 grpc = "1.84.0"
