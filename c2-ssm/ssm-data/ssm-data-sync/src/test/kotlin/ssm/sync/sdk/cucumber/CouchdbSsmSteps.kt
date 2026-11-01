@@ -28,7 +28,7 @@ import ssm.sync.sdk.SyncSsmCommandResult
 class CouchdbSsmSteps : SsmQueryStep(), En {
 
 	companion object {
-		const val GLUE = "ssm.sync.sdk"
+		const val GLUE = "ssm.sync.sdk.cucumber"
 	}
 	
 	var lastChanges: SyncSsmCommandResult? = null
