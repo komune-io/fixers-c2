@@ -1,5 +1,5 @@
 ARG VERSION
-ARG VERSION_ALPINE=3.19.1
+ARG VERSION_ALPINE=3.24.3
 ARG VERSION_FABRIC=2.5.16
 
 FROM alpine:${VERSION_ALPINE} AS fetcher
@@ -8,7 +8,7 @@ WORKDIR /git
 
 RUN apk update && \
 	apk upgrade && \
-	apk --no-cache add tar=1.35-r2 wget=1.21.4-r0 unzip=6.0-r14
+	apk --no-cache add tar=1.35-r5 wget=1.25.0-r3 unzip=6.0-r16
 
 RUN wget --no-check-certificate --progress=dot -O clone.zip https://github.com/apoupard/blockchain-ssm/archive/fabric-v2-images.zip && \
     unzip clone.zip && \
