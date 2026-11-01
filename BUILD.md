@@ -71,14 +71,14 @@ make build
 │  ├─ [2a] c2-chaincode/chaincode-ex02
 │  │       Dockerfile: c2-chaincode/chaincode-ex02/Dockerfile
 │  │       FROM hyperledger/fabric-tools:2.5.7 (builder)
-│  │       FROM alpine:3.19 (runtime)
+│  │       FROM alpine:3.24 (runtime)
 │  │       Produces: c2-chaincode-ex02:VERSION (local)
 │  │
 │  ├─ [2b] c2-chaincode/chaincode-ssm
 │  │       Dockerfile: c2-chaincode/chaincode-ssm/Dockerfile
-│  │       FROM alpine:3.19 (fetcher — downloads github.com/apoupard/blockchain-ssm)
+│  │       FROM alpine:3.24 (fetcher — downloads github.com/apoupard/blockchain-ssm)
 │  │       FROM hyperledger/fabric-tools:2.5.7 (builder)
-│  │       FROM alpine:3.19 (runtime)
+│  │       FROM alpine:3.24 (runtime)
 │  │       Produces: c2-chaincode-ssm:VERSION (local)
 │  │
 │  │  PHASE 3 — Sandbox containers
@@ -179,7 +179,7 @@ From `.env_version`:
 
 | Variable | Value | Used by |
 |----------|-------|---------|
-| `VERSION_ALPINE` | 3.19.1 | chaincode Dockerfiles |
+| `VERSION_ALPINE` | 3.24.3 | chaincode Dockerfiles |
 | `VERSION_FABRIC` | 2.5.7 | peer, orderer, cli, chaincode builders |
 | `VERSION_FABRIC_CA` | 1.5.10 | CA |
 | `SSM_VERSION` | 2.5.7-0.8.2 | chaincode-ssm |
@@ -205,5 +205,5 @@ From release orchestration:
 | `hyperledger/fabric-peer` | 2.5.7 | Blockchain peer node |
 | `hyperledger/fabric-orderer` | 2.5.7 | Blockchain orderer node |
 | `hyperledger/fabric-ca` | 1.5.10 | Certificate authority |
-| `alpine` | 3.19 | Lightweight runtime for chaincodes |
+| `alpine` | 3.24 | Lightweight runtime for chaincodes |
 | Paketo buildpacks | (implicit) | Spring Boot image for chaincode-api-gateway |
