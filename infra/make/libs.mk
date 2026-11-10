@@ -8,8 +8,11 @@ clean:
 lint:
 	./gradlew detekt
 
+# `clean` runs alone: in one invocation the root `clean` deletes build/js while the subprojects'
+# Kotlin/JS tasks write their packages there (Unable to delete directory … New files were found).
 build:
-	VERSION=$(VERSION) ./gradlew clean build publishToMavenLocal -Dorg.gradle.parallel=true -x test -x jvmTest -x jsTest -x jsBrowserTest -x kotlinStoreYarnLock
+	./gradlew clean
+	VERSION=$(VERSION) ./gradlew build publishToMavenLocal -Dorg.gradle.parallel=true -x test -x jvmTest -x jsTest -x jsBrowserTest -x kotlinStoreYarnLock
 
 test-pre:
 	@#make dev pull
