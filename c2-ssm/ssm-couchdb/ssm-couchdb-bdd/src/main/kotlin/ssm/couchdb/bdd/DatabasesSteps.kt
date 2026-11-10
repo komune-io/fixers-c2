@@ -15,86 +15,86 @@ import ssm.couchdb.f2.CouchdbSsmQueriesFunctionImpl
 
 class DatabasesSteps : En {
 
-	private lateinit var config: SsmCouchdbConfig
-	private var databases: List<DatabaseDTO> = emptyList()
-	private var ssms: List<Ssm> = emptyList()
+    private lateinit var config: SsmCouchdbConfig
+    private var databases: List<DatabaseDTO> = emptyList()
+    private var ssms: List<Ssm> = emptyList()
 
-	init {
-		DataTableType { entry: Map<String, String> ->
-			Chaincode(
-				id = entry["chaincodeId"] ?: "",
-				channelId = entry["channelId"] ?: ""
-			)
-		}
+    init {
+        DataTableType { entry: Map<String, String> ->
+            Chaincode(
+                id = entry["chaincodeId"] ?: "",
+                channelId = entry["channelId"] ?: ""
+            )
+        }
 
-		Given("I have a local database") {
-			config = TestConfig.dbConfig
-		}
+        Given("I have a local database") {
+            config = TestConfig.dbConfig
+        }
 
-		When("I get the list of databases") {
-			runBlocking {
-				databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseListQueryFunction().invoke(
-					CouchdbDatabaseListQuery()
-				).items
-			}
-		}
+        When("I get the list of databases") {
+            runBlocking {
+                databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseListQueryFunction().invoke(
+                    CouchdbDatabaseListQuery()
+                ).items
+            }
+        }
 
-		When("I get the list of databases filtered by {string} with {string}") { filter: String, value: String ->
-			runBlocking {
-				val query = when (filter) {
-					CouchdbDatabaseListQuery::channelId.name -> CouchdbDatabaseListQuery(
-						channelId = value,
-						chaincodeId = null
-					)
-					CouchdbDatabaseListQuery::chaincodeId.name -> CouchdbDatabaseListQuery(
-						channelId = null,
-						chaincodeId = value
-					)
-					else -> CouchdbDatabaseListQuery(null, null)
-				}
-				databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseListQueryFunction().invoke(
-					query
-				).items
-			}
-		}
+        When("I get the list of databases filtered by {string} with {string}") { filter: String, value: String ->
+            runBlocking {
+                val query = when (filter) {
+                    CouchdbDatabaseListQuery::channelId.name -> CouchdbDatabaseListQuery(
+                        channelId = value,
+                        chaincodeId = null
+                    )
+                    CouchdbDatabaseListQuery::chaincodeId.name -> CouchdbDatabaseListQuery(
+                        channelId = null,
+                        chaincodeId = value
+                    )
+                    else -> CouchdbDatabaseListQuery(null, null)
+                }
+                databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseListQueryFunction().invoke(
+                    query
+                ).items
+            }
+        }
 
-		When("I get the database for") { chaincode: Chaincode ->
-			runBlocking {
-				databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseGetQueryFunction().invoke(
-					CouchdbDatabaseGetQuery(
-						channelId = chaincode.channelId,
-						chaincodeId = chaincode.id,
-					)
-				).item.let {
-					listOfNotNull(it)
-				}
-			}
-		}
+        When("I get the database for") { chaincode: Chaincode ->
+            runBlocking {
+                databases = CouchdbSsmQueriesFunctionImpl(config).couchdbDatabaseGetQueryFunction().invoke(
+                    CouchdbDatabaseGetQuery(
+                        channelId = chaincode.channelId,
+                        chaincodeId = chaincode.id,
+                    )
+                ).item.let {
+                    listOfNotNull(it)
+                }
+            }
+        }
 
-		Then("I found the database {string}") { name: String ->
-			Assertions.assertThat(databases.map { it.name }).contains(name)
-		}
+        Then("I found the database {string}") { name: String ->
+            Assertions.assertThat(databases.map { it.name }).contains(name)
+        }
 
-		Then("I do not found database") {
-			Assertions.assertThat(databases).isEmpty()
-		}
+        Then("I do not found database") {
+            Assertions.assertThat(databases).isEmpty()
+        }
 
-		When("I get all ssm for") { chaincode: Chaincode ->
-			runBlocking {
-				ssms = CouchdbSsmQueriesFunctionImpl(config)
-					.couchdbSsmListQueryFunction()
-					.invoke(CouchdbSsmListQuery(
-						channelId = chaincode.channelId,
-						chaincodeId = chaincode.id,
-						pagination = null
-					)).items
-			}
-		}
-		Then("I do not found ssm") {
-			Assertions.assertThat(ssms).isEmpty()
-		}
-		Then("I found ssm") {
-			Assertions.assertThat(ssms).isNotEmpty
-		}
-	}
+        When("I get all ssm for") { chaincode: Chaincode ->
+            runBlocking {
+                ssms = CouchdbSsmQueriesFunctionImpl(config)
+                    .couchdbSsmListQueryFunction()
+                    .invoke(CouchdbSsmListQuery(
+                        channelId = chaincode.channelId,
+                        chaincodeId = chaincode.id,
+                        pagination = null
+                    )).items
+            }
+        }
+        Then("I do not found ssm") {
+            Assertions.assertThat(ssms).isEmpty()
+        }
+        Then("I found ssm") {
+            Assertions.assertThat(ssms).isNotEmpty
+        }
+    }
 }

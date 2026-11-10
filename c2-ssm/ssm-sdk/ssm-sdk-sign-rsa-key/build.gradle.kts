@@ -1,10 +1,10 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
-	alias(catalogue.plugins.fixers.gradle.publish)
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.fixers.gradle.publish)
 }
 
 dependencies {
-	api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
-	implementation(libs.bouncycastle)
-	testImplementation(libs.bundles.test)
+    api(project(":c2-ssm:ssm-sdk:ssm-sdk-sign"))
+    implementation(libs.bouncycastle)
+    testImplementation(libs.bundles.test)
 }

@@ -20,35 +20,35 @@ import tools.jackson.databind.JsonNode
 @RestController
 @RequestMapping("/", produces = [MediaType.APPLICATION_JSON_VALUE])
 class ChaincodeRestEndpoint(
-	private val chaincodeService: ChaincodeService
+    private val chaincodeService: ChaincodeService
 ) {
-	companion object {
-		const val CHANNEL_ID_URL_PARAM = "channelid"
-		const val CHAINCODE_ID_URL_PARAM = "chaincodeid"
-		const val CLOUDEVENTS_BATCH_JSON = "application/cloudevents-batch+json"
-	}
-	private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        const val CHANNEL_ID_URL_PARAM = "channelid"
+        const val CHAINCODE_ID_URL_PARAM = "chaincodeid"
+        const val CLOUDEVENTS_BATCH_JSON = "application/cloudevents-batch+json"
+    }
+    private val logger = LoggerFactory.getLogger(javaClass)
 
-	@GetMapping
-	suspend fun query(
-		@RequestParam(name = CHANNEL_ID_URL_PARAM, required = false) channel: ChannelId?,
-		@RequestParam(name = CHAINCODE_ID_URL_PARAM, required = false) chaincode: ChaincodeId?,
-		cmd: InvokeRequestType,
-		fcn: String,
-		args: Array<String>
-	): JsonNode {
-		logger.debug("Querying chaincode {}", cmd)
-		return chaincodeService.query(InvokeRequest(channel, chaincode, cmd, fcn, args))
-	}
+    @GetMapping
+    suspend fun query(
+        @RequestParam(name = CHANNEL_ID_URL_PARAM, required = false) channel: ChannelId?,
+        @RequestParam(name = CHAINCODE_ID_URL_PARAM, required = false) chaincode: ChaincodeId?,
+        cmd: InvokeRequestType,
+        fcn: String,
+        args: Array<String>
+    ): JsonNode {
+        logger.debug("Querying chaincode {}", cmd)
+        return chaincodeService.query(InvokeRequest(channel, chaincode, cmd, fcn, args))
+    }
 
-	@PostMapping(
-		path = ["invoke"],
-		consumes = [MediaType.APPLICATION_JSON_VALUE, CLOUDEVENTS_BATCH_JSON],
-	)
-	suspend fun invoke(
-		@RequestBody args: List<InvokeEnvelope<InvokeRequest>>,
-	): List<InvokeEnvelope<OutcomeData>> {
-		logger.debug("Invoking chaincode {} items", args.size)
-		return chaincodeService.execute(args)
-	}
+    @PostMapping(
+        path = ["invoke"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE, CLOUDEVENTS_BATCH_JSON],
+    )
+    suspend fun invoke(
+        @RequestBody args: List<InvokeEnvelope<InvokeRequest>>,
+    ): List<InvokeEnvelope<OutcomeData>> {
+        logger.debug("Invoking chaincode {} items", args.size)
+        return chaincodeService.execute(args)
+    }
 }

@@ -12,22 +12,22 @@ import ssm.chaincode.dsl.model.uri.SsmVersion
 @JsExport
 @JsName("DataSsmDTO")
 interface DataSsmDTO {
-	val uri: SsmUriDTO
-	/**
-	 * Description of a state machine
-	 */
-	val ssm: SsmDTO
+    val uri: SsmUriDTO
+    /**
+     * Description of a state machine
+     */
+    val ssm: SsmDTO
 
-	/**
-	 * Channel in which the SSM has been instantiated
-	 */
-	val channel: DataChannelDTO
+    /**
+     * Channel in which the SSM has been instantiated
+     */
+    val channel: DataChannelDTO
 
-	/**
-	 * Version of the SSM
-	 * @example "1.0"
-	 */
-	val version: SsmVersion?
+    /**
+     * Version of the SSM
+     * @example "1.0"
+     */
+    val version: SsmVersion?
 }
 
 /**
@@ -40,8 +40,8 @@ interface DataSsmDTO {
 @JsExport
 @JsName("DataSsm")
 class DataSsm(
-	override val uri: SsmUri,
-	override val ssm: Ssm,
-	override val channel: DataChannel,
-	override val version: SsmVersion?,
+    override val uri: SsmUri,
+    override val ssm: Ssm,
+    override val channel: DataChannel,
+    override val version: SsmVersion?,
 ) : DataSsmDTO

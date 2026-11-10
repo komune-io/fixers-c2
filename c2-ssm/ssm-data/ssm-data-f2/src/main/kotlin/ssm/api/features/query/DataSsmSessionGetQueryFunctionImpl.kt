@@ -17,31 +17,31 @@ import ssm.data.dsl.features.query.DataSsmSessionGetQueryResult
 import ssm.data.dsl.features.query.DataSsmSessionGetQueryResultDTO
 
 class DataSsmSessionGetQueryFunctionImpl(
-	private val ssmGetSessionQueryFunction: SsmGetSessionQueryFunction,
-	private val dataSsmSessionConvertFunction: DataSsmSessionConvertFunctionImpl,
+    private val ssmGetSessionQueryFunction: SsmGetSessionQueryFunction,
+    private val dataSsmSessionConvertFunction: DataSsmSessionConvertFunctionImpl,
 ) : DataSsmSessionGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataSsmSessionGetQueryDTO>): Flow<DataSsmSessionGetQueryResultDTO> {
-		return msgs.groupBy { it.ssmUri }.map { (ssmUri, queries) ->
-			queries.map { payload ->
-				SsmGetSessionQuery(
-					chaincodeUri = ssmUri.asChaincodeUri(),
-					sessionName = payload.sessionName,
-				)
-			}.let {
-				ssmGetSessionQueryFunction.invoke(it)
-			}.map { result ->
-				result.item?.let { item ->
-					DataSsmSessionConvertQuery(
-						sessionState = item,
-						ssmUri = ssmUri as SsmUri
-					)
-				}
-			}.map {
-				it?.invokeWith(dataSsmSessionConvertFunction)
-			}.map {
-				DataSsmSessionGetQueryResult(it)
-			}
-		}.flattenConcurrently()
-	}
+    override suspend fun invoke(msgs: Flow<DataSsmSessionGetQueryDTO>): Flow<DataSsmSessionGetQueryResultDTO> {
+        return msgs.groupBy { it.ssmUri }.map { (ssmUri, queries) ->
+            queries.map { payload ->
+                SsmGetSessionQuery(
+                    chaincodeUri = ssmUri.asChaincodeUri(),
+                    sessionName = payload.sessionName,
+                )
+            }.let {
+                ssmGetSessionQueryFunction.invoke(it)
+            }.map { result ->
+                result.item?.let { item ->
+                    DataSsmSessionConvertQuery(
+                        sessionState = item,
+                        ssmUri = ssmUri as SsmUri
+                    )
+                }
+            }.map {
+                it?.invokeWith(dataSsmSessionConvertFunction)
+            }.map {
+                DataSsmSessionGetQueryResult(it)
+            }
+        }.flattenConcurrently()
+    }
 }

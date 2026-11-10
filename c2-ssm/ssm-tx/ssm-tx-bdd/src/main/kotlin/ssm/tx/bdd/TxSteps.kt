@@ -20,51 +20,51 @@ import java.util.UUID
 
 class TxSteps : SsmCommandStep(), En {
 
-	companion object {
-		const val GLUE = "ssm.tx.bdd"
-	}
-	init {
-		prepareSteps()
+    companion object {
+        const val GLUE = "ssm.tx.bdd"
+    }
+    init {
+        prepareSteps()
 
-	}
+    }
 
-	override suspend fun startSession(session: SsmSession) {
-		SsmTxSessionStartFunctionImpl(bag.clientTx(bag.adminSigner)).invoke(
-			flowOf(SsmStartCommand(
-				msgId = UUID.randomUUID().toString(),
-				chaincodeUri = bag.chaincodeUri,
-				signerName = bag.adminSigner.name,
-				session = session,
-			))
-		).toList()
-	}
+    override suspend fun startSession(session: SsmSession) {
+        SsmTxSessionStartFunctionImpl(bag.clientTx(bag.adminSigner)).invoke(
+            flowOf(SsmStartCommand(
+                msgId = UUID.randomUUID().toString(),
+                chaincodeUri = bag.chaincodeUri,
+                signerName = bag.adminSigner.name,
+                session = session,
+            ))
+        ).toList()
+    }
 
-	override suspend fun createSsm(ssm: Ssm) {
-		getSsmTxAdminServiceImpl().ssmTxCreateFunction().invoke(
-			SsmCreateCommand(
-				chaincodeUri = bag.chaincodeUri,
-				signerName = bag.adminSigner.name,
-				ssm = ssm
-			)
-		)
-	}
+    override suspend fun createSsm(ssm: Ssm) {
+        getSsmTxAdminServiceImpl().ssmTxCreateFunction().invoke(
+            SsmCreateCommand(
+                chaincodeUri = bag.chaincodeUri,
+                signerName = bag.adminSigner.name,
+                ssm = ssm
+            )
+        )
+    }
 
-	override suspend fun registerUser(agent: Agent) {
-		getSsmTxAdminServiceImpl().ssmTxUserRegisterFunction().invoke(
-			SsmUserRegisterCommand(
-				chaincodeUri = bag.chaincodeUri,
-				signerName = bag.adminSigner.name,
-				agent
-			)
-		)
-	}
+    override suspend fun registerUser(agent: Agent) {
+        getSsmTxAdminServiceImpl().ssmTxUserRegisterFunction().invoke(
+            SsmUserRegisterCommand(
+                chaincodeUri = bag.chaincodeUri,
+                signerName = bag.adminSigner.name,
+                agent
+            )
+        )
+    }
 
-	override suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser {
-		return SignerUser.loadFromFile(agentName, filename)
-	}
+    override suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser {
+        return SignerUser.loadFromFile(agentName, filename)
+    }
 
-	private fun getSsmTxAdminServiceImpl() = SsmTxAdminServiceImpl(
-		ssmTxService = bag.clientTx(bag.adminSigner),
-		ssmQueryService = bag.clientQuery,
-	)
+    private fun getSsmTxAdminServiceImpl() = SsmTxAdminServiceImpl(
+        ssmTxService = bag.clientTx(bag.adminSigner),
+        ssmQueryService = bag.clientQuery,
+    )
 }

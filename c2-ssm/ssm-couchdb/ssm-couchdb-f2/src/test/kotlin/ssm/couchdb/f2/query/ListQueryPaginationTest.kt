@@ -21,90 +21,90 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQuery
  */
 internal class ListQueryPaginationTest {
 
-	private companion object {
-		const val CHANNEL_ID = "sandbox"
-		const val CHAINCODE_ID = "ssm"
-		const val DB_NAME = "sandbox_ssm"
-	}
+    private companion object {
+        const val CHANNEL_ID = "sandbox"
+        const val CHAINCODE_ID = "ssm"
+        const val DB_NAME = "sandbox_ssm"
+    }
 
-	private val client = mockk<CouchdbSsmClient>()
+    private val client = mockk<CouchdbSsmClient>()
 
-	private fun ssm(name: String) = Ssm(name = name, transitions = emptyList())
+    private fun ssm(name: String) = Ssm(name = name, transitions = emptyList())
 
-	private fun ssmListQuery(pagination: OffsetPagination?) = CouchdbSsmListQuery(
-		pagination = pagination,
-		channelId = CHANNEL_ID,
-		chaincodeId = CHAINCODE_ID,
-	)
+    private fun ssmListQuery(pagination: OffsetPagination?) = CouchdbSsmListQuery(
+        pagination = pagination,
+        channelId = CHANNEL_ID,
+        chaincodeId = CHAINCODE_ID,
+    )
 
-	@Test
-	suspend fun `ssm list pushes limit and skip down and reports the unpaged total`() {
-		val page = listOf(ssm("ssm-3"), ssm("ssm-4"))
-		coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
-		coEvery { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
+    @Test
+    suspend fun `ssm list pushes limit and skip down and reports the unpaged total`() {
+        val page = listOf(ssm("ssm-3"), ssm("ssm-4"))
+        coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
+        coEvery { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
 
-		val result = CouchdbSsmListQueryFunctionImpl(client)
-			.invoke(flowOf(ssmListQuery(OffsetPagination(offset = 2, limit = 2))))
-			.toList()
-			.single()
+        val result = CouchdbSsmListQueryFunctionImpl(client)
+            .invoke(flowOf(ssmListQuery(OffsetPagination(offset = 2, limit = 2))))
+            .toList()
+            .single()
 
-		assertThat(result.items).isEqualTo(page)
-		assertThat(result.total).isEqualTo(7)
-		assertThat(result.pagination?.offset).isEqualTo(2)
-		assertThat(result.pagination?.limit).isEqualTo(2)
-		coVerify(exactly = 1) { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) }
-	}
+        assertThat(result.items).isEqualTo(page)
+        assertThat(result.total).isEqualTo(7)
+        assertThat(result.pagination?.offset).isEqualTo(2)
+        assertThat(result.pagination?.limit).isEqualTo(2)
+        coVerify(exactly = 1) { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) }
+    }
 
-	@Test
-	suspend fun `ssm list without pagination fetches everything and counts the items it returned`() {
-		val all = listOf(ssm("ssm-1"), ssm("ssm-2"))
-		coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
+    @Test
+    suspend fun `ssm list without pagination fetches everything and counts the items it returned`() {
+        val all = listOf(ssm("ssm-1"), ssm("ssm-2"))
+        coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
 
-		val result = CouchdbSsmListQueryFunctionImpl(client)
-			.invoke(flowOf(ssmListQuery(null)))
-			.toList()
-			.single()
+        val result = CouchdbSsmListQueryFunctionImpl(client)
+            .invoke(flowOf(ssmListQuery(null)))
+            .toList()
+            .single()
 
-		assertThat(result.items).isEqualTo(all)
-		assertThat(result.total).isEqualTo(2)
-		assertThat(result.pagination).isNull()
-		// No extra count round trip when there is no page to describe.
-		coVerify(exactly = 0) { client.countByDocType(any(), DocType.Ssm, any()) }
-	}
+        assertThat(result.items).isEqualTo(all)
+        assertThat(result.total).isEqualTo(2)
+        assertThat(result.pagination).isNull()
+        // No extra count round trip when there is no page to describe.
+        coVerify(exactly = 0) { client.countByDocType(any(), DocType.Ssm, any()) }
+    }
 
-	@Test
-	suspend fun `session state list pushes the page down and keeps the ssm filter on the count`() {
-		val filters = mapOf("ssm" to "CarDealership")
-		val page = listOf(
-			SsmSessionState(
-				ssm = "CarDealership",
-				session = "session-1",
-				roles = emptyMap(),
-				public = "{}",
-				private = emptyMap(),
-				origin = null,
-				current = 0,
-				iteration = 0,
-			)
-		)
-		coEvery { client.fetchAllByDocType(DB_NAME, DocType.State, filters, 1L, 5L) } returns page
-		coEvery { client.countByDocType(DB_NAME, DocType.State, filters) } returns 42
+    @Test
+    suspend fun `session state list pushes the page down and keeps the ssm filter on the count`() {
+        val filters = mapOf("ssm" to "CarDealership")
+        val page = listOf(
+            SsmSessionState(
+                ssm = "CarDealership",
+                session = "session-1",
+                roles = emptyMap(),
+                public = "{}",
+                private = emptyMap(),
+                origin = null,
+                current = 0,
+                iteration = 0,
+            )
+        )
+        coEvery { client.fetchAllByDocType(DB_NAME, DocType.State, filters, 1L, 5L) } returns page
+        coEvery { client.countByDocType(DB_NAME, DocType.State, filters) } returns 42
 
-		val result = CouchdbSsmSessionStateListQueryFunctionImpl(client)
-			.invoke(
-				flowOf(
-					CouchdbSsmSessionStateListQuery(
-						pagination = OffsetPagination(offset = 5, limit = 1),
-						chaincodeUri = io.komune.c2.chaincode.dsl.ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID"),
-						ssm = "CarDealership",
-					)
-				)
-			)
-			.toList()
-			.single()
+        val result = CouchdbSsmSessionStateListQueryFunctionImpl(client)
+            .invoke(
+                flowOf(
+                    CouchdbSsmSessionStateListQuery(
+                        pagination = OffsetPagination(offset = 5, limit = 1),
+                        chaincodeUri = io.komune.c2.chaincode.dsl.ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID"),
+                        ssm = "CarDealership",
+                    )
+                )
+            )
+            .toList()
+            .single()
 
-		assertThat(result.items).isEqualTo(page)
-		assertThat(result.total).isEqualTo(42)
-		coVerify(exactly = 1) { client.countByDocType(DB_NAME, DocType.State, filters) }
-	}
+        assertThat(result.items).isEqualTo(page)
+        assertThat(result.total).isEqualTo(42)
+        coVerify(exactly = 1) { client.countByDocType(DB_NAME, DocType.State, filters) }
+    }
 }

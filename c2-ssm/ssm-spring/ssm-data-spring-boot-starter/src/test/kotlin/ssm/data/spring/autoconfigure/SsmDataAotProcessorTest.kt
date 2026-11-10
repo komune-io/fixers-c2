@@ -16,48 +16,48 @@ import ssm.couchdb.dsl.config.SsmCouchdbConfig
 
 class SsmDataAotProcessorTest {
 
-	@Test
-	fun `aot contribution registers both config bean methods, their types, constructors and resources`() {
-		val generationContext = DefaultGenerationContext(
-			ClassNameGenerator(ClassName.get("ssm.data.spring.autoconfigure", "AotTest")),
-			InMemoryGeneratedFiles(),
-		)
+    @Test
+    fun `aot contribution registers both config bean methods, their types, constructors and resources`() {
+        val generationContext = DefaultGenerationContext(
+            ClassNameGenerator(ClassName.get("ssm.data.spring.autoconfigure", "AotTest")),
+            InMemoryGeneratedFiles(),
+        )
 
-		SsmDataAutoConfigurationBeanFactoryInitializationAotProcessor()
-			.processAheadOfTime(DefaultListableBeanFactory())
-			.applyTo(generationContext, stubInitializationCode())
+        SsmDataAutoConfigurationBeanFactoryInitializationAotProcessor()
+            .processAheadOfTime(DefaultListableBeanFactory())
+            .applyTo(generationContext, stubInitializationCode())
 
-		val hints = generationContext.runtimeHints
-		val reflection = hints.reflection()
-		val configHint = reflection.getTypeHint(TypeReference.of(DataSsmAutoConfiguration::class.java))
-		assertThat(configHint).isNotNull
-		listOf(
-			DataSsmAutoConfiguration::dataCouchdbSsmConfig.name,
-			DataSsmAutoConfiguration::ssmChaincodeConfig.name,
-		).forEach { methodName ->
-			val methodHint = configHint!!.methods().toList().single { it.name == methodName }
-			assertThat(methodHint.parameterTypes)
-				.containsExactly(TypeReference.of(SsmDataProperties::class.java))
-		}
-		listOf(
-			SsmDataProperties::class.java,
-			SsmCouchdbConfig::class.java,
-			SsmChaincodeProperties::class.java,
-		).forEach { type ->
-			val typeHint = reflection.getTypeHint(TypeReference.of(type))
-			assertThat(typeHint).isNotNull
-			assertThat(typeHint!!.constructors().toList()).isNotEmpty
-		}
-		val patterns = hints.resources().resourcePatternHints()
-			.flatMap { it.includes.stream() }
-			.map { it.pattern }
-			.toList()
-		assertThat(patterns).contains("cloudant-parent.properties")
-	}
+        val hints = generationContext.runtimeHints
+        val reflection = hints.reflection()
+        val configHint = reflection.getTypeHint(TypeReference.of(DataSsmAutoConfiguration::class.java))
+        assertThat(configHint).isNotNull
+        listOf(
+            DataSsmAutoConfiguration::dataCouchdbSsmConfig.name,
+            DataSsmAutoConfiguration::ssmChaincodeConfig.name,
+        ).forEach { methodName ->
+            val methodHint = configHint!!.methods().toList().single { it.name == methodName }
+            assertThat(methodHint.parameterTypes)
+                .containsExactly(TypeReference.of(SsmDataProperties::class.java))
+        }
+        listOf(
+            SsmDataProperties::class.java,
+            SsmCouchdbConfig::class.java,
+            SsmChaincodeProperties::class.java,
+        ).forEach { type ->
+            val typeHint = reflection.getTypeHint(TypeReference.of(type))
+            assertThat(typeHint).isNotNull
+            assertThat(typeHint!!.constructors().toList()).isNotEmpty
+        }
+        val patterns = hints.resources().resourcePatternHints()
+            .flatMap { it.includes.stream() }
+            .map { it.pattern }
+            .toList()
+        assertThat(patterns).contains("cloudant-parent.properties")
+    }
 
-	private fun stubInitializationCode() = object : BeanFactoryInitializationCode {
-		override fun getMethods(): GeneratedMethods = error("not used by the contribution under test")
-		override fun getClassName(): ClassName = ClassName.get("ssm.data.spring.autoconfigure", "AotTestCode")
-		override fun addInitializer(methodReference: MethodReference) = Unit
-	}
+    private fun stubInitializationCode() = object : BeanFactoryInitializationCode {
+        override fun getMethods(): GeneratedMethods = error("not used by the contribution under test")
+        override fun getClassName(): ClassName = ClassName.get("ssm.data.spring.autoconfigure", "AotTestCode")
+        override fun addInitializer(methodReference: MethodReference) = Unit
+    }
 }

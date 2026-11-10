@@ -13,27 +13,27 @@ import ssm.couchdb.dsl.query.CouchdbDatabaseGetQueryResultDTO
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchdbDatabaseGetQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbDatabaseGetQueryFunction {
 
-	private val logger = LoggerFactory.getLogger(CouchdbDatabaseGetQueryFunctionImpl::class.java)
+    private val logger = LoggerFactory.getLogger(CouchdbDatabaseGetQueryFunctionImpl::class.java)
 
-	private fun DatabaseInformation.asDatabase() = Database(this.dbName)
+    private fun DatabaseInformation.asDatabase() = Database(this.dbName)
 
-	@Suppress("TooGenericExceptionCaught")
-	override suspend fun invoke(
-		msgs: Flow<CouchdbDatabaseGetQueryDTO>
-	): Flow<CouchdbDatabaseGetQueryResultDTO> = msgs.map { payload ->
-		val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
-		try {
-			CouchdbDatabaseGetQueryResult(
-				item = couchdbClient.getDatabase(dbName).asDatabase()
-			)
-		} catch (e: Exception) {
-			logger.error("Failed to get database $dbName", e)
-			CouchdbDatabaseGetQueryResult(
-				item = null
-			)
-		}
-	}
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun invoke(
+        msgs: Flow<CouchdbDatabaseGetQueryDTO>
+    ): Flow<CouchdbDatabaseGetQueryResultDTO> = msgs.map { payload ->
+        val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+        try {
+            CouchdbDatabaseGetQueryResult(
+                item = couchdbClient.getDatabase(dbName).asDatabase()
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to get database $dbName", e)
+            CouchdbDatabaseGetQueryResult(
+                item = null
+            )
+        }
+    }
 }

@@ -16,13 +16,13 @@ typealias DidCreateCommandFunction = F2Function<DidCreateCommand, DidCreatedEven
 @JsExport
 @JsName("DidCreateCommand")
 data class DidCreateCommand(
-	val id: DidId,
+    val id: DidId,
 ) : DidInitCommand
 
 @Serializable
 @JsExport
 @JsName("DidCreatedEvent")
 data class DidCreatedEvent(
-	override val id: String,
-	override val type: DidState,
+    override val id: String,
+    override val type: DidState,
 ) : DidEvent

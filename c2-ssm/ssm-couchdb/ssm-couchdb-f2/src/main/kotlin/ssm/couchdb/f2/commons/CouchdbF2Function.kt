@@ -9,10 +9,10 @@ import ssm.chaincode.dsl.model.ChannelId
 fun chainCodeDbName(channelId: ChannelId, chaincodeId: ChaincodeId) = "${channelId}_$chaincodeId"
 
 fun ChaincodeUriDTO.chainCodeDbName(): String {
-	val uri = burst()
-	return chainCodeDbName(uri.channelId, uri.chaincodeId)
+    val uri = burst()
+    return chainCodeDbName(uri.channelId, uri.chaincodeId)
 }
 
 fun ChaincodeUri.chainCodeDbName(): String {
-	return chainCodeDbName(channelId, chaincodeId)
+    return chainCodeDbName(channelId, chaincodeId)
 }

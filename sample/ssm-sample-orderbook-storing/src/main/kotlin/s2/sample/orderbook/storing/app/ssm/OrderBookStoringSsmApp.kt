@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class OrderBookStoringSsmApp
 
 fun main(args: Array<String>) {
-	runApplication<OrderBookStoringSsmApp>(*args)
+    runApplication<OrderBookStoringSsmApp>(*args)
 }

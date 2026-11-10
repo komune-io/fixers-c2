@@ -31,14 +31,14 @@ import ssm.chaincode.dsl.query.SsmListUserQueryFunction
 @JsExport
 @JsName("SsmChaincodeQueries")
 interface SsmChaincodeQueries {
-	fun ssmGetAdminFunction(): SsmGetAdminFunction
-	fun ssmGetQueryFunction(): SsmGetQueryFunction
-	fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction
-	fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction
-	fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction
-	fun ssmGetUserFunction(): SsmGetUserFunction
-	fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction
-	fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction
-	fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction
-	fun ssmListUserQueryFunction(): SsmListUserQueryFunction
+    fun ssmGetAdminFunction(): SsmGetAdminFunction
+    fun ssmGetQueryFunction(): SsmGetQueryFunction
+    fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction
+    fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction
+    fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction
+    fun ssmGetUserFunction(): SsmGetUserFunction
+    fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction
+    fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction
+    fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction
+    fun ssmListUserQueryFunction(): SsmListUserQueryFunction
 }

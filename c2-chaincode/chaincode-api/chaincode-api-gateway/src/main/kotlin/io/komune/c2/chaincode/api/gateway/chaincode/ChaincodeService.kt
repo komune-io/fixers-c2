@@ -27,76 +27,76 @@ import java.util.UUID
 
 @Service
 open class ChaincodeService(
-	val fabricGatewayClient: FabricGatewayClient,
-	val blockchainService: BlockchainServiceI,
-	private val chaincodeConfiguration: C2ChaincodeConfiguration,
-	private val cloudEventsProperties: CloudEventsProperties,
+    val fabricGatewayClient: FabricGatewayClient,
+    val blockchainService: BlockchainServiceI,
+    private val chaincodeConfiguration: C2ChaincodeConfiguration,
+    private val cloudEventsProperties: CloudEventsProperties,
 ) {
 
-	suspend fun query(args: InvokeRequest): JsonNode {
-		val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(args.channelid, args.chaincodeid)
-		return doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, args.toInvokeArgs())
-	}
+    suspend fun query(args: InvokeRequest): JsonNode {
+        val chainCodePair = chaincodeConfiguration.getChannelChaincodePair(args.channelid, args.chaincodeid)
+        return doQuery(chainCodePair.channelId, chainCodePair.chainCodeId, args.toInvokeArgs())
+    }
 
-	suspend fun execute(args: List<InvokeEnvelope<InvokeRequest>>): List<InvokeEnvelope<OutcomeData>> = supervisorScope {
-		args.map { envelope ->
-			async { invokeOne(envelope) }
-		}.awaitAll()
-	}
+    suspend fun execute(args: List<InvokeEnvelope<InvokeRequest>>): List<InvokeEnvelope<OutcomeData>> = supervisorScope {
+        args.map { envelope ->
+            async { invokeOne(envelope) }
+        }.awaitAll()
+    }
 
-	private suspend fun invokeOne(envelope: InvokeEnvelope<InvokeRequest>): InvokeEnvelope<OutcomeData> {
-		val (type, data) = runCatching { runInvoke(envelope) }
-			.getOrElse { e ->
-				InvokeType.Outcome.REJECTED to OutcomeData(
-					errorCode = "GATEWAY_EXCEPTION",
-					errorMessage = e.message ?: e::class.simpleName.orEmpty(),
-				)
-			}
-		return InvokeEnvelope(
-			id = UUID.randomUUID().toString(),
-			type = type,
-			source = cloudEventsProperties.source,
-			subject = envelope.id,
-			time = OffsetDateTime.now(ZoneOffset.UTC).toString(),
-			data = data,
-		)
-	}
+    private suspend fun invokeOne(envelope: InvokeEnvelope<InvokeRequest>): InvokeEnvelope<OutcomeData> {
+        val (type, data) = runCatching { runInvoke(envelope) }
+            .getOrElse { e ->
+                InvokeType.Outcome.REJECTED to OutcomeData(
+                    errorCode = "GATEWAY_EXCEPTION",
+                    errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+                )
+            }
+        return InvokeEnvelope(
+            id = UUID.randomUUID().toString(),
+            type = type,
+            source = cloudEventsProperties.source,
+            subject = envelope.id,
+            time = OffsetDateTime.now(ZoneOffset.UTC).toString(),
+            data = data,
+        )
+    }
 
-	protected open suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
-		val request = envelope.data
-		val pair = chaincodeConfiguration.getChannelChaincodePair(request.channelid, request.chaincodeid)
-		val invokeArgs = InvokeArgs(InvokeFunction(request.fcn), request.args.toList())
-		val outcome = fabricGatewayClient.invoke(
-			channelId = pair.channelId,
-			chaincodeId = pair.chainCodeId,
-			invokeArgsList = listOf(invokeArgs),
-			commandIds = listOf(envelope.id),
-		).first()
-		return outcome.toWire()
-	}
+    protected open suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
+        val request = envelope.data
+        val pair = chaincodeConfiguration.getChannelChaincodePair(request.channelid, request.chaincodeid)
+        val invokeArgs = InvokeArgs(InvokeFunction(request.fcn), request.args.toList())
+        val outcome = fabricGatewayClient.invoke(
+            channelId = pair.channelId,
+            chaincodeId = pair.chainCodeId,
+            invokeArgsList = listOf(invokeArgs),
+            commandIds = listOf(envelope.id),
+        ).first()
+        return outcome.toWire()
+    }
 
-	private suspend fun doQuery(
+    private suspend fun doQuery(
         channelId: ChannelId,
         chainCodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-	): JsonNode {
-		val raw = if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
-			blockchainService.query(channelId, invokeArgs)
-		} else {
-			doQueryChaincode(channelId, chainCodeId, invokeArgs)
-		}
-		return JsonUtils.toNode(raw)
-	}
+    ): JsonNode {
+        val raw = if (InvokeArgsUtils.isBlockQuery(invokeArgs) || InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
+            blockchainService.query(channelId, invokeArgs)
+        } else {
+            doQueryChaincode(channelId, chainCodeId, invokeArgs)
+        }
+        return JsonUtils.toNode(raw)
+    }
 
-	private suspend fun doQueryChaincode(
+    private suspend fun doQueryChaincode(
         channelId: ChannelId,
         chainCodeId: ChaincodeId,
         invokeArgs: InvokeArgs,
-	): String {
-		return fabricGatewayClient.query(
-			channelId = channelId,
-			chaincodeId = chainCodeId,
-			invokeArgsList = listOf(invokeArgs)
-		).first()
-	}
+    ): String {
+        return fabricGatewayClient.query(
+            channelId = channelId,
+            chaincodeId = chainCodeId,
+            invokeArgsList = listOf(invokeArgs)
+        ).first()
+    }
 }

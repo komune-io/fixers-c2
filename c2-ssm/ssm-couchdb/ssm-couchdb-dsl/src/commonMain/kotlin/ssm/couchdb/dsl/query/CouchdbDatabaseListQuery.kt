@@ -27,15 +27,15 @@ typealias CouchdbDatabaseListQueryFunction = F2Function<CouchdbDatabaseListQuery
 @JsExport
 @JsName("CouchdbDatabaseListQueryDTO")
 interface CouchdbDatabaseListQueryDTO : PageQueryDTO {
-	/**
-	 * The unique id of a channel.
-	 */
-	val channelId: ChannelId?
+    /**
+     * The unique id of a channel.
+     */
+    val channelId: ChannelId?
 
-	/**
-	 * The unique id of a chaincode.
-	 */
-	val chaincodeId: ChaincodeId?
+    /**
+     * The unique id of a chaincode.
+     */
+    val chaincodeId: ChaincodeId?
 }
 
 /**
@@ -46,25 +46,25 @@ interface CouchdbDatabaseListQueryDTO : PageQueryDTO {
 @JsExport
 @JsName("CouchdbDatabaseListQueryResultDTO")
 interface CouchdbDatabaseListQueryResultDTO : PageQueryResultDTO<DatabaseDTO> {
-	override val total: Int
-	override val pagination: OffsetPaginationDTO?
-	override val items: List<DatabaseDTO>
+    override val total: Int
+    override val pagination: OffsetPaginationDTO?
+    override val items: List<DatabaseDTO>
 }
 
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseListQuery")
 class CouchdbDatabaseListQuery(
-	override val pagination: OffsetPaginationDTO? = null,
-	override val channelId: ChannelId? = null,
-	override val chaincodeId: ChaincodeId? = null,
+    override val pagination: OffsetPaginationDTO? = null,
+    override val channelId: ChannelId? = null,
+    override val chaincodeId: ChaincodeId? = null,
 ) : CouchdbDatabaseListQueryDTO
 
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseListQueryResult")
 class CouchdbDatabaseListQueryResult(
-	override val pagination: OffsetPaginationDTO?,
-	override val items: List<DatabaseDTO>,
-	override val total: Int,
+    override val pagination: OffsetPaginationDTO?,
+    override val items: List<DatabaseDTO>,
+    override val total: Int,
 ) : CouchdbDatabaseListQueryResultDTO

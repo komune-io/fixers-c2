@@ -9,47 +9,47 @@ typealias TransactionId = String
 @JsExport
 @JsName("TransactionDTO")
 interface TransactionDTO {
-	/**
-	 * Identifier of the transaction
-	 * @example "c7de3ab6-56e0-4e7d-8fa4-905823ed982e"
-	 */
-	val transactionId: TransactionId
+    /**
+     * Identifier of the transaction
+     * @example "c7de3ab6-56e0-4e7d-8fa4-905823ed982e"
+     */
+    val transactionId: TransactionId
 
-	/**
-	 * [Block] holding the transaction within the blockchain
-	 * @example [Block.blockId]
-	 */
-	val blockId: BlockId
+    /**
+     * [Block] holding the transaction within the blockchain
+     * @example [Block.blockId]
+     */
+    val blockId: BlockId
 
-	/**
-	 * Execution date of the transaction as epoch milliseconds
-	 * @example 1738410430231
-	 */
-	val timestamp: Long
+    /**
+     * Execution date of the transaction as epoch milliseconds
+     * @example 1738410430231
+     */
+    val timestamp: Long
 
-	/**
-	 * Indicates if the transaction has been validated or not
-	 * @example true
-	 */
-	val isValid: Boolean
+    /**
+     * Indicates if the transaction has been validated or not
+     * @example true
+     */
+    val isValid: Boolean
 
-	/**
-	 * Channel in which the transaction has been performed
-	 * @example "channel-komune"
-	 */
-	val channelId: String
+    /**
+     * Channel in which the transaction has been performed
+     * @example "channel-komune"
+     */
+    val channelId: String
 
-	/**
-	 * Requester of the transaction
-	 */
-	val creator: IdentitiesInfoDTO
+    /**
+     * Requester of the transaction
+     */
+    val creator: IdentitiesInfoDTO
 
-	/**
-	 * Random value used to prevent replay attacks.
-	 * Each transaction includes a unique nonce to ensure it cannot be submitted twice.
-	 * @example "j/gVtg9VQ+8tvui/GTyxlILV8HIakce3"
-	 */
-	val nonce: ByteArray
+    /**
+     * Random value used to prevent replay attacks.
+     * Each transaction includes a unique nonce to ensure it cannot be submitted twice.
+     * @example "j/gVtg9VQ+8tvui/GTyxlILV8HIakce3"
+     */
+    val nonce: ByteArray
 }
 
 /**
@@ -61,11 +61,11 @@ interface TransactionDTO {
 @JsName("Transaction")
 @JsExport
 class Transaction(
-	override val transactionId: TransactionId,
-	override val blockId: BlockId,
-	override val timestamp: Long,
-	override val isValid: Boolean,
-	override val channelId: String,
-	override val creator: IdentitiesInfo,
-	override val nonce: ByteArray,
+    override val transactionId: TransactionId,
+    override val blockId: BlockId,
+    override val timestamp: Long,
+    override val isValid: Boolean,
+    override val channelId: String,
+    override val creator: IdentitiesInfo,
+    override val nonce: ByteArray,
 ) : TransactionDTO

@@ -19,50 +19,50 @@ import ssm.sdk.sign.SsmCmdSignerSha256RSASigner
 @Configuration(proxyBeanMethods = false)
 class SsmTxAutoConfiguration {
 
-	@Bean
-	@ConditionalOnProperty(prefix = "ssm.chaincode", name = ["url"])
-	@ConditionalOnMissingBean(SsmChaincodeProperties::class)
-	fun chaincodeSsmConfig(ssmTxCreateProperties: SsmTxProperties): SsmChaincodeProperties =
-		ssmTxCreateProperties.chaincode!!
+    @Bean
+    @ConditionalOnProperty(prefix = "ssm.chaincode", name = ["url"])
+    @ConditionalOnMissingBean(SsmChaincodeProperties::class)
+    fun chaincodeSsmConfig(ssmTxCreateProperties: SsmTxProperties): SsmChaincodeProperties =
+        ssmTxCreateProperties.chaincode!!
 
-	@Bean
-	@ConditionalOnMissingBean(SsmBatchProperties::class)
-	fun ssmBatchProperties(ssmTxCreateProperties: SsmTxProperties): SsmBatchProperties =
-		ssmTxCreateProperties.batch
+    @Bean
+    @ConditionalOnMissingBean(SsmBatchProperties::class)
+    fun ssmBatchProperties(ssmTxCreateProperties: SsmTxProperties): SsmBatchProperties =
+        ssmTxCreateProperties.batch
 
-	@Bean
-	@ConditionalOnMissingBean(SsmCmdSignerSha256RSASigner::class)
-	fun ssmCmdSigner(ssmTxCreateProperties: SsmTxProperties): SsmCmdSigner {
-		return SsmCmdSignerSha256RSASigner(*listOfNotNull(
-			ssmTxCreateProperties.signer?.admin?.signer(),
-			ssmTxCreateProperties.signer?.user?.signer()
-		).toTypedArray())
-	}
+    @Bean
+    @ConditionalOnMissingBean(SsmCmdSignerSha256RSASigner::class)
+    fun ssmCmdSigner(ssmTxCreateProperties: SsmTxProperties): SsmCmdSigner {
+        return SsmCmdSignerSha256RSASigner(*listOfNotNull(
+            ssmTxCreateProperties.signer?.admin?.signer(),
+            ssmTxCreateProperties.signer?.user?.signer()
+        ).toTypedArray())
+    }
 
-	@Bean
-	@ConditionalOnBean(value = [SsmCmdSigner::class, SsmChaincodeProperties::class])
-	@ConditionalOnMissingBean(SsmTxService::class)
-	fun ssmTxService(
-		ssmCmdSigner: SsmCmdSigner,
-		ssmChaincodeProperties: SsmChaincodeProperties,
-		ssmBatchProperties: SsmBatchProperties,
-	): SsmTxService {
-		return SsmServiceFactory.builder(
-			SsmSdkConfig(ssmChaincodeProperties.url),
-			ssmBatchProperties
-		).buildTxService(ssmCmdSigner)
-	}
+    @Bean
+    @ConditionalOnBean(value = [SsmCmdSigner::class, SsmChaincodeProperties::class])
+    @ConditionalOnMissingBean(SsmTxService::class)
+    fun ssmTxService(
+        ssmCmdSigner: SsmCmdSigner,
+        ssmChaincodeProperties: SsmChaincodeProperties,
+        ssmBatchProperties: SsmBatchProperties,
+    ): SsmTxService {
+        return SsmServiceFactory.builder(
+            SsmSdkConfig(ssmChaincodeProperties.url),
+            ssmBatchProperties
+        ).buildTxService(ssmCmdSigner)
+    }
 
-	@Bean
-	@ConditionalOnBean(value = [SsmChaincodeProperties::class])
-	@ConditionalOnMissingBean(SsmQueryService::class)
-	fun ssmQueryService(
-		ssmChaincodeProperties: SsmChaincodeProperties,
-		ssmBatchProperties: SsmBatchProperties,
-	): SsmQueryService {
-		return SsmServiceFactory.builder(
-			SsmSdkConfig(ssmChaincodeProperties.url),
-			ssmBatchProperties
-		).buildQueryService()
-	}
+    @Bean
+    @ConditionalOnBean(value = [SsmChaincodeProperties::class])
+    @ConditionalOnMissingBean(SsmQueryService::class)
+    fun ssmQueryService(
+        ssmChaincodeProperties: SsmChaincodeProperties,
+        ssmBatchProperties: SsmBatchProperties,
+    ): SsmQueryService {
+        return SsmServiceFactory.builder(
+            SsmSdkConfig(ssmChaincodeProperties.url),
+            ssmBatchProperties
+        ).buildQueryService()
+    }
 }

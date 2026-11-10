@@ -15,58 +15,58 @@ import ssm.tx.session.spring.autoconfigure.SsmTxSessionPerformActionAutoConfigur
 
 class ApplicationContextRunnerTest {
 
-	@Test
-	fun `spring context runner must must start`() {
-		ApplicationContextRunnerBuilder()
-			.buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
-				assertThat(context).hasSingleBean(FunctionCatalog::class.java)
-				assertThat(context).hasSingleBean(SsmTxProperties::class.java)
-				assertThat(context).hasBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
-			}
-	}
+    @Test
+    fun `spring context runner must must start`() {
+        ApplicationContextRunnerBuilder()
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+                assertThat(context).hasSingleBean(FunctionCatalog::class.java)
+                assertThat(context).hasSingleBean(SsmTxProperties::class.java)
+                assertThat(context).hasBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
+            }
+    }
 
 
-	@Test
-	fun `spring context must must start`() {
-		val context = ApplicationContextBuilder().create(
-			types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
-			config = SsmChaincodeConfigTest.localDockerComposeParams
-		)
-		assertThat(
-			context.getBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
-		).isNotNull
-		assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
-	}
+    @Test
+    fun `spring context must must start`() {
+        val context = ApplicationContextBuilder().create(
+            types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
+            config = SsmChaincodeConfigTest.localDockerComposeParams
+        )
+        assertThat(
+            context.getBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
+        ).isNotNull
+        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+    }
 
-	@Test
-	fun `user-supplied SsmTxSessionPerformActionFunctionImpl bean suppresses the autoconfig default`() {
-		ApplicationContextRunnerBuilder()
-			.buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
-			.withUserConfiguration(CustomPerformConfig::class.java)
-			.run { context ->
-				assertThat(context).hasBean("customPerformActionFunction")
-				assertThat(context).doesNotHaveBean(
-					SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name
-				)
-				assertThat(context).hasSingleBean(SsmTxSessionPerformActionFunctionImpl::class.java)
-			}
-	}
+    @Test
+    fun `user-supplied SsmTxSessionPerformActionFunctionImpl bean suppresses the autoconfig default`() {
+        ApplicationContextRunnerBuilder()
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+            .withUserConfiguration(CustomPerformConfig::class.java)
+            .run { context ->
+                assertThat(context).hasBean("customPerformActionFunction")
+                assertThat(context).doesNotHaveBean(
+                    SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name
+                )
+                assertThat(context).hasSingleBean(SsmTxSessionPerformActionFunctionImpl::class.java)
+            }
+    }
 
-	@Configuration
-	open class CustomPerformConfig {
-		@Bean
-		open fun customPerformActionFunction(ssmTxService: SsmTxService): SsmTxSessionPerformActionFunctionImpl =
-			SsmTxSessionPerformActionFunctionImpl(ssmTxService)
-	}
+    @Configuration
+    open class CustomPerformConfig {
+        @Bean
+        open fun customPerformActionFunction(ssmTxService: SsmTxService): SsmTxSessionPerformActionFunctionImpl =
+            SsmTxSessionPerformActionFunctionImpl(ssmTxService)
+    }
 }
 
 
 object SsmChaincodeConfigTest {
-	val localDockerCompose = SsmBddConfig.Chaincode
+    val localDockerCompose = SsmBddConfig.Chaincode
 
-	val localDockerComposeParams = mapOf(
-		"ssm.chaincode.url" to localDockerCompose.url,
-		"ssm.signer.admin.name" to SsmBddConfig.Key.admin.first,
-		"ssm.signer.admin.key" to SsmBddConfig.Key.admin.second,
-	)
+    val localDockerComposeParams = mapOf(
+        "ssm.chaincode.url" to localDockerCompose.url,
+        "ssm.signer.admin.name" to SsmBddConfig.Key.admin.first,
+        "ssm.signer.admin.key" to SsmBddConfig.Key.admin.second,
+    )
 }

@@ -27,19 +27,19 @@ import ssm.couchdb.dsl.query.CouchdbUserListQueryFunction
 @JsExport
 @JsName("SsmCouchDbQueries")
 interface SsmCouchDbQueries {
-	fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction
-	fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction
-	fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction
+    fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction
+    fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction
+    fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction
 
-	fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
+    fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
 
-	fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
+    fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
 
-	fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction
+    fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction
 
-	fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction
-	fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction
+    fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction
+    fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction
 
-	fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction
-	fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction
+    fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction
+    fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction
 }

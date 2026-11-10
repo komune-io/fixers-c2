@@ -15,31 +15,31 @@ import ssm.chaincode.dsl.model.SsmSessionStateLog
 
 @Suppress("TooManyFunctions")
 interface SsmQueryServiceI {
-	suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName>
-	suspend fun getAdmin(chaincodeUri: ChaincodeUri, username: AgentName): Agent?
-	suspend fun listUsers(chaincodeUri: ChaincodeUri): List<AgentName>
-	suspend fun getAgent(chaincodeUri: ChaincodeUri, agentName: AgentName): Agent?
-	suspend fun listSsm(chaincodeUri: ChaincodeUri): List<SsmName>
-	suspend fun getSsm(chaincodeUri: ChaincodeUri, name: SsmName): Ssm?
+    suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName>
+    suspend fun getAdmin(chaincodeUri: ChaincodeUri, username: AgentName): Agent?
+    suspend fun listUsers(chaincodeUri: ChaincodeUri): List<AgentName>
+    suspend fun getAgent(chaincodeUri: ChaincodeUri, agentName: AgentName): Agent?
+    suspend fun listSsm(chaincodeUri: ChaincodeUri): List<SsmName>
+    suspend fun getSsm(chaincodeUri: ChaincodeUri, name: SsmName): Ssm?
 
-	suspend fun listSession(chaincodeUri: ChaincodeUri): List<SessionName>
-	suspend fun getSession(chaincodeUri: ChaincodeUri, sessionName: SessionName): SsmSessionState?
+    suspend fun listSession(chaincodeUri: ChaincodeUri): List<SessionName>
+    suspend fun getSession(chaincodeUri: ChaincodeUri, sessionName: SessionName): SsmSessionState?
 
-	suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog>
+    suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog>
 
-	suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<TransactionId>
-	suspend fun getTransaction(chaincodeUri: ChaincodeUri, txId: TransactionId): Transaction?
+    suspend fun listTransactions(chaincodeUri: ChaincodeUri): List<TransactionId>
+    suspend fun getTransaction(chaincodeUri: ChaincodeUri, txId: TransactionId): Transaction?
 
-	suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<BlockId>
-	suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block?
+    suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<BlockId>
+    suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block?
 
-	suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent>
-	suspend fun getAgents(queries: List<GetAgentQuery>): List<Agent>
-	suspend fun getSsms(queries: List<GetSsmQuery>): List<Ssm>
-	suspend fun getSessions(queries: List<GetSessionQuery>): List<SsmSessionState?>
-	suspend fun getTransactions(queries: List<GetTransactionQuery>): List<Transaction?>
-	suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block>
-	suspend fun getLogs(queries: List<GetLogQuery>): List<List<SsmSessionStateLog>>
+    suspend fun getAdmins(queries: List<GetAdminQuery>): List<Agent>
+    suspend fun getAgents(queries: List<GetAgentQuery>): List<Agent>
+    suspend fun getSsms(queries: List<GetSsmQuery>): List<Ssm>
+    suspend fun getSessions(queries: List<GetSessionQuery>): List<SsmSessionState?>
+    suspend fun getTransactions(queries: List<GetTransactionQuery>): List<Transaction?>
+    suspend fun getBlocks(queries: List<GetBlockQuery>): List<Block>
+    suspend fun getLogs(queries: List<GetLogQuery>): List<List<SsmSessionStateLog>>
 }
 
 data class GetAdminQuery(val chaincodeUri: ChaincodeUri, val username: AgentName)

@@ -13,36 +13,36 @@ import s2.sample.subautomate.domain.model.OrderBookId
 
 @Serializable
 data class OrderBookCreateCommand(
-	val name: String
+    val name: String
 ) : S2InitCommand
 
 @Serializable
 @SerialName("OrderBookCreatedEvent")
 data class OrderBookCreatedEvent(
-	val name: String,
-	val id: OrderBookId,
-	val state: OrderBookState
+    val name: String,
+    val id: OrderBookId,
+    val state: OrderBookState
 ) : OrderBookEvent() {
-	override fun s2Id() = id
-	override fun s2State() = state
+    override fun s2Id() = id
+    override fun s2State() = state
 }
 
 @Serializable
 @SerialName("OrderBookUpdateCommand")
 data class OrderBookUpdateCommand(
-	val name: String,
-	override val id: OrderBookId
+    val name: String,
+    override val id: OrderBookId
 ) : OrderBookCommand()
 
 @Serializable
 @SerialName("OrderBookUpdatedEvent")
 data class OrderBookUpdatedEvent(
-	val name: String,
-	val id: OrderBookId,
-	val state: OrderBookState
+    val name: String,
+    val id: OrderBookId,
+    val state: OrderBookState
 ) : OrderBookEvent() {
-	override fun s2Id() = id
-	override fun s2State() = state
+    override fun s2Id() = id
+    override fun s2State() = state
 }
 
 @Serializable
@@ -52,11 +52,11 @@ data class OrderBookPublishCommand(override val id: OrderBookId) : OrderBookComm
 @Serializable
 @SerialName("OrderBookPublishedEvent")
 data class OrderBookPublishedEvent(
-	val id: OrderBookId,
-	val state: OrderBookState
+    val id: OrderBookId,
+    val state: OrderBookState
 ) : OrderBookEvent() {
-	override fun s2Id() = id
-	override fun s2State() = state
+    override fun s2Id() = id
+    override fun s2State() = state
 }
 
 @Serializable
@@ -66,10 +66,10 @@ data class OrderBookCloseCommand(override val id: OrderBookId) : OrderBookComman
 @Serializable
 @SerialName("OrderBookClosedEvent")
 data class OrderBookClosedEvent(
-	val id: OrderBookId, val state: OrderBookState
+    val id: OrderBookId, val state: OrderBookState
 ) : OrderBookEvent() {
-	override fun s2Id() = id
-	override fun s2State() = state
+    override fun s2Id() = id
+    override fun s2State() = state
 }
 
 @Serializable

@@ -11,13 +11,13 @@ import ssm.data.dsl.features.query.DataChaincodeListQueryFunction
 import ssm.data.dsl.features.query.DataChaincodeListQueryResult
 
 class DataChaincodeListQueryFunctionImp(
-	private val couchdbChaincodeListQueryFunction: CouchdbChaincodeListQueryFunction
+    private val couchdbChaincodeListQueryFunction: CouchdbChaincodeListQueryFunction
 ): DataChaincodeListQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataChaincodeListQuery>): Flow<DataChaincodeListQueryResult> =
-		msgs.map {
-			couchdbChaincodeListQueryFunction.invoke(CouchdbChaincodeListQuery()).let {
-				DataChaincodeListQueryResult(it.items.map {it.burst()})
-			}
-		}
+    override suspend fun invoke(msgs: Flow<DataChaincodeListQuery>): Flow<DataChaincodeListQueryResult> =
+        msgs.map {
+            couchdbChaincodeListQueryFunction.invoke(CouchdbChaincodeListQuery()).let {
+                DataChaincodeListQueryResult(it.items.map {it.burst()})
+            }
+        }
 }

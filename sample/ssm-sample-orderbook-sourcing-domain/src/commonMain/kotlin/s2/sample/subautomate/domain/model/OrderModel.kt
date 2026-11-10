@@ -6,7 +6,7 @@ typealias OrderId = String
 
 @optics
 data class Order(
-	val id: OrderId,
+    val id: OrderId,
 ) {
-	companion object
+    companion object
 }

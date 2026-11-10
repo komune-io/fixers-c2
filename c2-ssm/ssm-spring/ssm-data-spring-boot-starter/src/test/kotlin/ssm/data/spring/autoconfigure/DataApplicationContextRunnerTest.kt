@@ -11,48 +11,48 @@ import ssm.data.dsl.config.DataSsmConfig
 
 class DataApplicationContextRunnerTest {
 
-	@Test
-	fun `spring context runner must must start`() {
-		ApplicationContextRunnerBuilder()
-			.buildContext(TestConfiguration.localDockerComposeParams).run { context ->
-				assertThat(context).hasSingleBean(FunctionCatalog::class.java)
-				assertThat(context).hasSingleBean(SsmDataProperties::class.java)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataChaincodeListQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmListQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmGetQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionListQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionGetQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogListQueryFunction.name)
-				assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogGetQueryFunction.name)
-		}
-	}
+    @Test
+    fun `spring context runner must must start`() {
+        ApplicationContextRunnerBuilder()
+            .buildContext(TestConfiguration.localDockerComposeParams).run { context ->
+                assertThat(context).hasSingleBean(FunctionCatalog::class.java)
+                assertThat(context).hasSingleBean(SsmDataProperties::class.java)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataChaincodeListQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmListQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmGetQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionListQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionGetQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogListQueryFunction.name)
+                assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogGetQueryFunction.name)
+        }
+    }
 
-	@Test
-	fun `spring context must must start`() {
-		val context = ApplicationContextBuilder().create(
-			types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
-			config = TestConfiguration.localDockerComposeParams
-		)
-		assertThat(context.getBean(DataSsmAutoConfiguration::dataSsmConfig.name)).isNotNull
-		assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
-	}
+    @Test
+    fun `spring context must must start`() {
+        val context = ApplicationContextBuilder().create(
+            types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
+            config = TestConfiguration.localDockerComposeParams
+        )
+        assertThat(context.getBean(DataSsmAutoConfiguration::dataSsmConfig.name)).isNotNull
+        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+    }
 
 
-	object TestConfiguration {
-		private val localDockerCompose = DataSsmConfig(
-			batch = SsmBddConfig.Data.config.batch,
+    object TestConfiguration {
+        private val localDockerCompose = DataSsmConfig(
+            batch = SsmBddConfig.Data.config.batch,
 //			couchdb = SsmBddConfig.Data.config.couchdb,
 //			chaincode = SsmBddConfig.Data.config.chaincode,
-			couchdb = SsmBddConfig.Couchdb.config,
-			chaincode = SsmBddConfig.Chaincode.config
-		)
+            couchdb = SsmBddConfig.Couchdb.config,
+            chaincode = SsmBddConfig.Chaincode.config
+        )
 
-		val localDockerComposeParams = mapOf(
-			"ssm.chaincode.url" to localDockerCompose.chaincode.url,
-			"ssm.couchdb.url" to localDockerCompose.couchdb.url,
-			"ssm.couchdb.username" to localDockerCompose.couchdb.username,
-			"ssm.couchdb.password" to localDockerCompose.couchdb.password,
-			"ssm.couchdb.serviceName" to localDockerCompose.couchdb.serviceName,
-		)
-	}
+        val localDockerComposeParams = mapOf(
+            "ssm.chaincode.url" to localDockerCompose.chaincode.url,
+            "ssm.couchdb.url" to localDockerCompose.couchdb.url,
+            "ssm.couchdb.username" to localDockerCompose.couchdb.username,
+            "ssm.couchdb.password" to localDockerCompose.couchdb.password,
+            "ssm.couchdb.serviceName" to localDockerCompose.couchdb.serviceName,
+        )
+    }
 }

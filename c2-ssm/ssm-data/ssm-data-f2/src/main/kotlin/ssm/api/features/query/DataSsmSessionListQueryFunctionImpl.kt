@@ -17,29 +17,29 @@ import ssm.data.dsl.features.query.DataSsmSessionListQueryResult
 import ssm.data.dsl.features.query.DataSsmSessionListQueryResultDTO
 
 class DataSsmSessionListQueryFunctionImpl(
-	private val dataSsmSessionConvertFunctionImpl: DataSsmSessionConvertFunctionImpl,
-	private val couchdbSsmSessionStateListQueryFunction: CouchdbSsmSessionStateListQueryFunction,
+    private val dataSsmSessionConvertFunctionImpl: DataSsmSessionConvertFunctionImpl,
+    private val couchdbSsmSessionStateListQueryFunction: CouchdbSsmSessionStateListQueryFunction,
 ) : DataSsmSessionListQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataSsmSessionListQueryDTO>): Flow<DataSsmSessionListQueryResultDTO> =
-		msgs.map { payload ->
-			CouchdbSsmSessionStateListQuery(
-				chaincodeUri = ChaincodeUri.from(
-					channelId = payload.ssmUri.burst().channelId,
-					chaincodeId = payload.ssmUri.burst().chaincodeId,
-				),
-				ssm = payload.ssmUri.burst().ssmName,
-				pagination = null
-			).invokeWith(couchdbSsmSessionStateListQueryFunction)
-				.items
-				.filter { sessionState -> sessionState.session.isNotBlank() }
-				.map { sessionState ->
-					DataSsmSessionConvertQuery(
-						sessionState = sessionState as SsmSessionState,
-						ssmUri = payload.ssmUri.burst()
-					).invokeWith(dataSsmSessionConvertFunctionImpl)
-				}.let {
-					DataSsmSessionListQueryResult(it)
-				}
-		}
+    override suspend fun invoke(msgs: Flow<DataSsmSessionListQueryDTO>): Flow<DataSsmSessionListQueryResultDTO> =
+        msgs.map { payload ->
+            CouchdbSsmSessionStateListQuery(
+                chaincodeUri = ChaincodeUri.from(
+                    channelId = payload.ssmUri.burst().channelId,
+                    chaincodeId = payload.ssmUri.burst().chaincodeId,
+                ),
+                ssm = payload.ssmUri.burst().ssmName,
+                pagination = null
+            ).invokeWith(couchdbSsmSessionStateListQueryFunction)
+                .items
+                .filter { sessionState -> sessionState.session.isNotBlank() }
+                .map { sessionState ->
+                    DataSsmSessionConvertQuery(
+                        sessionState = sessionState as SsmSessionState,
+                        ssmUri = payload.ssmUri.burst()
+                    ).invokeWith(dataSsmSessionConvertFunctionImpl)
+                }.let {
+                    DataSsmSessionListQueryResult(it)
+                }
+        }
 }

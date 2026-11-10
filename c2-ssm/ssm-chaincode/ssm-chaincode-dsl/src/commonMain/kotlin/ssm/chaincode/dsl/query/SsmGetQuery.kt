@@ -30,10 +30,10 @@ typealias SsmGetQueryFunction = F2Function<SsmGetQuery, SsmGetResult>
 class SsmGetQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-	 * Identifier of the SSM to retrieve
-	 * @example [Ssm.name]
-	 */
-	val name: SsmName,
+     * Identifier of the SSM to retrieve
+     * @example [Ssm.name]
+     */
+    val name: SsmName,
 ) : SsmQueryDTO
 
 /**
@@ -45,8 +45,8 @@ class SsmGetQuery(
 @Serializable
 @JsName("SsmGetResult")
 class SsmGetResult(
-	/**
-	 * The ssm found
-	 */
-	override val item: Ssm?,
+    /**
+     * The ssm found
+     */
+    override val item: Ssm?,
 ) : SsmItemResultDTO<Ssm>

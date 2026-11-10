@@ -8,16 +8,16 @@ import kotlinx.serialization.Serializable
 @JsExport
 @JsName("SsmSessionStateLogDTO")
 interface SsmSessionStateLogDTO {
-	/**
-	 * Id of the [Transaction][ssm.chaincode.dsl.blockchain.Transaction] the state is originated from
-	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
-	 */
-	val txId: TransactionId
+    /**
+     * Id of the [Transaction][ssm.chaincode.dsl.blockchain.Transaction] the state is originated from
+     * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
+     */
+    val txId: TransactionId
 
-	/**
-	 * The state generated with the transaction
-	 */
-	val state: SsmSessionStateDTO
+    /**
+     * The state generated with the transaction
+     */
+    val state: SsmSessionStateDTO
 }
 
 /**

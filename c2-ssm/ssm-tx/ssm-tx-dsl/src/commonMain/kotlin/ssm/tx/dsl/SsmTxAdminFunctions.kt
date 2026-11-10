@@ -21,9 +21,9 @@ import ssm.tx.dsl.features.user.SsmTxUserRegisterFunction
  * @parent [ssm.tx.dsl.SsmTxD2]
  */
 interface SsmTxAdminFunctions {
-	fun ssmTxUserGrantFunction(): SsmTxUserGrantFunction
-	fun ssmTxUserRegisterFunction(): SsmTxUserRegisterFunction
+    fun ssmTxUserGrantFunction(): SsmTxUserGrantFunction
+    fun ssmTxUserRegisterFunction(): SsmTxUserRegisterFunction
 
-	fun ssmTxCreateFunction(): SsmTxCreateFunction
-	fun ssmTxInitializeFunction(): SsmTxInitFunction
+    fun ssmTxCreateFunction(): SsmTxCreateFunction
+    fun ssmTxInitializeFunction(): SsmTxInitFunction
 }

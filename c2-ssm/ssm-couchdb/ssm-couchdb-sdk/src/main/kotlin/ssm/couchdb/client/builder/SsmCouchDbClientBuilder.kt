@@ -7,51 +7,51 @@ import ssm.sdk.json.JSONConverterObjectMapper
 
 class SsmCouchDbClientBuilder {
 
-	private var jsonConverter: JSONConverter = JSONConverterObjectMapper()
-	private lateinit var auth: SsmCouchDbAuth
-	private lateinit var url: String
-	private lateinit var name: String
+    private var jsonConverter: JSONConverter = JSONConverterObjectMapper()
+    private lateinit var auth: SsmCouchDbAuth
+    private lateinit var url: String
+    private lateinit var name: String
 
-	fun withJSONConverter(jsonConverter: JSONConverter): SsmCouchDbClientBuilder = apply {
-		this.jsonConverter = jsonConverter
-	}
+    fun withJSONConverter(jsonConverter: JSONConverter): SsmCouchDbClientBuilder = apply {
+        this.jsonConverter = jsonConverter
+    }
 
-	fun withUrl(url: String): SsmCouchDbClientBuilder = apply {
-		this.url = url
-	}
+    fun withUrl(url: String): SsmCouchDbClientBuilder = apply {
+        this.url = url
+    }
 
-	fun withName(name: String): SsmCouchDbClientBuilder = apply {
-		this.name = name
-	}
+    fun withName(name: String): SsmCouchDbClientBuilder = apply {
+        this.name = name
+    }
 
-	fun withAuth(auth: SsmCouchDbAuth): SsmCouchDbClientBuilder = apply {
-		this.auth = auth
-	}
+    fun withAuth(auth: SsmCouchDbAuth): SsmCouchDbClientBuilder = apply {
+        this.auth = auth
+    }
 
-	fun build(): CouchdbSsmClient {
-		val converter = requireNotNull(this.jsonConverter)
-		val auth = requireNotNull(this.auth)
-		val cloudant = buildCloudant(auth)
-		return CouchdbSsmClient(cloudant, converter)
-	}
+    fun build(): CouchdbSsmClient {
+        val converter = requireNotNull(this.jsonConverter)
+        val auth = requireNotNull(this.auth)
+        val cloudant = buildCloudant(auth)
+        return CouchdbSsmClient(cloudant, converter)
+    }
 
-	private fun buildCloudant(auth: SsmCouchDbAuth): CloudantFixed {
-		val cloudantAuth = when (auth) {
-			is SsmCouchDbBasicAuth -> BasicAuthenticator.Builder()
-				.username(auth.username)
-				.password(auth.password)
-				.build()
-		}
+    private fun buildCloudant(auth: SsmCouchDbAuth): CloudantFixed {
+        val cloudantAuth = when (auth) {
+            is SsmCouchDbBasicAuth -> BasicAuthenticator.Builder()
+                .username(auth.username)
+                .password(auth.password)
+                .build()
+        }
 
-		val client = CloudantFixed(name, cloudantAuth).apply {
-			serviceUrl = url
-		}
+        val client = CloudantFixed(name, cloudantAuth).apply {
+            serviceUrl = url
+        }
 
-		val serverInformation = client
-			.serverInformation
-			.execute()
-			.result
-		println("Server Version: ${serverInformation.version}")
-		return client
-	}
+        val serverInformation = client
+            .serverInformation
+            .execute()
+            .result
+        println("Server Version: ${serverInformation.version}")
+        return client
+    }
 }

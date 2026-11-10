@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class SubAutomateSsmApp
 
 fun main(args: Array<String>) {
-	runApplication<SubAutomateSsmApp>(*args)
+    runApplication<SubAutomateSsmApp>(*args)
 }

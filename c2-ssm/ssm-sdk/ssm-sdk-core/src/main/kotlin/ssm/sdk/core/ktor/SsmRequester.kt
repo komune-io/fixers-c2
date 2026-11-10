@@ -18,128 +18,128 @@ import ssm.sdk.json.JsonUtils
 import tools.jackson.core.type.TypeReference
 
 class SsmRequester(
-	private val jsonConverter: JSONConverter,
-	private val ssmChaincodeRepository: SsmChaincodeRepository,
+    private val jsonConverter: JSONConverter,
+    private val ssmChaincodeRepository: SsmChaincodeRepository,
 ) {
 
-	private val logger = LoggerFactory.getLogger(SsmRequester::class.java)
+    private val logger = LoggerFactory.getLogger(SsmRequester::class.java)
 
-	// Note: queryLogs logs BEFORE performing the request, while query/list log AFTER —
-	// a historical inconsistency preserved as-is (renamed from `logger`, behavior unchanged).
-	suspend fun <T> queryLogs(
+    // Note: queryLogs logs BEFORE performing the request, while query/list log AFTER —
+    // a historical inconsistency preserved as-is (renamed from `logger`, behavior unchanged).
+    suspend fun <T> queryLogs(
         chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: TypeReference<List<T>>
-	): List<T> {
-		val args = query.queryArgs(value)
-		logger.info(
-			"Query[Log] the blockchain in chaincode[{}] with fcn[{}] with args:{}",
-			chaincodeUri.uri,
-			args.function,
-			args.values
-		)
-		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query,
-			fcn = args.function,
-			args = args.values,
-			channelId = chaincodeUri.channelId,
-			chaincodeId = chaincodeUri.chaincodeId,
-		)
-		return JsonUtils.toObject(request, clazz)
-	}
+    ): List<T> {
+        val args = query.queryArgs(value)
+        logger.info(
+            "Query[Log] the blockchain in chaincode[{}] with fcn[{}] with args:{}",
+            chaincodeUri.uri,
+            args.function,
+            args.values
+        )
+        val request = ssmChaincodeRepository.query(
+            cmd = InvokeRequestType.query,
+            fcn = args.function,
+            args = args.values,
+            channelId = chaincodeUri.channelId,
+            chaincodeId = chaincodeUri.chaincodeId,
+        )
+        return JsonUtils.toObject(request, clazz)
+    }
 
-	suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
-		val args = query.queryArgs(value)
-		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query,
-			fcn = args.function,
-			args = args.values,
-			channelId = chaincodeUri.channelId,
-			chaincodeId = chaincodeUri.chaincodeId,
-		)
-		logger.info(
-			"Query the blockchain in chaincode[{}] with fcn[{}] with args:{}",
-			chaincodeUri.uri,
-			args.function,
-			args.values
-		)
-		return jsonConverter.toCompletableObject(clazz, request)
-	}
+    suspend fun <T> query(chaincodeUri: ChaincodeUri, value: String, query: HasGet, clazz: Class<T>): T? {
+        val args = query.queryArgs(value)
+        val request = ssmChaincodeRepository.query(
+            cmd = InvokeRequestType.query,
+            fcn = args.function,
+            args = args.values,
+            channelId = chaincodeUri.channelId,
+            chaincodeId = chaincodeUri.chaincodeId,
+        )
+        logger.info(
+            "Query the blockchain in chaincode[{}] with fcn[{}] with args:{}",
+            chaincodeUri.uri,
+            args.function,
+            args.values
+        )
+        return jsonConverter.toCompletableObject(clazz, request)
+    }
 
-	private fun <T> List<T>.logChaincodes(
-		type: String, total: Int, toChaincode: (T) -> ChaincodeUri
-	) = map(toChaincode).toSet()
-	.joinToString { "[${it.channelId}:${it.chaincodeId}]]" }
-	.let { chaincodeUri ->
-		logger.info(
-			"$type[$total] the blockchain in channel[$chaincodeUri]",
-		)
-	}
+    private fun <T> List<T>.logChaincodes(
+        type: String, total: Int, toChaincode: (T) -> ChaincodeUri
+    ) = map(toChaincode).toSet()
+    .joinToString { "[${it.channelId}:${it.chaincodeId}]]" }
+    .let { chaincodeUri ->
+        logger.info(
+            "$type[$total] the blockchain in channel[$chaincodeUri]",
+        )
+    }
 
-	suspend fun <T> queryEach(queries: List<SsmApiQuery>, clazz: TypeReference<T>): List<T> =
-		queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
+    suspend fun <T> queryEach(queries: List<SsmApiQuery>, clazz: TypeReference<T>): List<T> =
+        queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
 
-	suspend fun <T> queryEachList(
-		queries: List<SsmApiQuery>,
-		clazz: TypeReference<List<T>>,
-	): List<List<T>> = queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
+    suspend fun <T> queryEachList(
+        queries: List<SsmApiQuery>,
+        clazz: TypeReference<List<T>>,
+    ): List<List<T>> = queries.fetchEach().map { raw -> raw.handleResponse { JsonUtils.toObject(it, clazz) } }
 
-	private suspend fun List<SsmApiQuery>.fetchEach(): List<String> = coroutineScope {
-		logChaincodes("Query", size) { it.chaincodeUri }
-		map { query ->
-			async {
-				val args = query.query.queryArgs(query.value)
-				ssmChaincodeRepository.query(
-					cmd = InvokeRequestType.query,
-					fcn = args.function,
-					args = args.values,
-					channelId = query.chaincodeUri.channelId,
-					chaincodeId = query.chaincodeUri.chaincodeId,
-				)
-			}
-		}.awaitAll()
-	}
+    private suspend fun List<SsmApiQuery>.fetchEach(): List<String> = coroutineScope {
+        logChaincodes("Query", size) { it.chaincodeUri }
+        map { query ->
+            async {
+                val args = query.query.queryArgs(query.value)
+                ssmChaincodeRepository.query(
+                    cmd = InvokeRequestType.query,
+                    fcn = args.function,
+                    args = args.values,
+                    channelId = query.chaincodeUri.channelId,
+                    chaincodeId = query.chaincodeUri.chaincodeId,
+                )
+            }
+        }.awaitAll()
+    }
 
-	suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
-		val args = query.listArgs()
-		val request = ssmChaincodeRepository.query(
-			cmd = InvokeRequestType.query,
-			fcn = args.function,
-			args = args.values,
-			channelId = chaincodeUri.channelId,
-			chaincodeId = chaincodeUri.chaincodeId,
-		)
-		logger.info(
-			"Query the blockchain in chaincode[${chaincodeUri.uri}] with fcn[${args.function}] with args:${args.values}",
-		)
-		return request.handleResponse { response ->
-			jsonConverter.toCompletableObjects(clazz, response)
-		}
-	}
+    suspend fun <T> list(chaincodeUri: ChaincodeUri, query: HasList, clazz: Class<T>): List<T> {
+        val args = query.listArgs()
+        val request = ssmChaincodeRepository.query(
+            cmd = InvokeRequestType.query,
+            fcn = args.function,
+            args = args.values,
+            channelId = chaincodeUri.channelId,
+            chaincodeId = chaincodeUri.chaincodeId,
+        )
+        logger.info(
+            "Query the blockchain in chaincode[${chaincodeUri.uri}] with fcn[${args.function}] with args:${args.values}",
+        )
+        return request.handleResponse { response ->
+            jsonConverter.toCompletableObjects(clazz, response)
+        }
+    }
 
-	@Throws(Exception::class)
-	suspend fun invokeAll(
-		cmds: List<SsmCmdSigned>,
-		msgIds: List<String>,
-	): List<CommandOutcome> {
-		require(msgIds.size == cmds.size) {
-			"msgIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
-		}
-		val total = cmds.size
-		cmds.logChaincodes("Invoke", total) { it.chaincodeUri }
+    @Throws(Exception::class)
+    suspend fun invokeAll(
+        cmds: List<SsmCmdSigned>,
+        msgIds: List<String>,
+    ): List<CommandOutcome> {
+        require(msgIds.size == cmds.size) {
+            "msgIds.size=${msgIds.size} must match cmds.size=${cmds.size}"
+        }
+        val total = cmds.size
+        cmds.logChaincodes("Invoke", total) { it.chaincodeUri }
 
-		val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
-		return ssmChaincodeRepository.invoke(args, msgIds)
-	}
+        val args = cmds.map { it.buildCommandArgs(InvokeRequestType.invoke) }
+        return ssmChaincodeRepository.invoke(args, msgIds)
+    }
 
-	private fun <R> String.handleResponse(transform: (String) -> R): R = try {
-		transform(this)
-	} catch (e: Exception) {
-		val excerpt = this.take(HANDLE_RESPONSE_EXCERPT_LIMIT).ifBlank { "<empty>" }
-		throw InvokeException("Error parsing response: $excerpt", e)
-	}
+    private fun <R> String.handleResponse(transform: (String) -> R): R = try {
+        transform(this)
+    } catch (e: Exception) {
+        val excerpt = this.take(HANDLE_RESPONSE_EXCERPT_LIMIT).ifBlank { "<empty>" }
+        throw InvokeException("Error parsing response: $excerpt", e)
+    }
 
-	companion object {
-		private const val HANDLE_RESPONSE_EXCERPT_LIMIT = 200
-	}
+    companion object {
+        private const val HANDLE_RESPONSE_EXCERPT_LIMIT = 200
+    }
 }
 
 data class SsmApiQuery(

@@ -9,28 +9,28 @@ typealias BlockId = Int
 @JsExport
 @JsName("BlockDTO")
 interface BlockDTO {
-	/**
-	 * Identifier of the block
-	 * @example 10
-	 */
-	val blockId: BlockId
+    /**
+     * Identifier of the block
+     * @example 10
+     */
+    val blockId: BlockId
 
-	/**
-	 * Hash of the previous block within the blockchain
-	 * @example "TODO"
-	 */
-	val previousHash: ByteArray
+    /**
+     * Hash of the previous block within the blockchain
+     * @example "TODO"
+     */
+    val previousHash: ByteArray
 
-	/**
-	 * Hash of the data within the block
-	 * @example "TODO"
-	 */
-	val dataHash: ByteArray
+    /**
+     * Hash of the data within the block
+     * @example "TODO"
+     */
+    val dataHash: ByteArray
 
-	/**
-	 * Transactions within the block
-	 */
-	val transactions: List<TransactionDTO>
+    /**
+     * Transactions within the block
+     */
+    val transactions: List<TransactionDTO>
 }
 
 /**

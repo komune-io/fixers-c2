@@ -24,62 +24,62 @@ import ssm.sdk.sign.model.SignerUser
 
 internal class DataSsmSessionListQueryFunctionImplTest {
 
-	private val chaincodeUri = SsmBddConfig.Chaincode.chaincodeUri
+    private val chaincodeUri = SsmBddConfig.Chaincode.chaincodeUri
 
-	private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
-		SsmBddConfig.Data.config,
-	)
+    private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
+        SsmBddConfig.Data.config,
+    )
 
-	private val function: DataSsmSessionListQueryFunction = dataSsmQueryFunction.dataSsmSessionListQueryFunction()
-	private val dataSsmListQueryFunction: DataSsmListQueryFunction = dataSsmQueryFunction.dataSsmListQueryFunction()
+    private val function: DataSsmSessionListQueryFunction = dataSsmQueryFunction.dataSsmSessionListQueryFunction()
+    private val dataSsmListQueryFunction: DataSsmListQueryFunction = dataSsmQueryFunction.dataSsmListQueryFunction()
 
 
-	@Test
-	suspend fun `test exception`() {
-		val uuid = UUID.randomUUID().toString().take(8)
-		val createdSsmName = createSsmWithSession(uuid)
+    @Test
+    suspend fun `test exception`() {
+        val uuid = UUID.randomUUID().toString().take(8)
+        val createdSsmName = createSsmWithSession(uuid)
 
-		val ssmListResult = dataSsmListQueryFunction.invoke(
-			DataSsmListQuery(listOf(chaincodeUri))
-		)
-		val createdSsmUri = ssmListResult.items
-			.first { it.ssm.name == createdSsmName }
-			.uri
-		val result = DataSsmSessionListQuery(
-			ssmUri = createdSsmUri,
-		).invokeWith(function)
-		Assertions.assertThat(result.items).isNotEmpty()
-	}
+        val ssmListResult = dataSsmListQueryFunction.invoke(
+            DataSsmListQuery(listOf(chaincodeUri))
+        )
+        val createdSsmUri = ssmListResult.items
+            .first { it.ssm.name == createdSsmName }
+            .uri
+        val result = DataSsmSessionListQuery(
+            ssmUri = createdSsmUri,
+        ).invokeWith(function)
+        Assertions.assertThat(result.items).isNotEmpty()
+    }
 
-	private suspend fun createSsmWithSession(uuid: String): String {
-		val (adminName, adminPath) = SsmBddConfig.Key.admin
-		val admin = SignerAdmin.loadFromFile(adminName, adminPath)
-		val factory = SsmServiceFactory.builder(
-			SsmSdkConfig(SsmBddConfig.Chaincode.url),
-			SsmBatchProperties()
-		)
-		val txService = factory.buildTxService(SsmCmdSignerSha256RSASigner(admin))
+    private suspend fun createSsmWithSession(uuid: String): String {
+        val (adminName, adminPath) = SsmBddConfig.Key.admin
+        val admin = SignerAdmin.loadFromFile(adminName, adminPath)
+        val factory = SsmServiceFactory.builder(
+            SsmSdkConfig(SsmBddConfig.Chaincode.url),
+            SsmBatchProperties()
+        )
+        val txService = factory.buildTxService(SsmCmdSignerSha256RSASigner(admin))
 
-		val ssmName = "data-test-ssm-$uuid"
-		val ssm = Ssm(
-			name = ssmName,
-			transitions = listOf(
-				SsmTransition(from = 0, to = 1, role = "Tester", action = "Test")
-			)
-		)
-		txService.sendCreate(chaincodeUri, ssm, admin.name)
+        val ssmName = "data-test-ssm-$uuid"
+        val ssm = Ssm(
+            name = ssmName,
+            transitions = listOf(
+                SsmTransition(from = 0, to = 1, role = "Tester", action = "Test")
+            )
+        )
+        txService.sendCreate(chaincodeUri, ssm, admin.name)
 
-		val user = SignerUser.generate("data-test-user-$uuid")
-		txService.sendRegisterUser(chaincodeUri, user.asAgent(), admin.name)
+        val user = SignerUser.generate("data-test-user-$uuid")
+        txService.sendRegisterUser(chaincodeUri, user.asAgent(), admin.name)
 
-		val session = SsmSession(
-			ssm = ssmName,
-			session = "data-test-session-$uuid",
-			roles = mapOf(user.name to "Tester"),
-			public = "",
-			private = null
-		)
-		txService.sendStart(chaincodeUri, session, admin.name)
-		return ssmName
-	}
+        val session = SsmSession(
+            ssm = ssmName,
+            session = "data-test-session-$uuid",
+            roles = mapOf(user.name to "Tester"),
+            public = "",
+            private = null
+        )
+        txService.sendStart(chaincodeUri, session, admin.name)
+        return ssmName
+    }
 }

@@ -10,21 +10,21 @@ import ssm.tx.dsl.features.user.SsmUserRegisterCommand
 import ssm.tx.dsl.features.user.SsmUserRegisteredResult
 
 class SsmUserRegisterFunctionImpl(
-	private val ssmTxService: SsmTxService
+    private val ssmTxService: SsmTxService
 ): SsmTxUserRegisterFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmUserRegisterCommand>): Flow<SsmUserRegisteredResult> = msgs.map { payload ->
-		UserRegisterCommand(
-			agent = payload.agent,
-			chaincodeUri = payload.chaincodeUri.burst(),
-			signerName = payload.signerName
-		)
-	}.let {
-		ssmTxService.sendRegisterUser(it).map { result ->
-			SsmUserRegisteredResult(
-				transactionId = result.transactionId.orEmpty(),
-			)
-		}
-	}
+    override suspend fun invoke(msgs: Flow<SsmUserRegisterCommand>): Flow<SsmUserRegisteredResult> = msgs.map { payload ->
+        UserRegisterCommand(
+            agent = payload.agent,
+            chaincodeUri = payload.chaincodeUri.burst(),
+            signerName = payload.signerName
+        )
+    }.let {
+        ssmTxService.sendRegisterUser(it).map { result ->
+            SsmUserRegisteredResult(
+                transactionId = result.transactionId.orEmpty(),
+            )
+        }
+    }
 
 }

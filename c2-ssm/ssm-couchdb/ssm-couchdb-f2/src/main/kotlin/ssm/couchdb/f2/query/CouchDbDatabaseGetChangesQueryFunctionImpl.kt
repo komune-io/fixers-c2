@@ -15,58 +15,58 @@ import ssm.couchdb.dsl.query.CouchdbDatabaseGetChangesQueryResultDTO
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchDbDatabaseGetChangesQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbDatabaseGetChangesQueryFunction {
 
-	private val logger = LoggerFactory.getLogger(CouchDbDatabaseGetChangesQueryFunctionImpl::class.java)
+    private val logger = LoggerFactory.getLogger(CouchDbDatabaseGetChangesQueryFunctionImpl::class.java)
 
-	@Suppress("TooGenericExceptionCaught")
-	override suspend fun invoke(msgs: Flow<CouchdbDatabaseGetChangesQueryDTO>)
-	: Flow<CouchdbDatabaseGetChangesQueryResultDTO> = msgs.map { payload ->
-		try {
-			getChanges(couchdbClient, payload)
-		} catch (e: Exception) {
-			logger.error(e.message, e)
-			CouchdbDatabaseGetChangesQueryResult(
-				items = emptyList(),
-				lastEventId = null
-			)
-		}
-	}
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun invoke(msgs: Flow<CouchdbDatabaseGetChangesQueryDTO>)
+    : Flow<CouchdbDatabaseGetChangesQueryResultDTO> = msgs.map { payload ->
+        try {
+            getChanges(couchdbClient, payload)
+        } catch (e: Exception) {
+            logger.error(e.message, e)
+            CouchdbDatabaseGetChangesQueryResult(
+                items = emptyList(),
+                lastEventId = null
+            )
+        }
+    }
 
-	private suspend fun getChanges(
-		couchdbClient: CouchdbSsmClient,
-		payload: CouchdbDatabaseGetChangesQueryDTO
-	): CouchdbDatabaseGetChangesQueryResultDTO {
-		logger.info("GetChanges for ${payload.channelId}:${payload.chaincodeId}:${payload.ssmName}:${payload.sessionName}")
-		val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
-		return couchdbClient.getSsmChanges(
-			dbName = dbName,
-			lastEventId = payload.lastEventId,
-			limit = payload.limit,
-			ssmName = payload.ssmName,
-			sessionName = payload.sessionName
-		).transformResult()
-	}
+    private suspend fun getChanges(
+        couchdbClient: CouchdbSsmClient,
+        payload: CouchdbDatabaseGetChangesQueryDTO
+    ): CouchdbDatabaseGetChangesQueryResultDTO {
+        logger.info("GetChanges for ${payload.channelId}:${payload.chaincodeId}:${payload.ssmName}:${payload.sessionName}")
+        val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+        return couchdbClient.getSsmChanges(
+            dbName = dbName,
+            lastEventId = payload.lastEventId,
+            limit = payload.limit,
+            ssmName = payload.ssmName,
+            sessionName = payload.sessionName
+        ).transformResult()
+    }
 
-	private fun ChangesResult.transformResult(): CouchdbDatabaseGetChangesQueryResult {
-		return results.filter { changes ->
-			changes.parseId().isNotBlank()
-		}.map { changesItem ->
-			DatabaseChanges(
-				objectId = changesItem.parseId(),
-				docType = changesItem.getDocType(),
-				changeEventId = changesItem.seq
-			)
-		}.let {
-			CouchdbDatabaseGetChangesQueryResult(
-				items = it,
-				lastEventId = lastSeq
-			)
-		}
-	}
+    private fun ChangesResult.transformResult(): CouchdbDatabaseGetChangesQueryResult {
+        return results.filter { changes ->
+            changes.parseId().isNotBlank()
+        }.map { changesItem ->
+            DatabaseChanges(
+                objectId = changesItem.parseId(),
+                docType = changesItem.getDocType(),
+                changeEventId = changesItem.seq
+            )
+        }.let {
+            CouchdbDatabaseGetChangesQueryResult(
+                items = it,
+                lastEventId = lastSeq
+            )
+        }
+    }
 
-	private fun ChangesResultItem.parseId(): String {
-		return id.substringAfter("_")
-	}
+    private fun ChangesResultItem.parseId(): String {
+        return id.substringAfter("_")
+    }
 }

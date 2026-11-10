@@ -13,12 +13,12 @@ import ssm.sdk.core.GetTransactionQuery
 import ssm.sdk.core.SsmQueryService
 
 class SsmGetTransactionQueryFunctionImpl(
-	private val queryService: SsmQueryService
+    private val queryService: SsmQueryService
 ) : SsmGetTransactionQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmGetTransactionQuery>): Flow<SsmGetTransactionQueryResult> = flow {
-		val transactionQuery = msgs.map { GetTransactionQuery(it.chaincodeUri, it.id)  }.toList()
-		val transactions = queryService.getTransactions(transactionQuery).map(::SsmGetTransactionQueryResult)
-		emitAll(transactions.asFlow())
-	}
+    override suspend fun invoke(msgs: Flow<SsmGetTransactionQuery>): Flow<SsmGetTransactionQueryResult> = flow {
+        val transactionQuery = msgs.map { GetTransactionQuery(it.chaincodeUri, it.id)  }.toList()
+        val transactions = queryService.getTransactions(transactionQuery).map(::SsmGetTransactionQueryResult)
+        emitAll(transactions.asFlow())
+    }
 }

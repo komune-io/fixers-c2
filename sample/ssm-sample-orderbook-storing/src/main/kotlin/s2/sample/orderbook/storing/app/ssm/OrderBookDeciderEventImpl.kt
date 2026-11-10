@@ -21,48 +21,48 @@ import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
 
 @Service
 class OrderBookDeciderEventImpl(
-	private val aggregate: OrderBookS2EventAggregate
+    private val aggregate: OrderBookS2EventAggregate
 ) : OrderBookDecider {
 
-	override fun orderBookCreateDecider()
-		: OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent> = F2Function { msg ->
-		aggregate.evolve(msg) { cmd ->
-			val id = UUID.randomUUID().toString()
-			OrderBook(
-				id = id,
-				name = cmd.name,
-				status = OrderBookState.Created
-			) to OrderBookCreatedEvent(id = id, name = cmd.name, state = OrderBookState.Created)
-		}
-	}
+    override fun orderBookCreateDecider()
+        : OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent> = F2Function { msg ->
+        aggregate.evolve(msg) { cmd ->
+            val id = UUID.randomUUID().toString()
+            OrderBook(
+                id = id,
+                name = cmd.name,
+                status = OrderBookState.Created
+            ) to OrderBookCreatedEvent(id = id, name = cmd.name, state = OrderBookState.Created)
+        }
+    }
 
-	override fun orderBookUpdateDecider()
-		: OrderBookDecide<OrderBookUpdateCommand, OrderBookUpdatedEvent> = F2Function { msg ->
-		aggregate.evolve(msg) { cmd, entity ->
-			val ent = OrderBook.name.set(entity, cmd.name)
-			val event =	OrderBookUpdatedEvent(id = cmd.id, name = cmd.name, state = OrderBookState.Created)
-			ent to event
-		}
-	}
+    override fun orderBookUpdateDecider()
+        : OrderBookDecide<OrderBookUpdateCommand, OrderBookUpdatedEvent> = F2Function { msg ->
+        aggregate.evolve(msg) { cmd, entity ->
+            val ent = OrderBook.name.set(entity, cmd.name)
+            val event =	OrderBookUpdatedEvent(id = cmd.id, name = cmd.name, state = OrderBookState.Created)
+            ent to event
+        }
+    }
 
-	override fun orderBookPublishDecider()
-		: OrderBookDecide<OrderBookPublishCommand, OrderBookPublishedEvent> = F2Function { msg ->
-		aggregate.evolve(msg) { cmd, entity ->
-			OrderBook.status.set(entity, OrderBookState.Published) to OrderBookPublishedEvent(
-				id = cmd.id,
-				state = OrderBookState.Published
-			)
-		}
-	}
+    override fun orderBookPublishDecider()
+        : OrderBookDecide<OrderBookPublishCommand, OrderBookPublishedEvent> = F2Function { msg ->
+        aggregate.evolve(msg) { cmd, entity ->
+            OrderBook.status.set(entity, OrderBookState.Published) to OrderBookPublishedEvent(
+                id = cmd.id,
+                state = OrderBookState.Published
+            )
+        }
+    }
 
-	override fun orderBookCloseDecider()
-		: OrderBookDecide<OrderBookCloseCommand, OrderBookClosedEvent> = F2Function { msg ->
-		aggregate.evolve(msg) { cmd, entity ->
-			OrderBook.status.set(entity, OrderBookState.Closed) to
-				OrderBookClosedEvent(
-					id = cmd.id,
-					state = OrderBookState.Closed
-				)
-		}
-	}
+    override fun orderBookCloseDecider()
+        : OrderBookDecide<OrderBookCloseCommand, OrderBookClosedEvent> = F2Function { msg ->
+        aggregate.evolve(msg) { cmd, entity ->
+            OrderBook.status.set(entity, OrderBookState.Closed) to
+                OrderBookClosedEvent(
+                    id = cmd.id,
+                    state = OrderBookState.Closed
+                )
+        }
+    }
 }

@@ -30,10 +30,10 @@ typealias SsmGetAdminFunction = F2Function<SsmGetAdminQuery, SsmGetAdminResult>
 class SsmGetAdminQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-	 * The name of the admin.
-	 * @example ["Chuck"]
-	 */
-	val name: AgentName,
+     * The name of the admin.
+     * @example ["Chuck"]
+     */
+    val name: AgentName,
 ) : SsmQueryDTO
 
 /**
@@ -45,8 +45,8 @@ class SsmGetAdminQuery(
 @Serializable
 @JsName("SsmGetAdminResult")
 class SsmGetAdminResult(
-	/**
-	 * The admin found.
-	 */
-	override val item: Agent?,
+    /**
+     * The admin found.
+     */
+    override val item: Agent?,
 ) : SsmItemResultDTO<Agent>

@@ -9,10 +9,10 @@ import ssm.chaincode.dsl.model.AgentDTO
 @JsExport
 @JsName("DataSsmUserDTO")
 interface DataSsmUserDTO {
-	/**
-	 * Agent able to interact with an SSM
-	 */
-	val agent: AgentDTO
+    /**
+     * Agent able to interact with an SSM
+     */
+    val agent: AgentDTO
 }
 
 /**
@@ -25,5 +25,5 @@ interface DataSsmUserDTO {
 @JsExport
 @JsName("DataSsmUser")
 class DataSsmUser(
-	override val agent: Agent,
+    override val agent: Agent,
 ) : DataSsmUserDTO

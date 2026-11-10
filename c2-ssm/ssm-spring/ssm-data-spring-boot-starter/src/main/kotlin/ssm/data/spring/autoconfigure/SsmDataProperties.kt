@@ -7,16 +7,16 @@ import ssm.couchdb.dsl.config.SsmCouchdbConfig
 
 @ConfigurationProperties(prefix = "ssm")
 data class SsmDataProperties(
-	/**
-	 * Configuration for couchdb.
-	 */
-	val couchdb: SsmCouchdbConfig?,
-	/**
-	 *  Configuration for couchdb.
-	 */
-	val chaincode: SsmChaincodeProperties?,
-	/**
-	 * Configuration for chunking.
-	 */
-	val batch: SsmBatchProperties = SsmBatchProperties(),
+    /**
+     * Configuration for couchdb.
+     */
+    val couchdb: SsmCouchdbConfig?,
+    /**
+     *  Configuration for couchdb.
+     */
+    val chaincode: SsmChaincodeProperties?,
+    /**
+     * Configuration for chunking.
+     */
+    val batch: SsmBatchProperties = SsmBatchProperties(),
 )

@@ -9,11 +9,11 @@ typealias OrderBookId = String
 
 @optics
 data class OrderBook(
-	val id: OrderBookId,
-	val name: String,
-	val status: OrderBookState
+    val id: OrderBookId,
+    val name: String,
+    val status: OrderBookState
 ): WithS2Id<OrderBookId>, WithS2State<OrderBookState> {
-	override fun s2Id() = id
-	override fun s2State() = status
-	companion object
+    override fun s2Id() = id
+    override fun s2State() = status
+    companion object
 }

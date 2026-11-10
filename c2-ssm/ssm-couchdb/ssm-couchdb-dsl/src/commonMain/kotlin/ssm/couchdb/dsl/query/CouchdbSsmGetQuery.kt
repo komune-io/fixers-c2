@@ -30,20 +30,20 @@ typealias CouchdbSsmGetQueryFunction = F2Function<CouchdbSsmGetQuery, CouchdbSsm
 @JsExport
 @JsName("CouchdbSsmGetQueryDTO")
 interface CouchdbSsmGetQueryDTO : Query {
-	/**
-	 * The unique id of a channel.
-	 */
-	val channelId: ChannelId
-	/**
-	 * The unique id of a chaincode.
-	 */
-	val chaincodeId: ChaincodeId
+    /**
+     * The unique id of a channel.
+     */
+    val channelId: ChannelId
+    /**
+     * The unique id of a chaincode.
+     */
+    val chaincodeId: ChaincodeId
 
-	/**
-	 * The name of ssm
-	 * @example "ssmkomune"
-	 */
-	val ssmName: SsmName
+    /**
+     * The name of ssm
+     * @example "ssmkomune"
+     */
+    val ssmName: SsmName
 }
 
 /**
@@ -55,23 +55,23 @@ interface CouchdbSsmGetQueryDTO : Query {
 @JsExport
 @JsName("CouchdbSsmGetQueryResultDTO")
 interface CouchdbSsmGetQueryResultDTO: Event {
-	val uri: SsmUri
-	val item: SsmDTO?
+    val uri: SsmUri
+    val item: SsmDTO?
 }
 
 @Serializable
 @JsExport
 @JsName("CouchdbSsmGetQuery")
 class CouchdbSsmGetQuery(
-	override val channelId: ChannelId,
-	override val chaincodeId: ChaincodeId,
-	override val ssmName: SsmName
+    override val channelId: ChannelId,
+    override val chaincodeId: ChaincodeId,
+    override val ssmName: SsmName
 ) : CouchdbSsmGetQueryDTO
 
 @Serializable
 @JsExport
 @JsName("CouchdbSsmGetQueryResult")
 class CouchdbSsmGetQueryResult(
-	override val uri: SsmUri,
-	override val item: Ssm?
+    override val uri: SsmUri,
+    override val item: Ssm?
 ) : CouchdbSsmGetQueryResultDTO

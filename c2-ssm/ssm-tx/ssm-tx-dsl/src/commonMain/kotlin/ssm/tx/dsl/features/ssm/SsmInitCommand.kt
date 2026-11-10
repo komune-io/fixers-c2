@@ -25,18 +25,18 @@ typealias SsmTxInitFunction = F2Function<SsmInitCommand, SsmInitdResult>
 class SsmInitCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     /**
-	 * The name of the signer
-	 */
-	val signerName: AgentName,
+     * The name of the signer
+     */
+    val signerName: AgentName,
     /**
-	 * Description of the SSM to create
-	 */
-	val ssm: Ssm,
+     * Description of the SSM to create
+     */
+    val ssm: Ssm,
 
     /**
-	 * Initial user of the SSM
-	 */
-	val agent: Agent,
+     * Initial user of the SSM
+     */
+    val agent: Agent,
 ) : SsmCommandDTO
 
 /**
@@ -45,5 +45,5 @@ class SsmInitCommand(
  * @title Initialize SSM: Response
  */
 class SsmInitdResult(
-	val results: List<TransactionId>
+    val results: List<TransactionId>
 ) : Event

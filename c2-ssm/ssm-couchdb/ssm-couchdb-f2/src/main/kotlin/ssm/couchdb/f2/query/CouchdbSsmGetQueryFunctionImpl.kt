@@ -12,21 +12,21 @@ import ssm.couchdb.dsl.query.CouchdbSsmGetQueryResult
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchdbSsmGetQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbSsmGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<CouchdbSsmGetQuery>): Flow<CouchdbSsmGetQueryResult> = msgs.map { payload ->
-		couchdbClient
-			.fetchOneByDocTypeAndName(chainCodeDbName(payload.channelId, payload.chaincodeId), DocType.Ssm, payload.ssmName)
-			.let{ item ->
-				CouchdbSsmGetQueryResult(
-					item = item,
-					uri = SsmUri.from(
-						channelId = payload.channelId,
-						chaincodeId = payload.chaincodeId,
-						ssmName = payload.ssmName,
-					)
-				)
-			}
-	}
+    override suspend fun invoke(msgs: Flow<CouchdbSsmGetQuery>): Flow<CouchdbSsmGetQueryResult> = msgs.map { payload ->
+        couchdbClient
+            .fetchOneByDocTypeAndName(chainCodeDbName(payload.channelId, payload.chaincodeId), DocType.Ssm, payload.ssmName)
+            .let{ item ->
+                CouchdbSsmGetQueryResult(
+                    item = item,
+                    uri = SsmUri.from(
+                        channelId = payload.channelId,
+                        chaincodeId = payload.chaincodeId,
+                        ssmName = payload.ssmName,
+                    )
+                )
+            }
+    }
 }

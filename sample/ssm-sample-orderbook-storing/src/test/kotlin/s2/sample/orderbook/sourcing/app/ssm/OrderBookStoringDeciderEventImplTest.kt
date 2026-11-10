@@ -21,106 +21,106 @@ import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
 
 internal class OrderBookStoringDeciderEventImplTest: SpringTestBase() {
 
-	@Autowired
-	lateinit var orderBookAutomateEventConfig: OrderBookAutomateEventConfig
+    @Autowired
+    lateinit var orderBookAutomateEventConfig: OrderBookAutomateEventConfig
 
-	@Autowired
-	lateinit var orderBookDeciderImpl: OrderBookDeciderEventImpl
+    @Autowired
+    lateinit var orderBookDeciderImpl: OrderBookDeciderEventImpl
 
-	@Test
-	suspend fun `should create order book`() {
-		val event = orderBookDeciderImpl.orderBookCreateDecider()
-			.invoke(OrderBookCreateCommand("TheNewOrderBook"))
+    @Test
+    suspend fun `should create order book`() {
+        val event = orderBookDeciderImpl.orderBookCreateDecider()
+            .invoke(OrderBookCreateCommand("TheNewOrderBook"))
  		orderBookDeciderImpl.orderBookUpdateDecider()
-			 .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBookAfterUpdate"))
-		orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
-		orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
-		val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
-		val entity = ssmAutomatePersister.load(
-				AutomateContext(automate = orderBookAutomateEventConfig.automate(),
-				S2BatchProperties()
-			), event.id)
-		assertThat(entity?.name).isEqualTo("TheNewOrderBookAfterUpdate")
-		assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
-	}
-	@Test
-	suspend fun `should create flow(24-6) of order book`() {
-		(0..24).asFlow().map {
-			OrderBookCreateCommand("TheNewOrderBook$it")
-		}.let {
-			orderBookDeciderImpl.orderBookCreateDecider().invoke(it)
-		}.map { event ->
-			OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2")
-		}.let {
-			orderBookDeciderImpl.orderBookUpdateDecider().invoke(it)
-		}.map { event ->
-			OrderBookPublishCommand(id = event.id)
-		}.let {
-			orderBookDeciderImpl.orderBookPublishDecider().invoke(it)
-		}.map { event ->
-			OrderBookCloseCommand(id = event.id)
-		}.let {
-			orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
-		}.map { event ->
-			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
-			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomateEventConfig.automate(),
-				S2BatchProperties()
-			), event.id)
-			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
-		}.toList()
-	}
+             .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBookAfterUpdate"))
+        orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
+        orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
+        val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
+        val entity = ssmAutomatePersister.load(
+                AutomateContext(automate = orderBookAutomateEventConfig.automate(),
+                S2BatchProperties()
+            ), event.id)
+        assertThat(entity?.name).isEqualTo("TheNewOrderBookAfterUpdate")
+        assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
+    }
+    @Test
+    suspend fun `should create flow(24-6) of order book`() {
+        (0..24).asFlow().map {
+            OrderBookCreateCommand("TheNewOrderBook$it")
+        }.let {
+            orderBookDeciderImpl.orderBookCreateDecider().invoke(it)
+        }.map { event ->
+            OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2")
+        }.let {
+            orderBookDeciderImpl.orderBookUpdateDecider().invoke(it)
+        }.map { event ->
+            OrderBookPublishCommand(id = event.id)
+        }.let {
+            orderBookDeciderImpl.orderBookPublishDecider().invoke(it)
+        }.map { event ->
+            OrderBookCloseCommand(id = event.id)
+        }.let {
+            orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
+        }.map { event ->
+            val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
+            val entity = ssmAutomatePersister.load(AutomateContext(
+                automate = orderBookAutomateEventConfig.automate(),
+                S2BatchProperties()
+            ), event.id)
+            assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
+        }.toList()
+    }
 
-	@Test
-	suspend fun `should create flow(4-6) of order book`() {
-		(0..4).asFlow().map {
-			OrderBookCreateCommand("TheNewOrderBook$it")
-		}.let {
-			orderBookDeciderImpl.orderBookCreateDecider().invoke(it)
-		}.map { event ->
-			OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2")
-		}.let {
-			orderBookDeciderImpl.orderBookUpdateDecider().invoke(it)
-		}.map { event ->
-			OrderBookPublishCommand(id = event.id)
-		}.let {
-			orderBookDeciderImpl.orderBookPublishDecider().invoke(it)
-		}.map { event ->
-			OrderBookCloseCommand(id = event.id)
-		}.let {
-			orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
-		}.toList().forEach { event ->
-			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
-			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomateEventConfig.automate(),
-				S2BatchProperties()
-			), event.id)
-			assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
-			assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
-		}
-	}
+    @Test
+    suspend fun `should create flow(4-6) of order book`() {
+        (0..4).asFlow().map {
+            OrderBookCreateCommand("TheNewOrderBook$it")
+        }.let {
+            orderBookDeciderImpl.orderBookCreateDecider().invoke(it)
+        }.map { event ->
+            OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2")
+        }.let {
+            orderBookDeciderImpl.orderBookUpdateDecider().invoke(it)
+        }.map { event ->
+            OrderBookPublishCommand(id = event.id)
+        }.let {
+            orderBookDeciderImpl.orderBookPublishDecider().invoke(it)
+        }.map { event ->
+            OrderBookCloseCommand(id = event.id)
+        }.let {
+            orderBookDeciderImpl.orderBookCloseDecider().invoke(it)
+        }.toList().forEach { event ->
+            val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
+            val entity = ssmAutomatePersister.load(AutomateContext(
+                automate = orderBookAutomateEventConfig.automate(),
+                S2BatchProperties()
+            ), event.id)
+            assertThat(entity?.name).isEqualTo("TheNewOrderBook2")
+            assertThat(entity?.status).isEqualTo(OrderBookState.Closed)
+        }
+    }
 
-	@Test
-	suspend fun `should flow event to build entity`() {
-		val all = flowOf(
-			OrderBookCreateCommand("TheNewOrderBook"),
-			OrderBookCreateCommand("TheNewOrderBook1"),
-			OrderBookCreateCommand("TheNewOrderBook2"),
-			OrderBookCreateCommand("TheNewOrderBook3"),
-			OrderBookCreateCommand("TheNewOrderBook4"),
-		)
+    @Test
+    suspend fun `should flow event to build entity`() {
+        val all = flowOf(
+            OrderBookCreateCommand("TheNewOrderBook"),
+            OrderBookCreateCommand("TheNewOrderBook1"),
+            OrderBookCreateCommand("TheNewOrderBook2"),
+            OrderBookCreateCommand("TheNewOrderBook3"),
+            OrderBookCreateCommand("TheNewOrderBook4"),
+        )
 
-		val events = orderBookDeciderImpl.orderBookCreateDecider().invoke(all).toList()
-		assertThat(events).hasSize(5)
-		events.forEach { event ->
-			val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
-			val entity = ssmAutomatePersister.load(AutomateContext(
-				automate = orderBookAutomateEventConfig.automate(),
-				S2BatchProperties()
-			), event.id)
-			assertThat(entity?.name).startsWith("TheNewOrderBook")
-			assertThat(entity?.status).isEqualTo(OrderBookState.Created)
-		}
-	}
+        val events = orderBookDeciderImpl.orderBookCreateDecider().invoke(all).toList()
+        assertThat(events).hasSize(5)
+        events.forEach { event ->
+            val ssmAutomatePersister = orderBookAutomateEventConfig.aggregateRepository()
+            val entity = ssmAutomatePersister.load(AutomateContext(
+                automate = orderBookAutomateEventConfig.automate(),
+                S2BatchProperties()
+            ), event.id)
+            assertThat(entity?.name).startsWith("TheNewOrderBook")
+            assertThat(entity?.status).isEqualTo(OrderBookState.Created)
+        }
+    }
 
 }

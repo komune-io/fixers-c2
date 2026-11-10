@@ -45,544 +45,544 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 
 class SsmAutomatePersister<STATE, ID, ENTITY, EVENT>(
-	internal var ssmSessionStartFunction: SsmTxSessionStartFunction,
-	internal var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction,
-	internal var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
+    internal var ssmSessionStartFunction: SsmTxSessionStartFunction,
+    internal var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction,
+    internal var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
 
-	internal var chaincodeUri: ChaincodeUri,
-	internal var entityType: Class<ENTITY>,
-	internal var agentSigner: Agent,
-	internal var objectMapper: ObjectMapper,
-	internal var batch: S2BatchProperties,
-	internal var permissive: Boolean = false,
-	/**
-	 * Resolves an optional business timestamp (epoch millis) from the S2 command driving a transition
-	 * (`InitTransitionAppliedContext.msg` / `TransitionAppliedContext.msg`). When it returns a value, the
-	 * Fabric tx envelope is stamped with that time instead of wall-clock. Defaults to null (wall-clock).
-	 */
-	internal var timestampProvider: (Any) -> Long? = { null }
+    internal var chaincodeUri: ChaincodeUri,
+    internal var entityType: Class<ENTITY>,
+    internal var agentSigner: Agent,
+    internal var objectMapper: ObjectMapper,
+    internal var batch: S2BatchProperties,
+    internal var permissive: Boolean = false,
+    /**
+     * Resolves an optional business timestamp (epoch millis) from the S2 command driving a transition
+     * (`InitTransitionAppliedContext.msg` / `TransitionAppliedContext.msg`). When it returns a value, the
+     * Fabric tx envelope is stamped with that time instead of wall-clock. Defaults to null (wall-clock).
+     */
+    internal var timestampProvider: (Any) -> Long? = { null }
 ) : AutomatePersister<STATE, ID, ENTITY, EVENT, S2Automate> where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
 ENTITY : WithS2Id<ID> {
 
-	private val logger = LoggerFactory.getLogger(SsmAutomatePersister::class.java)
+    private val logger = LoggerFactory.getLogger(SsmAutomatePersister::class.java)
 
-	override suspend fun load(automateContexts: AutomateContext<S2Automate>, id: ID & Any): ENTITY? {
-		return load(automateContexts, flowOf(id)).firstOrNull()
-	}
+    override suspend fun load(automateContexts: AutomateContext<S2Automate>, id: ID & Any): ENTITY? {
+        return load(automateContexts, flowOf(id)).firstOrNull()
+    }
 
-	/**
-	 * Per-id classified load. The engine's `evolveWithOutcomes` path consumes
-	 * this method directly — overriding it (vs the legacy [load]) is what lets
-	 * a single bad session in a batch surface as one [LoadOutcome.Rejected]
-	 * instead of aborting the whole chunk.
-	 *
-	 * Failure modes:
-	 *  - chaincode-query throws (network / gRPC) → [LoadOutcome.Transient] for
-	 *    every id (we can't classify per-id when the query itself failed);
-	 *  - session not in the result set (chain has no such id) →
-	 *    [LoadOutcome.Rejected] with `SESSION_NOT_FOUND`;
-	 *  - session returned but logs empty → [LoadOutcome.Rejected] with
-	 *    `SESSION_NOT_INITIALIZED` (the originally-broken case);
-	 *  - JSON deserialisation of the last log fails → [LoadOutcome.Rejected]
-	 *    with `DESERIALIZATION_FAILED` (a bad on-chain write — retry won't fix).
-	 */
-	override suspend fun loadWithOutcomes(
-		automateContexts: AutomateContext<S2Automate>,
-		ids: Flow<ID & Any>,
-	): Flow<LoadOutcome<ID & Any, ENTITY>> = flow {
-		val idList = ids.toList()
-		if (idList.isEmpty()) return@flow
+    /**
+     * Per-id classified load. The engine's `evolveWithOutcomes` path consumes
+     * this method directly — overriding it (vs the legacy [load]) is what lets
+     * a single bad session in a batch surface as one [LoadOutcome.Rejected]
+     * instead of aborting the whole chunk.
+     *
+     * Failure modes:
+     *  - chaincode-query throws (network / gRPC) → [LoadOutcome.Transient] for
+     *    every id (we can't classify per-id when the query itself failed);
+     *  - session not in the result set (chain has no such id) →
+     *    [LoadOutcome.Rejected] with `SESSION_NOT_FOUND`;
+     *  - session returned but logs empty → [LoadOutcome.Rejected] with
+     *    `SESSION_NOT_INITIALIZED` (the originally-broken case);
+     *  - JSON deserialisation of the last log fails → [LoadOutcome.Rejected]
+     *    with `DESERIALIZATION_FAILED` (a bad on-chain write — retry won't fix).
+     */
+    override suspend fun loadWithOutcomes(
+        automateContexts: AutomateContext<S2Automate>,
+        ids: Flow<ID & Any>,
+    ): Flow<LoadOutcome<ID & Any, ENTITY>> = flow {
+        val idList = ids.toList()
+        if (idList.isEmpty()) return@flow
 
-		// distinct() — multiple commands in a batch may target the same entity;
-		// the chaincode lookup is the same gRPC call, so dedup the queries.
-		// Outcomes are still emitted per-original-id in the loop below.
-		val queries = idList.distinct().map { id ->
-			GetAutomateSessionQuery(automateContext = automateContexts, sessionId = id.toString())
-		}
+        // distinct() — multiple commands in a batch may target the same entity;
+        // the chaincode lookup is the same gRPC call, so dedup the queries.
+        // Outcomes are still emitted per-original-id in the loop below.
+        val queries = idList.distinct().map { id ->
+            GetAutomateSessionQuery(automateContext = automateContexts, sessionId = id.toString())
+        }
 
-		val sessions = try {
-			getSessionForAutomate(queries.asFlow()).toList()
-		} catch (e: CancellationException) {
-			// Cooperative cancellation must propagate — never swallow it into
-			// a Transient outcome.
-			throw e
-		} catch (e: Exception) {
-			// Whole chain query failed — we can't classify per id, so every id
-			// becomes Transient (network/timeout-shaped — retry with backoff).
-			idList.forEach { id ->
-				emit(LoadOutcome.Transient<ID & Any, ENTITY>(id,
-					s2error(
-						code = "CHAINCODE_QUERY_FAILED",
-						description = e.message ?: e::class.simpleName ?: "<no message>",
-						payload = mapOf("id" to id.toString()),
-						cause = e,
-					)))
-			}
-			return@flow
-		}
+        val sessions = try {
+            getSessionForAutomate(queries.asFlow()).toList()
+        } catch (e: CancellationException) {
+            // Cooperative cancellation must propagate — never swallow it into
+            // a Transient outcome.
+            throw e
+        } catch (e: Exception) {
+            // Whole chain query failed — we can't classify per id, so every id
+            // becomes Transient (network/timeout-shaped — retry with backoff).
+            idList.forEach { id ->
+                emit(LoadOutcome.Transient<ID & Any, ENTITY>(id,
+                    s2error(
+                        code = "CHAINCODE_QUERY_FAILED",
+                        description = e.message ?: e::class.simpleName ?: "<no message>",
+                        payload = mapOf("id" to id.toString()),
+                        cause = e,
+                    )))
+            }
+            return@flow
+        }
 
-		val sessionsByName = sessions.associateBy { it.sessionName }
-		idList.forEach { id ->
-			emit(classifySession(id, sessionsByName[id.toString()]))
-		}
-	}
+        val sessionsByName = sessions.associateBy { it.sessionName }
+        idList.forEach { id ->
+            emit(classifySession(id, sessionsByName[id.toString()]))
+        }
+    }
 
-	/**
-	 * Classifies a single id against the chaincode's chain-side session for
-	 * that id. Extracted from [loadWithOutcomes] to keep that method below
-	 * detekt's cyclomatic complexity ceiling.
-	 */
-	private fun classifySession(
-		id: ID & Any,
-		session: SsmGetSessionLogsQueryResult?,
-	): LoadOutcome<ID & Any, ENTITY> {
-		val sessionName = id.toString()
-		return when {
-			session == null -> LoadOutcome.Rejected(id, s2error(
-				code = "SESSION_NOT_FOUND",
-				description = "Session $sessionName not on chaincode",
-				payload = mapOf("id" to sessionName),
-			))
-			session.logs.isEmpty() -> LoadOutcome.Rejected(id, s2error(
-				code = "SESSION_NOT_INITIALIZED",
-				description = "No logs for session $sessionName",
-				payload = mapOf("id" to sessionName),
-			))
-			else -> loadEntityFromLogs(id, session, sessionName)
-		}
-	}
+    /**
+     * Classifies a single id against the chaincode's chain-side session for
+     * that id. Extracted from [loadWithOutcomes] to keep that method below
+     * detekt's cyclomatic complexity ceiling.
+     */
+    private fun classifySession(
+        id: ID & Any,
+        session: SsmGetSessionLogsQueryResult?,
+    ): LoadOutcome<ID & Any, ENTITY> {
+        val sessionName = id.toString()
+        return when {
+            session == null -> LoadOutcome.Rejected(id, s2error(
+                code = "SESSION_NOT_FOUND",
+                description = "Session $sessionName not on chaincode",
+                payload = mapOf("id" to sessionName),
+            ))
+            session.logs.isEmpty() -> LoadOutcome.Rejected(id, s2error(
+                code = "SESSION_NOT_INITIALIZED",
+                description = "No logs for session $sessionName",
+                payload = mapOf("id" to sessionName),
+            ))
+            else -> loadEntityFromLogs(id, session, sessionName)
+        }
+    }
 
-	/**
-	 * Deserialises the entity from the session's last log. Split out from
-	 * [classifySession] so each method stays under detekt's ReturnCount
-	 * ceiling.
-	 */
-	private fun loadEntityFromLogs(
-		id: ID & Any,
-		session: SsmGetSessionLogsQueryResult,
-		sessionName: String,
-	): LoadOutcome<ID & Any, ENTITY> {
-		val lastTransaction = session.logs.maxBy { it.state.iteration }
-		return try {
-			val raw = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
-			// Stamp the on-chain iteration onto the loaded entity (it's already in
-			// the logs we just fetched). Entities implementing WithS2Iteration then
-			// carry it through to persist, which skips the redundant iteration query.
-			val entity = if (raw is WithS2Iteration) {
-				entityType.cast(raw.withS2Iteration(lastTransaction.state.iteration))
-			} else {
-				raw
-			}
-			LoadOutcome.Loaded(id, entity)
-		} catch (e: CancellationException) {
-			throw e
-		} catch (e: Exception) {
-			// Bad write on-chain — Rejected (permanent: retry won't make
-			// the corrupt payload parse).
-			LoadOutcome.Rejected(id, s2error(
-				code = "DESERIALIZATION_FAILED",
-				description = e.message ?: e::class.simpleName ?: "<no message>",
-				payload = mapOf("id" to sessionName),
-				cause = e,
-			))
-		}
-	}
+    /**
+     * Deserialises the entity from the session's last log. Split out from
+     * [classifySession] so each method stays under detekt's ReturnCount
+     * ceiling.
+     */
+    private fun loadEntityFromLogs(
+        id: ID & Any,
+        session: SsmGetSessionLogsQueryResult,
+        sessionName: String,
+    ): LoadOutcome<ID & Any, ENTITY> {
+        val lastTransaction = session.logs.maxBy { it.state.iteration }
+        return try {
+            val raw = objectMapper.readValue(lastTransaction.state.public.toString(), entityType)
+            // Stamp the on-chain iteration onto the loaded entity (it's already in
+            // the logs we just fetched). Entities implementing WithS2Iteration then
+            // carry it through to persist, which skips the redundant iteration query.
+            val entity = if (raw is WithS2Iteration) {
+                entityType.cast(raw.withS2Iteration(lastTransaction.state.iteration))
+            } else {
+                raw
+            }
+            LoadOutcome.Loaded(id, entity)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Bad write on-chain — Rejected (permanent: retry won't make
+            // the corrupt payload parse).
+            LoadOutcome.Rejected(id, s2error(
+                code = "DESERIALIZATION_FAILED",
+                description = e.message ?: e::class.simpleName ?: "<no message>",
+                payload = mapOf("id" to sessionName),
+                cause = e,
+            ))
+        }
+    }
 
-	/**
-	 * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
-	 * to the nullable shape required by the interface signature:
-	 *  - Loaded   → entity
-	 *  - Rejected → null   (permanent: no entity, won't change on retry)
-	 *  - any other Failure (Transient / Indeterminate / Conflict) → throw,
-	 *    preserving legacy semantics for callers that don't go through the
-	 *    WithOutcomes path (the original cause is rethrown when present so
-	 *    the caller can introspect it).
-	 *
-	 * Uses the same `is Success / is Failure` idiom as [persistInit] /
-	 * [persist] below — the explicit [LoadOutcome.Rejected] arm pre-empts
-	 * [LoadOutcome.Failure] for the "return null" case; everything else falls
-	 * into the catch-all Failure arm.
-	 */
-	override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
-		loadWithOutcomes(automateContexts, ids).map { outcome ->
-			when (outcome) {
-				is LoadOutcome.Loaded -> outcome.entity
-				is LoadOutcome.Rejected -> null
-				is LoadOutcome.Failure -> throw outcome.error.cause
-					?: IllegalStateException(outcome.error.description)
-			}
-		}
+    /**
+     * Legacy load — delegates to [loadWithOutcomes] and collapses each outcome
+     * to the nullable shape required by the interface signature:
+     *  - Loaded   → entity
+     *  - Rejected → null   (permanent: no entity, won't change on retry)
+     *  - any other Failure (Transient / Indeterminate / Conflict) → throw,
+     *    preserving legacy semantics for callers that don't go through the
+     *    WithOutcomes path (the original cause is rethrown when present so
+     *    the caller can introspect it).
+     *
+     * Uses the same `is Success / is Failure` idiom as [persistInit] /
+     * [persist] below — the explicit [LoadOutcome.Rejected] arm pre-empts
+     * [LoadOutcome.Failure] for the "return null" case; everything else falls
+     * into the catch-all Failure arm.
+     */
+    override suspend fun load(automateContexts: AutomateContext<S2Automate>, ids: Flow<ID & Any>): Flow<ENTITY?> =
+        loadWithOutcomes(automateContexts, ids).map { outcome ->
+            when (outcome) {
+                is LoadOutcome.Loaded -> outcome.entity
+                is LoadOutcome.Rejected -> null
+                is LoadOutcome.Failure -> throw outcome.error.cause
+                    ?: IllegalStateException(outcome.error.description)
+            }
+        }
 
-	/**
-	 * Legacy init persist — collapses [persistInitWithOutcomes] for callers that don't go
-	 * through the outcomes path. A [PersistOutcome.Failure] must throw rather than be
-	 * dropped: dropping it under-emits and desynchronises the caller's command/event pairing.
-	 */
-	override suspend fun persistInit(
-		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).map { outcome ->
-		when (outcome) {
-			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> throw outcome.asCategorizedException()
-		}
-	}
+    /**
+     * Legacy init persist — collapses [persistInitWithOutcomes] for callers that don't go
+     * through the outcomes path. A [PersistOutcome.Failure] must throw rather than be
+     * dropped: dropping it under-emits and desynchronises the caller's command/event pairing.
+     */
+    override suspend fun persistInit(
+        transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+    ): Flow<EVENT> = persistInitWithOutcomes(transitionContexts).map { outcome ->
+        when (outcome) {
+            is PersistOutcome.Success -> outcome.event
+            is PersistOutcome.Failure -> throw outcome.asCategorizedException()
+        }
+    }
 
-	override suspend fun persistInitWithOutcomes(
-		transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<PersistOutcome<EVENT>> = flow {
-		val collectedContexts = transitionContexts.toList()
-		emitReconciled(
-			items = collectedContexts,
-			buildCommand = ::startCommandFor,
-			msgIdOf = SsmStartCommand::msgId,
-			invoke = { ssmSessionStartFunction.invoke(it) },
-			eventOf = { it.event },
-			toCandidate = ::startCandidate,
-		)
-	}
+    override suspend fun persistInitWithOutcomes(
+        transitionContexts: Flow<InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+    ): Flow<PersistOutcome<EVENT>> = flow {
+        val collectedContexts = transitionContexts.toList()
+        emitReconciled(
+            items = collectedContexts,
+            buildCommand = ::startCommandFor,
+            msgIdOf = SsmStartCommand::msgId,
+            invoke = { ssmSessionStartFunction.invoke(it) },
+            eventOf = { it.event },
+            toCandidate = ::startCandidate,
+        )
+    }
 
-	/** Pairs an init context with the on-chain state its start command intends to write. */
-	private fun startCandidate(
-		ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
-		cmd: SsmStartCommand,
-		base: PersistOutcome<EVENT>,
-	): ReconcileCandidate<EVENT> = ReconcileCandidate(
-		sessionName = ctx.entity.s2Id().toString(),
-		targetIteration = START_ITERATION,
-		intendedPublic = cmd.session.public,
-		event = ctx.event,
-		automateContext = ctx.automateContext,
-		base = base,
-	)
+    /** Pairs an init context with the on-chain state its start command intends to write. */
+    private fun startCandidate(
+        ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+        cmd: SsmStartCommand,
+        base: PersistOutcome<EVENT>,
+    ): ReconcileCandidate<EVENT> = ReconcileCandidate(
+        sessionName = ctx.entity.s2Id().toString(),
+        targetIteration = START_ITERATION,
+        intendedPublic = cmd.session.public,
+        event = ctx.event,
+        automateContext = ctx.automateContext,
+        base = base,
+    )
 
-	/** Builds the session-start command for an init transition. msgId scheme `start:<id>` is load-bearing. */
-	private fun startCommandFor(
-		ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
-	): SsmStartCommand {
-		val entity = ctx.entity
-		val automate = ctx.automateContext.automate
-		return SsmStartCommand(
-			msgId = "start:${entity.s2Id()}",
-			session = SsmSession(
-				ssm = automate.name,
-				session = entity.s2Id().toString(),
-				roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
-				public = objectMapper.writeValueAsString(entity),
-				private = mapOf(),
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri,
-			timestamp = timestampProvider(ctx.msg),
-		)
-	}
+    /** Builds the session-start command for an init transition. msgId scheme `start:<id>` is load-bearing. */
+    private fun startCommandFor(
+        ctx: InitTransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+    ): SsmStartCommand {
+        val entity = ctx.entity
+        val automate = ctx.automateContext.automate
+        return SsmStartCommand(
+            msgId = "start:${entity.s2Id()}",
+            session = SsmSession(
+                ssm = automate.name,
+                session = entity.s2Id().toString(),
+                roles = mapOf(agentSigner.name to automate.transitions.first().role.name),
+                public = objectMapper.writeValueAsString(entity),
+                private = mapOf(),
+            ),
+            signerName = agentSigner.name,
+            chaincodeUri = chaincodeUri,
+            timestamp = timestampProvider(ctx.msg),
+        )
+    }
 
-	/** Builds the perform command for a transition. msgId scheme `<sessionId>:<iteration+1>` is load-bearing. */
-	private fun performCommandFor(
-		result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
-	): SsmPerformCommand {
-		val entity = result.transitionContext.entity
-		val withEventAsAction = result.transitionContext.automateContext.automate.withResultAsAction
-		val action = result.transitionContext.event?.takeIf { withEventAsAction } ?: result.transitionContext.msg
-		return SsmPerformCommand(
-			msgId = "${result.sessionId}:${result.iteration + 1}",
-			action = action::class.simpleName!!,
-			context = SsmContext(
-				session = entity.s2Id().toString(),
-				public = objectMapper.writeValueAsString(entity),
-				private = mapOf(),
-				iteration = result.iteration,
-			),
-			signerName = agentSigner.name,
-			chaincodeUri = chaincodeUri,
-			timestamp = timestampProvider(result.transitionContext.msg),
-		)
-	}
+    /** Builds the perform command for a transition. msgId scheme `<sessionId>:<iteration+1>` is load-bearing. */
+    private fun performCommandFor(
+        result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
+    ): SsmPerformCommand {
+        val entity = result.transitionContext.entity
+        val withEventAsAction = result.transitionContext.automateContext.automate.withResultAsAction
+        val action = result.transitionContext.event?.takeIf { withEventAsAction } ?: result.transitionContext.msg
+        return SsmPerformCommand(
+            msgId = "${result.sessionId}:${result.iteration + 1}",
+            action = action::class.simpleName!!,
+            context = SsmContext(
+                session = entity.s2Id().toString(),
+                public = objectMapper.writeValueAsString(entity),
+                private = mapOf(),
+                iteration = result.iteration,
+            ),
+            signerName = agentSigner.name,
+            chaincodeUri = chaincodeUri,
+            timestamp = timestampProvider(result.transitionContext.msg),
+        )
+    }
 
-	/**
-	 * Shared 5-phase persist pipeline used by [persistInitWithOutcomes] and [persistWithOutcomes]:
-	 * 1. build one command per item ([buildCommand] — this is where the msgId scheme lives);
-	 * 2. invoke the chaincode function on the whole batch;
-	 * 3. index the outcomes by msgId;
-	 * 4. pair each item with its [ReconcileCandidate] and run [reconcileFailures];
-	 * 5. emit — in item order — the reconciled outcome when present, the base outcome otherwise.
-	 */
-	private suspend fun <ITEM, COMMAND> FlowCollector<PersistOutcome<EVENT>>.emitReconciled(
-		items: List<ITEM>,
-		buildCommand: (ITEM) -> COMMAND,
-		msgIdOf: (COMMAND) -> String,
-		invoke: suspend (Flow<COMMAND>) -> Flow<CommandOutcome>,
-		eventOf: (ITEM) -> EVENT,
-		toCandidate: (ITEM, COMMAND, PersistOutcome<EVENT>) -> ReconcileCandidate<EVENT>,
-	) {
-		val commands = items.map(buildCommand)
-		val outcomesById = invoke(commands.asFlow()).toList().associateBy { it.msgId }
-		val candidates = items.zip(commands).map { (item, command) ->
-			val msgId = msgIdOf(command)
-			toCandidate(item, command, toPersistOutcome(msgId, eventOf(item), outcomesById[msgId]))
-		}
-		val reconciled = reconcileFailures(candidates)
-		candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
-	}
+    /**
+     * Shared 5-phase persist pipeline used by [persistInitWithOutcomes] and [persistWithOutcomes]:
+     * 1. build one command per item ([buildCommand] — this is where the msgId scheme lives);
+     * 2. invoke the chaincode function on the whole batch;
+     * 3. index the outcomes by msgId;
+     * 4. pair each item with its [ReconcileCandidate] and run [reconcileFailures];
+     * 5. emit — in item order — the reconciled outcome when present, the base outcome otherwise.
+     */
+    private suspend fun <ITEM, COMMAND> FlowCollector<PersistOutcome<EVENT>>.emitReconciled(
+        items: List<ITEM>,
+        buildCommand: (ITEM) -> COMMAND,
+        msgIdOf: (COMMAND) -> String,
+        invoke: suspend (Flow<COMMAND>) -> Flow<CommandOutcome>,
+        eventOf: (ITEM) -> EVENT,
+        toCandidate: (ITEM, COMMAND, PersistOutcome<EVENT>) -> ReconcileCandidate<EVENT>,
+    ) {
+        val commands = items.map(buildCommand)
+        val outcomesById = invoke(commands.asFlow()).toList().associateBy { it.msgId }
+        val candidates = items.zip(commands).map { (item, command) ->
+            val msgId = msgIdOf(command)
+            toCandidate(item, command, toPersistOutcome(msgId, eventOf(item), outcomesById[msgId]))
+        }
+        val reconciled = reconcileFailures(candidates)
+        candidates.forEach { emit(reconciled[it.msgId] ?: it.base) }
+    }
 
-	private fun getIterations(
-		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
-	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> {
-		return if (WithS2Iteration::class.java.isAssignableFrom(entityType)) {
-			iterationsFromEntity(query)
-		} else {
-			iterationsFromChain(query)
-		}
-	}
+    private fun getIterations(
+        query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
+    ): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> {
+        return if (WithS2Iteration::class.java.isAssignableFrom(entityType)) {
+            iterationsFromEntity(query)
+        } else {
+            iterationsFromChain(query)
+        }
+    }
 
-	/** Iterations already carried by the entity ([WithS2Iteration]) — no chaincode round-trip needed. */
-	private fun iterationsFromEntity(
-		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
-	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.map {
-		val entity = it.transitionContext.entity as WithS2Iteration
-		val iteration = entity.s2Iteration()
-		GetSessionResult(
-			transitionContext = it.transitionContext,
-			sessionId = it.sessionId,
-			iteration = iteration,
-		)
-	}
+    /** Iterations already carried by the entity ([WithS2Iteration]) — no chaincode round-trip needed. */
+    private fun iterationsFromEntity(
+        query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
+    ): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.map {
+        val entity = it.transitionContext.entity as WithS2Iteration
+        val iteration = entity.s2Iteration()
+        GetSessionResult(
+            transitionContext = it.transitionContext,
+            sessionId = it.sessionId,
+            iteration = iteration,
+        )
+    }
 
-	/** Iterations resolved from the chain's session logs, batched; missing/log-less sessions become failures. */
-	private fun iterationsFromChain(
-		query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
-	): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.batchFlow(batch.asBatch()) { list ->
-		val bySession = list.associateBy { it.sessionId }
-		val sessions = getSessions(list).toList()
-		val foundIds = sessions.map { it.sessionName }.toSet()
-		val happy = sessions.map { session ->
-			val context = bySession.getValue(session.sessionName)
-			val iteration = session.logs.maxOfOrNull { it.state.iteration } ?: -1
-			if (iteration < 0) {
-				GetSessionResult(
-					transitionContext = context.transitionContext,
-					sessionId = context.sessionId,
-					iteration = 0,
-					failure = PersistOutcome.Rejected(
-						msgId = commandIdFor(context),
-						error = s2error(
-							code = "NO_LOGS",
-							description = "No logs for session ${session.sessionName}",
-						),
-					),
-				)
-			} else {
-				GetSessionResult(context.transitionContext, context.sessionId, iteration)
-			}
-		}
-		val missing = list.filterNot { it.sessionId in foundIds }.map { miss ->
-			GetSessionResult(
-				transitionContext = miss.transitionContext,
-				sessionId = miss.sessionId,
-				iteration = 0,
-				failure = PersistOutcome.Rejected(
-					msgId = commandIdFor(miss),
-					error = s2error(
-						code = "SESSION_NOT_FOUND",
-						description = "Session ${miss.sessionId} not on chaincode",
-					),
-				),
-			)
-		}
-		(happy + missing).asFlow()
-	}
+    /** Iterations resolved from the chain's session logs, batched; missing/log-less sessions become failures. */
+    private fun iterationsFromChain(
+        query: Flow<GetSessionQuery<STATE, ID, ENTITY, EVENT>>
+    ): Flow<GetSessionResult<STATE, ID, ENTITY, EVENT>> = query.batchFlow(batch.asBatch()) { list ->
+        val bySession = list.associateBy { it.sessionId }
+        val sessions = getSessions(list).toList()
+        val foundIds = sessions.map { it.sessionName }.toSet()
+        val happy = sessions.map { session ->
+            val context = bySession.getValue(session.sessionName)
+            val iteration = session.logs.maxOfOrNull { it.state.iteration } ?: -1
+            if (iteration < 0) {
+                GetSessionResult(
+                    transitionContext = context.transitionContext,
+                    sessionId = context.sessionId,
+                    iteration = 0,
+                    failure = PersistOutcome.Rejected(
+                        msgId = commandIdFor(context),
+                        error = s2error(
+                            code = "NO_LOGS",
+                            description = "No logs for session ${session.sessionName}",
+                        ),
+                    ),
+                )
+            } else {
+                GetSessionResult(context.transitionContext, context.sessionId, iteration)
+            }
+        }
+        val missing = list.filterNot { it.sessionId in foundIds }.map { miss ->
+            GetSessionResult(
+                transitionContext = miss.transitionContext,
+                sessionId = miss.sessionId,
+                iteration = 0,
+                failure = PersistOutcome.Rejected(
+                    msgId = commandIdFor(miss),
+                    error = s2error(
+                        code = "SESSION_NOT_FOUND",
+                        description = "Session ${miss.sessionId} not on chaincode",
+                    ),
+                ),
+            )
+        }
+        (happy + missing).asFlow()
+    }
 
-	private fun commandIdFor(query: GetSessionQuery<STATE, ID, ENTITY, EVENT>): String {
-		return "${query.sessionId}:lookup"
-	}
+    private fun commandIdFor(query: GetSessionQuery<STATE, ID, ENTITY, EVENT>): String {
+        return "${query.sessionId}:lookup"
+    }
 
-	private suspend fun getSessions(
-		queries: List<GetSessionQuery<STATE, ID, ENTITY, EVENT>>,
-	): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
-		SsmGetSessionLogsQuery(
-			sessionName = query.sessionId,
-			chaincodeUri = chaincodeUri,
-			ssmName = query.transitionContext.automateContext.automate.name,
-		)
-	}.let {
-		ssmGetSessionLogsQueryFunction.invoke(it.asFlow())
-	}
+    private suspend fun getSessions(
+        queries: List<GetSessionQuery<STATE, ID, ENTITY, EVENT>>,
+    ): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
+        SsmGetSessionLogsQuery(
+            sessionName = query.sessionId,
+            chaincodeUri = chaincodeUri,
+            ssmName = query.transitionContext.automateContext.automate.name,
+        )
+    }.let {
+        ssmGetSessionLogsQueryFunction.invoke(it.asFlow())
+    }
 
-	private suspend fun getSessionForAutomate(
-		queries: Flow<GetAutomateSessionQuery>,
-	): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
-		SsmGetSessionLogsQuery(
-			sessionName = query.sessionId,
-			chaincodeUri = chaincodeUri,
-			ssmName = query.automateContext.automate.name,
-		)
-	}.let {
-		ssmGetSessionLogsQueryFunction.invoke(it)
-	}
+    private suspend fun getSessionForAutomate(
+        queries: Flow<GetAutomateSessionQuery>,
+    ): Flow<SsmGetSessionLogsQueryResult> = queries.map { query ->
+        SsmGetSessionLogsQuery(
+            sessionName = query.sessionId,
+            chaincodeUri = chaincodeUri,
+            ssmName = query.automateContext.automate.name,
+        )
+    }.let {
+        ssmGetSessionLogsQueryFunction.invoke(it)
+    }
 
-	/**
-	 * Legacy persist — collapses [persistWithOutcomes] for the legacy engine path.
-	 *
-	 * The [AutomatePersister.persist] contract requires exactly one event per received
-	 * context, in the same order: the legacy engine correlates events to contexts
-	 * positionally ([s2.automate.core.engine.S2AutomateEngineImpl.doTransition] guards
-	 * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] must therefore
-	 * throw rather than be dropped — a dropped event shifts every later event one
-	 * position left and misroutes the engine's end-of-transition application events.
-	 */
-	override suspend fun persist(
-		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<EVENT> = persistWithOutcomes(transitionContexts).map { outcome ->
-		when (outcome) {
-			is PersistOutcome.Success -> outcome.event
-			is PersistOutcome.Failure -> throw outcome.asCategorizedException()
-		}
-	}
+    /**
+     * Legacy persist — collapses [persistWithOutcomes] for the legacy engine path.
+     *
+     * The [AutomatePersister.persist] contract requires exactly one event per received
+     * context, in the same order: the legacy engine correlates events to contexts
+     * positionally ([s2.automate.core.engine.S2AutomateEngineImpl.doTransition] guards
+     * this with ERROR_PERSISTER_EVENT_COUNT). A [PersistOutcome.Failure] must therefore
+     * throw rather than be dropped — a dropped event shifts every later event one
+     * position left and misroutes the engine's end-of-transition application events.
+     */
+    override suspend fun persist(
+        transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+    ): Flow<EVENT> = persistWithOutcomes(transitionContexts).map { outcome ->
+        when (outcome) {
+            is PersistOutcome.Success -> outcome.event
+            is PersistOutcome.Failure -> throw outcome.asCategorizedException()
+        }
+    }
 
-	override suspend fun persistWithOutcomes(
-		transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
-	): Flow<PersistOutcome<EVENT>> = flow {
-		val collectedContexts = transitionContexts.toList()
+    override suspend fun persistWithOutcomes(
+        transitionContexts: Flow<TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>>
+    ): Flow<PersistOutcome<EVENT>> = flow {
+        val collectedContexts = transitionContexts.toList()
 
-		val sessionResults: List<GetSessionResult<STATE, ID, ENTITY, EVENT>> = collectedContexts.map {
-			val sessionName = it.entity.s2Id().toString()
-			GetSessionQuery(it, sessionName)
-		}.let { getIterations(it.asFlow()) }.toList()
+        val sessionResults: List<GetSessionResult<STATE, ID, ENTITY, EVENT>> = collectedContexts.map {
+            val sessionName = it.entity.s2Id().toString()
+            GetSessionQuery(it, sessionName)
+        }.let { getIterations(it.asFlow()) }.toList()
 
-		sessionResults.filter { it.failure != null }.forEach { failed ->
-			@Suppress("UNCHECKED_CAST")
-			emit(failed.failure!! as PersistOutcome<EVENT>)
-		}
+        sessionResults.filter { it.failure != null }.forEach { failed ->
+            @Suppress("UNCHECKED_CAST")
+            emit(failed.failure!! as PersistOutcome<EVENT>)
+        }
 
-		emitReconciled(
-			items = sessionResults.filter { it.failure == null },
-			buildCommand = ::performCommandFor,
-			msgIdOf = SsmPerformCommand::msgId,
-			invoke = { ssmSessionPerformActionFunction.invoke(it) },
-			eventOf = { it.transitionContext.event },
-			toCandidate = ::performCandidate,
-		)
-	}
+        emitReconciled(
+            items = sessionResults.filter { it.failure == null },
+            buildCommand = ::performCommandFor,
+            msgIdOf = SsmPerformCommand::msgId,
+            invoke = { ssmSessionPerformActionFunction.invoke(it) },
+            eventOf = { it.transitionContext.event },
+            toCandidate = ::performCandidate,
+        )
+    }
 
-	/** Pairs a transition's session result with the on-chain state its perform command intends to write. */
-	private fun performCandidate(
-		result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
-		cmd: SsmPerformCommand,
-		base: PersistOutcome<EVENT>,
-	): ReconcileCandidate<EVENT> = ReconcileCandidate(
-		sessionName = result.sessionId,
-		targetIteration = result.iteration + 1,
-		intendedPublic = cmd.context.public,
-		event = result.transitionContext.event,
-		automateContext = result.transitionContext.automateContext,
-		base = base,
-	)
+    /** Pairs a transition's session result with the on-chain state its perform command intends to write. */
+    private fun performCandidate(
+        result: GetSessionResult<STATE, ID, ENTITY, EVENT>,
+        cmd: SsmPerformCommand,
+        base: PersistOutcome<EVENT>,
+    ): ReconcileCandidate<EVENT> = ReconcileCandidate(
+        sessionName = result.sessionId,
+        targetIteration = result.iteration + 1,
+        intendedPublic = cmd.context.public,
+        event = result.transitionContext.event,
+        automateContext = result.transitionContext.automateContext,
+        base = base,
+    )
 
-	private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
-		if (outcome == null) {
-			return PersistOutcome.Indeterminate(
-				msgId = msgId,
-				error = s2error(
-					code = "MISSING_OUTCOME",
-					description = "No CommandOutcome returned for $msgId",
-				),
-			)
-		}
-		val error = s2error(
-			code = outcome.errorCode.orEmpty(),
-			description = outcome.errorMessage.orEmpty(),
-		)
-		return when (outcome.outcome) {
-			"Committed" -> PersistOutcome.Success(
-				msgId = msgId,
-				event = event,
-				metadata = buildMap {
-					outcome.transactionId?.let { put("transactionId", it) }
-					outcome.blockNumber?.let { put("blockNumber", it.toString()) }
-				},
-			)
-			"Rejected" -> PersistOutcome.Rejected(msgId = msgId, error = error)
-			"Transient" -> PersistOutcome.Transient(msgId = msgId, error = error)
-			"Indeterminate" -> PersistOutcome.Indeterminate(msgId = msgId, error = error)
-			"Conflict" -> PersistOutcome.Conflict(msgId = msgId, error = error)
-			else -> PersistOutcome.Indeterminate(
-				msgId = msgId,
-				error = s2error(
-					code = "UNKNOWN_OUTCOME",
-					description = outcome.outcome,
-				),
-			)
-		}
-	}
+    private fun <E> toPersistOutcome(msgId: String, event: E, outcome: CommandOutcome?): PersistOutcome<E> {
+        if (outcome == null) {
+            return PersistOutcome.Indeterminate(
+                msgId = msgId,
+                error = s2error(
+                    code = "MISSING_OUTCOME",
+                    description = "No CommandOutcome returned for $msgId",
+                ),
+            )
+        }
+        val error = s2error(
+            code = outcome.errorCode.orEmpty(),
+            description = outcome.errorMessage.orEmpty(),
+        )
+        return when (outcome.outcome) {
+            "Committed" -> PersistOutcome.Success(
+                msgId = msgId,
+                event = event,
+                metadata = buildMap {
+                    outcome.transactionId?.let { put("transactionId", it) }
+                    outcome.blockNumber?.let { put("blockNumber", it.toString()) }
+                },
+            )
+            "Rejected" -> PersistOutcome.Rejected(msgId = msgId, error = error)
+            "Transient" -> PersistOutcome.Transient(msgId = msgId, error = error)
+            "Indeterminate" -> PersistOutcome.Indeterminate(msgId = msgId, error = error)
+            "Conflict" -> PersistOutcome.Conflict(msgId = msgId, error = error)
+            else -> PersistOutcome.Indeterminate(
+                msgId = msgId,
+                error = s2error(
+                    code = "UNKNOWN_OUTCOME",
+                    description = outcome.outcome,
+                ),
+            )
+        }
+    }
 
-	/**
-	 * Idempotent reconciliation: a transition that actually committed on a prior attempt
-	 * (lost response, sweeper retry, duplicate send, or a replay onto a non-wiped chain) comes
-	 * back here as a [PersistOutcome.Failure]. Instead of guessing from the chaincode's error
-	 * prose, we ask the chain: if the session's log at the target iteration already holds the
-	 * exact state this command was writing, the transition is on chain — promote it to
-	 * [PersistOutcome.Success] and recover the real txId, instead of re-rejecting and flooding
-	 * the DLQ.
-	 *
-	 * Cost: zero reads on the success path; a single batched session-logs read only when at
-	 * least one outcome [isReconcilableFailure].
-	 */
-	private suspend fun reconcileFailures(
-		candidates: List<ReconcileCandidate<EVENT>>,
-	): Map<String, PersistOutcome<EVENT>> {
-		val toCheck = candidates.filter { it.base.isReconcilableFailure() }
-		if (toCheck.isEmpty()) return emptyMap()
+    /**
+     * Idempotent reconciliation: a transition that actually committed on a prior attempt
+     * (lost response, sweeper retry, duplicate send, or a replay onto a non-wiped chain) comes
+     * back here as a [PersistOutcome.Failure]. Instead of guessing from the chaincode's error
+     * prose, we ask the chain: if the session's log at the target iteration already holds the
+     * exact state this command was writing, the transition is on chain — promote it to
+     * [PersistOutcome.Success] and recover the real txId, instead of re-rejecting and flooding
+     * the DLQ.
+     *
+     * Cost: zero reads on the success path; a single batched session-logs read only when at
+     * least one outcome [isReconcilableFailure].
+     */
+    private suspend fun reconcileFailures(
+        candidates: List<ReconcileCandidate<EVENT>>,
+    ): Map<String, PersistOutcome<EVENT>> {
+        val toCheck = candidates.filter { it.base.isReconcilableFailure() }
+        if (toCheck.isEmpty()) return emptyMap()
 
-		val logsBySession = try {
-			getSessionForAutomate(
-				toCheck.map { GetAutomateSessionQuery(it.automateContext, it.sessionName) }.distinct().asFlow()
-			).toList().associateBy { it.sessionName }
-		} catch (e: CancellationException) {
-			throw e
-		} catch (e: Exception) {
-			logger.warn("Reconciliation chain query failed; falling back to base outcomes", e)
-			emptyMap()
-		}
+        val logsBySession = try {
+            getSessionForAutomate(
+                toCheck.map { GetAutomateSessionQuery(it.automateContext, it.sessionName) }.distinct().asFlow()
+            ).toList().associateBy { it.sessionName }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn("Reconciliation chain query failed; falling back to base outcomes", e)
+            emptyMap()
+        }
 
-		return toCheck.associate { candidate ->
-			candidate.msgId to reconcileOne(candidate, logsBySession[candidate.sessionName])
-		}
-	}
+        return toCheck.associate { candidate ->
+            candidate.msgId to reconcileOne(candidate, logsBySession[candidate.sessionName])
+        }
+    }
 
-	private fun reconcileOne(
-		candidate: ReconcileCandidate<EVENT>,
-		onChain: SsmGetSessionLogsQueryResult?,
-	): PersistOutcome<EVENT> {
-		val log = onChain?.logs?.firstOrNull { it.state.iteration == candidate.targetIteration }
-		return if (log != null && publicMatches(candidate.intendedPublic, log.state.public)) {
-			PersistOutcome.Success(
-				msgId = candidate.msgId,
-				event = candidate.event,
-				metadata = mapOf("transactionId" to log.txId),
-			)
-		} else {
-			candidate.base
-		}
-	}
+    private fun reconcileOne(
+        candidate: ReconcileCandidate<EVENT>,
+        onChain: SsmGetSessionLogsQueryResult?,
+    ): PersistOutcome<EVENT> {
+        val log = onChain?.logs?.firstOrNull { it.state.iteration == candidate.targetIteration }
+        return if (log != null && publicMatches(candidate.intendedPublic, log.state.public)) {
+            PersistOutcome.Success(
+                msgId = candidate.msgId,
+                event = candidate.event,
+                metadata = mapOf("transactionId" to log.txId),
+            )
+        } else {
+            candidate.base
+        }
+    }
 
-	/**
-	 * Canonical (key-order-insensitive) JSON equality between the state this command intended to
-	 * write and the state already on chain at that iteration. Tree comparison via the same
-	 * ObjectMapper avoids serialization-order false-negatives; on a parse failure we fall back to
-	 * raw string equality (never throwing out of reconciliation).
-	 */
-	private fun publicMatches(intended: String, onChain: Any?): Boolean {
-		if (onChain == null) return false
-		return runCatching {
-			val intendedNode = objectMapper.readTree(intended)
-			val onChainNode = when (onChain) {
-				is String -> objectMapper.readTree(onChain)
-				else -> objectMapper.valueToTree<JsonNode>(onChain)
-			}
-			intendedNode == onChainNode
-		}.getOrDefault(intended == onChain.toString())
-	}
+    /**
+     * Canonical (key-order-insensitive) JSON equality between the state this command intended to
+     * write and the state already on chain at that iteration. Tree comparison via the same
+     * ObjectMapper avoids serialization-order false-negatives; on a parse failure we fall back to
+     * raw string equality (never throwing out of reconciliation).
+     */
+    private fun publicMatches(intended: String, onChain: Any?): Boolean {
+        if (onChain == null) return false
+        return runCatching {
+            val intendedNode = objectMapper.readTree(intended)
+            val onChainNode = when (onChain) {
+                is String -> objectMapper.readTree(onChain)
+                else -> objectMapper.valueToTree<JsonNode>(onChain)
+            }
+            intendedNode == onChainNode
+        }.getOrDefault(intended == onChain.toString())
+    }
 }
 
 private const val START_ITERATION = 0
@@ -610,11 +610,11 @@ internal const val CATEGORY_PAYLOAD_KEY = "category"
  * that pre-existing payload entries survive.
  */
 internal fun PersistOutcome.Failure<*>.asCategorizedException() = S2ErrorBase(
-	type = error.type,
-	description = error.description,
-	date = error.date,
-	payload = error.payload + (CATEGORY_PAYLOAD_KEY to category.name),
-	cause = error.cause,
+    type = error.type,
+    description = error.description,
+    date = error.date,
+    payload = error.payload + (CATEGORY_PAYLOAD_KEY to category.name),
+    cause = error.cause,
 ).asException()
 
 /**
@@ -622,38 +622,38 @@ internal fun PersistOutcome.Failure<*>.asCategorizedException() = S2ErrorBase(
  * a network/gRPC failure means the tx may never have reached the chain, so it must retry — never reconcile.
  */
 private fun PersistOutcome<*>.isReconcilableFailure(): Boolean =
-	this is PersistOutcome.Failure && this !is PersistOutcome.Transient
+    this is PersistOutcome.Failure && this !is PersistOutcome.Transient
 
 /** A persisted command paired with the on-chain state it intended to write, for [reconcileFailures]. */
 private class ReconcileCandidate<EVENT>(
-	val sessionName: SessionName,
-	val targetIteration: Int,
-	val intendedPublic: String,
-	val event: EVENT,
-	val automateContext: AutomateContext<S2Automate>,
-	val base: PersistOutcome<EVENT>,
+    val sessionName: SessionName,
+    val targetIteration: Int,
+    val intendedPublic: String,
+    val event: EVENT,
+    val automateContext: AutomateContext<S2Automate>,
+    val base: PersistOutcome<EVENT>,
 ) {
-	val msgId: String get() = base.msgId
+    val msgId: String get() = base.msgId
 }
 
 data class GetSessionQuery<STATE, ID, ENTITY, EVENT>(
-	val transitionContext: TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
-	val sessionId: SessionName
+    val transitionContext: TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+    val sessionId: SessionName
 ) where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
 ENTITY : WithS2Id<ID>
 
 data class GetAutomateSessionQuery(
-	val automateContext: AutomateContext<S2Automate>,
-	val sessionId: SessionName
+    val automateContext: AutomateContext<S2Automate>,
+    val sessionId: SessionName
 )
 
 data class GetSessionResult<STATE, ID, ENTITY, EVENT>(
-	val transitionContext: TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
-	val sessionId: SessionName,
-	val iteration: Int,
-	val failure: PersistOutcome.Rejected<EVENT>? = null,
+    val transitionContext: TransitionAppliedContext<STATE, ID, ENTITY, EVENT, S2Automate>,
+    val sessionId: SessionName,
+    val iteration: Int,
+    val failure: PersistOutcome.Rejected<EVENT>? = null,
 ) where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,

@@ -12,28 +12,28 @@ import ssm.data.dsl.features.query.DataSsmSessionGetQueryFunction
 
 internal class DataSsmSessionGetQueryFunctionImplTest {
 
-	private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
-		SsmBddConfig.Data.config,
-	)
+    private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
+        SsmBddConfig.Data.config,
+    )
 
-	private val dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
-		= dataSsmQueryFunction.dataSsmSessionGetQueryFunction()
+    private val dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
+        = dataSsmQueryFunction.dataSsmSessionGetQueryFunction()
 
 
-	@Test
-	suspend fun `test exception`() {
-		val queries = flowOf(
-			DataSsmSessionGetQuery(
-				"sessionName",
-				SsmBddConfig.Chaincode.chaincodeUri.toSsmUri("ssmName")
-			)
-		)
+    @Test
+    suspend fun `test exception`() {
+        val queries = flowOf(
+            DataSsmSessionGetQuery(
+                "sessionName",
+                SsmBddConfig.Chaincode.chaincodeUri.toSsmUri("ssmName")
+            )
+        )
 
-		val ssmListResult = dataSsmSessionGetQueryFunction.invoke(queries).toList()
-		Assertions.assertThat(ssmListResult).hasSize(1)
-		ssmListResult.map {
-			Assertions.assertThat(it.item).isNull()
-		}
+        val ssmListResult = dataSsmSessionGetQueryFunction.invoke(queries).toList()
+        Assertions.assertThat(ssmListResult).hasSize(1)
+        ssmListResult.map {
+            Assertions.assertThat(it.item).isNull()
+        }
 
-	}
+    }
 }

@@ -20,7 +20,7 @@ typealias DataSsmGetQueryFunction = F2Function<DataSsmGetQueryDTO, DataSsmGetQue
 @JsExport
 @JsName("DataSsmGetQueryDTO")
 interface DataSsmGetQueryDTO : DataQueryDTO {
-	override val ssmUri: SsmUriDTO
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -32,16 +32,16 @@ interface DataSsmGetQueryDTO : DataQueryDTO {
 @JsExport
 @JsName("DataSsmGetQuery")
 class DataSsmGetQuery(
-	override val ssmUri: SsmUri,
+    override val ssmUri: SsmUri,
 ) : DataSsmGetQueryDTO
 
 @JsExport
 @JsName("DataSsmGetQueryResultDTO")
 interface DataSsmGetQueryResultDTO {
-	/**
-	 * The retrieved SSM if it exists
-	 */
-	val item: DataSsm?
+    /**
+     * The retrieved SSM if it exists
+     */
+    val item: DataSsm?
 }
 
 /**
@@ -53,5 +53,5 @@ interface DataSsmGetQueryResultDTO {
 @JsExport
 @JsName("DataSsmGetQueryResult")
 class DataSsmGetQueryResult(
-	override val item: DataSsm?,
+    override val item: DataSsm?,
 ) : DataSsmGetQueryResultDTO

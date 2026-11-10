@@ -15,35 +15,35 @@ import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryResult
 import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryResultDTO
 
 class CouchdbChaincodeListQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbChaincodeListQueryFunction {
-	companion object {
-		const val DB_LSCC = "_lscc"
-	}
+    companion object {
+        const val DB_LSCC = "_lscc"
+    }
 
-	override suspend fun invoke(
-		msgs: Flow<CouchdbChaincodeListQueryDTO>
-	): Flow<CouchdbChaincodeListQueryResultDTO> = msgs.map { _ ->
-		couchdbClient.getDatabases()
-			.asFlow()
-			.filter { it.contains(DB_LSCC) }
-			.flatMapMerge { dbName ->
-				val channelId = dbName.removeSuffix(DB_LSCC)
-				couchdbClient.fetchAll(dbName).map { document ->
-					document.id
-				}.map { chaincodeId ->
-					ChaincodeUri.from(
-						channelId = channelId,
-						chaincodeId = chaincodeId
-					)
-				}.asFlow()
-			}.toList()
-			.let {
-				CouchdbChaincodeListQueryResult(
-					items = it
-				)
-			}
+    override suspend fun invoke(
+        msgs: Flow<CouchdbChaincodeListQueryDTO>
+    ): Flow<CouchdbChaincodeListQueryResultDTO> = msgs.map { _ ->
+        couchdbClient.getDatabases()
+            .asFlow()
+            .filter { it.contains(DB_LSCC) }
+            .flatMapMerge { dbName ->
+                val channelId = dbName.removeSuffix(DB_LSCC)
+                couchdbClient.fetchAll(dbName).map { document ->
+                    document.id
+                }.map { chaincodeId ->
+                    ChaincodeUri.from(
+                        channelId = channelId,
+                        chaincodeId = chaincodeId
+                    )
+                }.asFlow()
+            }.toList()
+            .let {
+                CouchdbChaincodeListQueryResult(
+                    items = it
+                )
+            }
 
-	}
+    }
 
 }

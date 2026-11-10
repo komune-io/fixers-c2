@@ -7,17 +7,17 @@ import kotlinx.serialization.Serializable
 @JsExport
 @JsName("IdentitiesInfoDTO")
 interface IdentitiesInfoDTO {
-	/**
-	 * Identifier of the identity
-	 * @example "2e3900b7-76f4-4828-9742-31bd39015de6"
-	 */
-	val id: String
+    /**
+     * Identifier of the identity
+     * @example "2e3900b7-76f4-4828-9742-31bd39015de6"
+     */
+    val id: String
 
-	/**
-	 * Membership service provider identifier
-	 * @example "PeerKomune2"
-	 */
-	val mspid: String
+    /**
+     * Membership service provider identifier
+     * @example "PeerKomune2"
+     */
+    val mspid: String
 }
 
 /**
@@ -28,6 +28,6 @@ interface IdentitiesInfoDTO {
 @JsExport
 @JsName("IdentitiesInfo")
 class IdentitiesInfo(
-	override val id: String,
-	override val mspid: String,
+    override val id: String,
+    override val mspid: String,
 ) : IdentitiesInfoDTO

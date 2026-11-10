@@ -25,9 +25,9 @@ class SsmCreateCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     val signerName: AgentName,
     /**
-	 * Description of the SSM to create
-	 */
-	val ssm: Ssm,
+     * Description of the SSM to create
+     */
+    val ssm: Ssm,
 ) : SsmCommandDTO
 
 /**
@@ -36,5 +36,5 @@ class SsmCreateCommand(
  * @title Create SSM: Response
  */
 class SsmCreateResult(
-	override val transactionId: TransactionId
+    override val transactionId: TransactionId
 ) : SsmCommandResultDTO

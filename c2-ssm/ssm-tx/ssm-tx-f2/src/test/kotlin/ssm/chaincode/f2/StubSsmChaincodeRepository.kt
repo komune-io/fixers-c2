@@ -18,46 +18,46 @@ import ssm.sdk.dsl.CommandOutcome
  * missing key yields [NOT_FOUND] (empty body), which the SDK converts to `null`.
  */
 internal class StubSsmChaincodeRepository(
-	responses: Map<String, List<String>> = emptyMap(),
-	private val onInvoke: (List<InvokeRequest>, List<String>) -> List<CommandOutcome> = { _, msgIds ->
-		msgIds.map { CommandOutcome(outcome = "Committed", msgId = it, transactionId = "tx-$it") }
-	},
+    responses: Map<String, List<String>> = emptyMap(),
+    private val onInvoke: (List<InvokeRequest>, List<String>) -> List<CommandOutcome> = { _, msgIds ->
+        msgIds.map { CommandOutcome(outcome = "Committed", msgId = it, transactionId = "tx-$it") }
+    },
 ) : SsmChaincodeRepository {
 
-	data class QueryCall(
-		val fcn: String,
-		val args: List<String>,
-		val channelId: ChannelId,
-		val chaincodeId: ChaincodeId,
-	)
+    data class QueryCall(
+        val fcn: String,
+        val args: List<String>,
+        val channelId: ChannelId,
+        val chaincodeId: ChaincodeId,
+    )
 
-	private val scripted = responses.mapValues { (_, bodies) -> ArrayDeque(bodies) }
+    private val scripted = responses.mapValues { (_, bodies) -> ArrayDeque(bodies) }
 
-	val queries = mutableListOf<QueryCall>()
-	val invoked = mutableListOf<InvokeRequest>()
-	val invokedMsgIds = mutableListOf<List<String>>()
+    val queries = mutableListOf<QueryCall>()
+    val invoked = mutableListOf<InvokeRequest>()
+    val invokedMsgIds = mutableListOf<List<String>>()
 
-	override suspend fun query(
-		cmd: InvokeRequestType,
-		fcn: InvokeFunction,
-		args: List<String>,
-		channelId: ChannelId,
-		chaincodeId: ChaincodeId,
-	): String {
-		queries += QueryCall(fcn.value, args, channelId, chaincodeId)
-		return scripted[key(fcn.value, args.firstOrNull())]?.removeFirstOrNull() ?: NOT_FOUND
-	}
+    override suspend fun query(
+        cmd: InvokeRequestType,
+        fcn: InvokeFunction,
+        args: List<String>,
+        channelId: ChannelId,
+        chaincodeId: ChaincodeId,
+    ): String {
+        queries += QueryCall(fcn.value, args, channelId, chaincodeId)
+        return scripted[key(fcn.value, args.firstOrNull())]?.removeFirstOrNull() ?: NOT_FOUND
+    }
 
-	override suspend fun invoke(invokeArgs: List<InvokeRequest>, msgIds: List<String>): List<CommandOutcome> {
-		invoked += invokeArgs
-		invokedMsgIds += msgIds
-		return onInvoke(invokeArgs, msgIds)
-	}
+    override suspend fun invoke(invokeArgs: List<InvokeRequest>, msgIds: List<String>): List<CommandOutcome> {
+        invoked += invokeArgs
+        invokedMsgIds += msgIds
+        return onInvoke(invokeArgs, msgIds)
+    }
 
-	companion object {
-		/** The gateway returns an empty body for a missing entry. */
-		const val NOT_FOUND = ""
+    companion object {
+        /** The gateway returns an empty body for a missing entry. */
+        const val NOT_FOUND = ""
 
-		fun key(fcn: String, value: String?) = "$fcn:$value"
-	}
+        fun key(fcn: String, value: String?) = "$fcn:$value"
+    }
 }

@@ -20,32 +20,32 @@ import ssm.chaincode.dsl.model.SsmSessionStateDTO
  * @title List Sessions
  */
 typealias CouchdbSsmSessionStateListQueryFunction
-		= F2Function<CouchdbSsmSessionStateListQueryDTO, CouchdbSsmSessionStateListQueryResultDTO>
+        = F2Function<CouchdbSsmSessionStateListQueryDTO, CouchdbSsmSessionStateListQueryResultDTO>
 
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryDTO")
 interface CouchdbSsmSessionStateListQueryDTO : PageQueryDTO {
-	/**
-	 * The unique uri of a channel.
-	 */
-	val chaincodeUri: ChaincodeUriDTO
-	/**
-	 * The unique identifier of a ssm.
-	 */
-	val ssm: SsmName?
+    /**
+     * The unique uri of a channel.
+     */
+    val chaincodeUri: ChaincodeUriDTO
+    /**
+     * The unique identifier of a ssm.
+     */
+    val ssm: SsmName?
 }
 
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryResultDTO")
 interface CouchdbSsmSessionStateListQueryResultDTO : PageQueryResultDTO<SsmSessionStateDTO> {
-	/**
-	 * Retrieved sessions
-	 */
-	override val pagination: OffsetPaginationDTO?
-	/**
-	 * Retrieved sessions
-	 */
-	override val items: List<SsmSessionStateDTO>
+    /**
+     * Retrieved sessions
+     */
+    override val pagination: OffsetPaginationDTO?
+    /**
+     * Retrieved sessions
+     */
+    override val items: List<SsmSessionStateDTO>
 }
 
 /**
@@ -71,7 +71,7 @@ class CouchdbSsmSessionStateListQuery(
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryResult")
 class CouchdbSsmSessionStateListQueryResult(
-	override val pagination: OffsetPaginationDTO?,
-	override val total: Int,
-	override val items: List<SsmSessionStateDTO>,
+    override val pagination: OffsetPaginationDTO?,
+    override val total: Int,
+    override val items: List<SsmSessionStateDTO>,
 ) : CouchdbSsmSessionStateListQueryResultDTO

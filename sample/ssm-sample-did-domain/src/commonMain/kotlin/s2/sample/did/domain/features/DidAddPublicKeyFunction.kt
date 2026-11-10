@@ -15,14 +15,14 @@ typealias DidAddPublicKeyCommandFunction = F2Function<DidAddPublicKeyCommand, Di
 @JsExport
 @JsName("DidAddPublicKeyCommand")
 data class DidAddPublicKeyCommand(
-	override val id: DidId,
-	val publicKey: String,
+    override val id: DidId,
+    val publicKey: String,
 ) : DidCommand
 
 @Serializable
 @JsExport
 @JsName("DidAddPublicKeyEvent")
 data class DidAddPublicKeyEvent(
-	override val id: DidId,
-	override val type: DidState,
+    override val id: DidId,
+    override val type: DidState,
 ) : DidEvent

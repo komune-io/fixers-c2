@@ -27,10 +27,10 @@ typealias CouchdbAdminListQueryFunction = F2Function<CouchdbAdminListQueryDTO, C
 @JsExport
 @JsName("CouchdbAdminListQueryDTO")
 interface CouchdbAdminListQueryDTO : Query {
-	/**
-	 * The unique id of a chaincode.
-	 */
-	val chaincodeUri: ChaincodeUriDTO
+    /**
+     * The unique id of a chaincode.
+     */
+    val chaincodeUri: ChaincodeUriDTO
 }
 
 /**
@@ -41,22 +41,22 @@ interface CouchdbAdminListQueryDTO : Query {
 @JsExport
 @JsName("CouchdbAdminListQueryResultDTO")
 interface CouchdbAdminListQueryResultDTO : Event {
-	/**
-	 * Names of the admin.
-	 */
-	val items: List<AgentDTO>
+    /**
+     * Names of the admin.
+     */
+    val items: List<AgentDTO>
 }
 
 @Serializable
 @JsExport
 @JsName("CouchdbAdminListQuery")
 class CouchdbAdminListQuery(
-	override val chaincodeUri: ChaincodeUri
+    override val chaincodeUri: ChaincodeUri
 ) : CouchdbAdminListQueryDTO
 
 @Serializable
 @JsExport
 @JsName("CouchdbAdminListQueryResult")
 class CouchdbAdminListQueryResult(
-	override val items: List<Agent>,
+    override val items: List<Agent>,
 ) : CouchdbAdminListQueryResultDTO

@@ -8,11 +8,11 @@ import ssm.chaincode.dsl.model.ChannelId
 @JsExport
 @JsName("DataChannelDTO")
 interface DataChannelDTO {
-	/**
-	 * Identifier
-	 * @example "channel-@komune-io"
-	 */
-	val id: ChannelId
+    /**
+     * Identifier
+     * @example "channel-@komune-io"
+     */
+    val id: ChannelId
 }
 
 /**
@@ -24,5 +24,5 @@ interface DataChannelDTO {
 @JsExport
 @JsName("DataChannel")
 class DataChannel(
-	override val id: ChannelId,
+    override val id: ChannelId,
 ) : DataChannelDTO

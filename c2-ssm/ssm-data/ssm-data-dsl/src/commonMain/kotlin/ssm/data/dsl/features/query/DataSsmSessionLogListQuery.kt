@@ -17,17 +17,17 @@ import ssm.data.dsl.model.DataSsmSessionState
  * @title List Session Logs
  */
 typealias DataSsmSessionLogListQueryFunction
-		= F2Function<DataSsmSessionLogListQueryDTO, DataSsmSessionLogListQueryResultDTO>
+        = F2Function<DataSsmSessionLogListQueryDTO, DataSsmSessionLogListQueryResultDTO>
 
 @JsExport
 @JsName("DataSsmSessionLogListQueryDTO")
 interface DataSsmSessionLogListQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example "DataSsmSessionId"
-	 */
-	val sessionName: SessionName
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the session to retrieve
+     * @example "DataSsmSessionId"
+     */
+    val sessionName: SessionName
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -39,17 +39,17 @@ interface DataSsmSessionLogListQueryDTO : DataQueryDTO {
 @JsExport
 @JsName("DataSsmSessionLogListQuery")
 class DataSsmSessionLogListQuery(
-	override val sessionName: SessionName,
-	override val ssmUri: SsmUri,
+    override val sessionName: SessionName,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionLogListQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionLogListQueryResultDTO")
 interface DataSsmSessionLogListQueryResultDTO {
-	/**
-	 * All retrieved logs of the given session
-	 */
-	val items: List<DataSsmSessionState>
+    /**
+     * All retrieved logs of the given session
+     */
+    val items: List<DataSsmSessionState>
 }
 
 /**
@@ -61,5 +61,5 @@ interface DataSsmSessionLogListQueryResultDTO {
 @JsExport
 @JsName("SsmSessionLogListQueryResult")
 class DataSsmSessionLogListQueryResult(
-	override val items: List<DataSsmSessionState>,
+    override val items: List<DataSsmSessionState>,
 ) : DataSsmSessionLogListQueryResultDTO

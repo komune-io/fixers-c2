@@ -13,18 +13,18 @@ import ssm.data.dsl.features.query.DataSsmGetQueryResult
 import ssm.data.dsl.features.query.DataSsmGetQueryResultDTO
 
 class DataSsmGetQueryFunctionImpl(
-	private val ssmGetQueryFunction: SsmGetQueryFunction
+    private val ssmGetQueryFunction: SsmGetQueryFunction
 ) : DataSsmGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataSsmGetQueryDTO>): Flow<DataSsmGetQueryResultDTO> =
-		msgs.map { payload ->
-			SsmGetQuery(
-				chaincodeUri = payload.ssmUri.burst().chaincodeUri,
-				name = payload.ssmUri.burst().ssmName,
-			).invokeWith(ssmGetQueryFunction)
-				.item
-				?.toDataSsm(payload.ssmUri.burst())
-				.let(::DataSsmGetQueryResult)
+    override suspend fun invoke(msgs: Flow<DataSsmGetQueryDTO>): Flow<DataSsmGetQueryResultDTO> =
+        msgs.map { payload ->
+            SsmGetQuery(
+                chaincodeUri = payload.ssmUri.burst().chaincodeUri,
+                name = payload.ssmUri.burst().ssmName,
+            ).invokeWith(ssmGetQueryFunction)
+                .item
+                ?.toDataSsm(payload.ssmUri.burst())
+                .let(::DataSsmGetQueryResult)
 
-		}
+        }
 }

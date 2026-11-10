@@ -30,16 +30,16 @@ interface DataSsmListQueryDTO
 @JsExport
 @JsName("DataSsmListQuery")
 class DataSsmListQuery(
-	val chaincodes: List<ChaincodeUri>
+    val chaincodes: List<ChaincodeUri>
 ) : DataSsmListQueryDTO
 
 @JsExport
 @JsName("DataSsmListQueryResultDTO")
 interface DataSsmListQueryResultDTO {
-	/**
-	 * List of all retrieved SSMs
-	 */
-	val items: List<DataSsmDTO>
+    /**
+     * List of all retrieved SSMs
+     */
+    val items: List<DataSsmDTO>
 }
 
 /**
@@ -51,5 +51,5 @@ interface DataSsmListQueryResultDTO {
 @JsExport
 @JsName("DataSsmListQueryResult")
 class DataSsmListQueryResult(
-	override val items: List<DataSsm>,
+    override val items: List<DataSsm>,
 ) : DataSsmListQueryResultDTO

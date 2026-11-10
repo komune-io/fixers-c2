@@ -6,6 +6,6 @@ import ssm.chaincode.dsl.config.SsmChaincodeProperties
 
 @ConfigurationProperties(prefix = "ssm")
 data class SsmChaincodeConfiguration(
-	val chaincode: SsmChaincodeProperties,
-	val batch: SsmBatchProperties = SsmBatchProperties()
+    val chaincode: SsmChaincodeProperties,
+    val batch: SsmBatchProperties = SsmBatchProperties()
 )

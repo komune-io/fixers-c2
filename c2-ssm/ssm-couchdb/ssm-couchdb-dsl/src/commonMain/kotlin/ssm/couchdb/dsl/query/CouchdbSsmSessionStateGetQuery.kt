@@ -20,23 +20,23 @@ import ssm.chaincode.dsl.model.SsmSessionStateDTO
  * @title List Sessions
  */
 typealias CouchdbSsmSessionStateGetQueryFunction
-		= F2Function<CouchdbSsmSessionStateGetQueryDTO, CouchdbSsmSessionStateGetQueryResultDTO>
+        = F2Function<CouchdbSsmSessionStateGetQueryDTO, CouchdbSsmSessionStateGetQueryResultDTO>
 
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryDTO")
 interface CouchdbSsmSessionStateGetQueryDTO : Query {
-	val chaincodeUri: ChaincodeUriDTO
-	val ssmName: SsmName?
-	val sessionName: SessionName
+    val chaincodeUri: ChaincodeUriDTO
+    val ssmName: SsmName?
+    val sessionName: SessionName
 }
 
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryResultDTO")
 interface CouchdbSsmSessionStateGetQueryResultDTO : Event {
-	/**
-	 * Retrieved sessions
-	 */
-	val item: SsmSessionStateDTO
+    /**
+     * Retrieved sessions
+     */
+    val item: SsmSessionStateDTO
 }
 
 /**
@@ -62,5 +62,5 @@ class CouchdbSsmSessionStateGetQuery(
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryResult")
 class CouchdbSsmSessionStateGetQueryResult(
-	override val item: SsmSessionStateDTO
+    override val item: SsmSessionStateDTO
 ) : CouchdbSsmSessionStateGetQueryResultDTO

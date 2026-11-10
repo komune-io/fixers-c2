@@ -23,12 +23,12 @@ typealias DataSsmSessionGetQueryFunction = F2Function<DataSsmSessionGetQueryDTO,
 @JsExport
 @JsName("DataSsmSessionGetQueryDTO")
 interface DataSsmSessionGetQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example [DataSsmSession.sessionName]
-	 */
-	val sessionName: SessionName
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the session to retrieve
+     * @example [DataSsmSession.sessionName]
+     */
+    val sessionName: SessionName
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -40,17 +40,17 @@ interface DataSsmSessionGetQueryDTO : DataQueryDTO {
 @JsExport
 @JsName("DataSsmSessionGetQuery")
 class DataSsmSessionGetQuery(
-	override val sessionName: SessionName,
-	override val ssmUri: SsmUri,
+    override val sessionName: SessionName,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionGetQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionGetQueryResultDTO")
 interface DataSsmSessionGetQueryResultDTO: Event {
-	/**
-	 * The retrieved session if it exists
-	 */
-	val item: DataSsmSessionDTO?
+    /**
+     * The retrieved session if it exists
+     */
+    val item: DataSsmSessionDTO?
 }
 
 /**
@@ -62,5 +62,5 @@ interface DataSsmSessionGetQueryResultDTO: Event {
 @JsExport
 @JsName("DataSsmSessionGetQueryResult")
 class DataSsmSessionGetQueryResult(
-	override val item: DataSsmSession?,
+    override val item: DataSsmSession?,
 ) : DataSsmSessionGetQueryResultDTO

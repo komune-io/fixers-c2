@@ -1,12 +1,12 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
 }
 
 dependencies {
-	implementation(project(":c2-ssm:ssm-tx:ssm-tx-f2"))
+    implementation(project(":c2-ssm:ssm-tx:ssm-tx-f2"))
 
-	implementation(project(":c2-ssm:ssm-sdk:ssm-sdk-bdd"))
-	implementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-bdd"))
+    implementation(project(":c2-ssm:ssm-sdk:ssm-sdk-bdd"))
+    implementation(project(":c2-ssm:ssm-chaincode:ssm-chaincode-bdd"))
 
-	api(libs.bundles.cucumber)
+    api(libs.bundles.cucumber)
 }

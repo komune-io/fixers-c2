@@ -16,16 +16,16 @@ typealias DatabaseName = String
 @JsExport
 @JsName("DatabaseDTO")
 interface DatabaseDTO {
-	/**
-	 * Name of the database
-	 * @example "komunease_ssm"
-	 */
-	val name: DatabaseName
+    /**
+     * Name of the database
+     * @example "komunease_ssm"
+     */
+    val name: DatabaseName
 }
 
 @Serializable
 @JsExport
 @JsName("Database")
 class Database(
-	override val name: DatabaseName,
+    override val name: DatabaseName,
 ) : DatabaseDTO

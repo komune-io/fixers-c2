@@ -27,15 +27,15 @@ typealias CouchdbDatabaseGetQueryFunction = F2Function<CouchdbDatabaseGetQueryDT
 @JsExport
 @JsName("CouchdbDatabaseGetQueryDTO")
 interface CouchdbDatabaseGetQueryDTO : Query {
-	/**
-	 * The unique id of a channel.
-	 */
-	val channelId: ChannelId
+    /**
+     * The unique id of a channel.
+     */
+    val channelId: ChannelId
 
-	/**
-	 * The unique id of a chaincode.
-	 */
-	val chaincodeId: ChaincodeId
+    /**
+     * The unique id of a chaincode.
+     */
+    val chaincodeId: ChaincodeId
 }
 
 /**
@@ -46,23 +46,23 @@ interface CouchdbDatabaseGetQueryDTO : Query {
 @JsExport
 @JsName("CouchdbDatabaseGetQueryResultDTO")
 interface CouchdbDatabaseGetQueryResultDTO : Event {
-	/**
-	 * The name of the database.
-	 */
-	val item: DatabaseDTO?
+    /**
+     * The name of the database.
+     */
+    val item: DatabaseDTO?
 }
 
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseGetQuery")
 class CouchdbDatabaseGetQuery(
-	override val channelId: ChannelId,
-	override val chaincodeId: ChaincodeId,
+    override val channelId: ChannelId,
+    override val chaincodeId: ChaincodeId,
 ) : CouchdbDatabaseGetQueryDTO
 
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseGetQueryResult")
 class CouchdbDatabaseGetQueryResult(
-	override val item: Database?,
+    override val item: Database?,
 ) : CouchdbDatabaseGetQueryResultDTO

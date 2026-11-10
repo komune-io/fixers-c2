@@ -19,23 +19,23 @@ import ssm.data.dsl.model.DataSsmSessionStateDTO
  * @title Get Session Log
  */
 typealias DataSsmSessionLogGetQueryFunction
-		= F2Function<DataSsmSessionLogGetQueryDTO, DataSsmSessionLogGetQueryResultDTO>
+        = F2Function<DataSsmSessionLogGetQueryDTO, DataSsmSessionLogGetQueryResultDTO>
 
 @JsExport
 @JsName("DataSsmSessionLogGetQueryDTO")
 interface DataSsmSessionLogGetQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example [ssm.data.dsl.model.DataSsmSession.sessionName]
-	 */
-	val sessionName: SessionName
+    /**
+     * Identifier of the session to retrieve
+     * @example [ssm.data.dsl.model.DataSsmSession.sessionName]
+     */
+    val sessionName: SessionName
 
-	/**
-	 * Identifier of the transaction to retrieve
-	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
-	 */
-	val txId: TransactionId
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the transaction to retrieve
+     * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
+     */
+    val txId: TransactionId
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -55,10 +55,10 @@ class DataSsmSessionLogGetQuery(
 @JsExport
 @JsName("DataSsmSessionLogGetQueryResultDTO")
 interface DataSsmSessionLogGetQueryResultDTO {
-	/**
-	 * The retrieved session state and transaction
-	 */
-	val item: DataSsmSessionStateDTO?
+    /**
+     * The retrieved session state and transaction
+     */
+    val item: DataSsmSessionStateDTO?
 }
 
 /**
@@ -70,5 +70,5 @@ interface DataSsmSessionLogGetQueryResultDTO {
 @JsExport
 @JsName("DataSsmSessionLogGetQueryResult")
 class DataSsmSessionLogGetQueryResult(
-	override val item: DataSsmSessionState?,
+    override val item: DataSsmSessionState?,
 ) : DataSsmSessionLogGetQueryResultDTO

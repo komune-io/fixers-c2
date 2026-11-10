@@ -18,45 +18,45 @@ import ssm.sdk.core.SsmTxService
  */
 class SsmTxInitAutoConfigurationTest {
 
-	private fun contextRunner() = ApplicationContextRunnerBuilder()
-		.buildContext(ApplicationContextRunnerTest.SsmChaincodeConfigTest.localDockerComposeParams)
+    private fun contextRunner() = ApplicationContextRunnerBuilder()
+        .buildContext(ApplicationContextRunnerTest.SsmChaincodeConfigTest.localDockerComposeParams)
 
-	@Test
-	fun `auto-configured init function backs off when the user defines SsmTxInitFunctionImpl`() {
-		contextRunner()
-			.withUserConfiguration(UserInitFunctionConfiguration::class.java)
-			.run { context ->
-				assertThat(context).hasSingleBean(SsmTxInitFunctionImpl::class.java)
-				assertThat(context).hasBean("userSsmTxInitFunction")
-				assertThat(context).doesNotHaveBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)
-			}
-	}
+    @Test
+    fun `auto-configured init function backs off when the user defines SsmTxInitFunctionImpl`() {
+        contextRunner()
+            .withUserConfiguration(UserInitFunctionConfiguration::class.java)
+            .run { context ->
+                assertThat(context).hasSingleBean(SsmTxInitFunctionImpl::class.java)
+                assertThat(context).hasBean("userSsmTxInitFunction")
+                assertThat(context).doesNotHaveBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)
+            }
+    }
 
-	@Test
-	fun `auto-configured init function is kept when the user defines only SsmTxCreateFunctionImpl`() {
-		contextRunner()
-			.withUserConfiguration(UserCreateFunctionConfiguration::class.java)
-			.run { context ->
-				assertThat(context).hasBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)
-				assertThat(context).hasSingleBean(SsmTxInitFunctionImpl::class.java)
-				assertThat(context).hasSingleBean(SsmTxCreateFunctionImpl::class.java)
-			}
-	}
+    @Test
+    fun `auto-configured init function is kept when the user defines only SsmTxCreateFunctionImpl`() {
+        contextRunner()
+            .withUserConfiguration(UserCreateFunctionConfiguration::class.java)
+            .run { context ->
+                assertThat(context).hasBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)
+                assertThat(context).hasSingleBean(SsmTxInitFunctionImpl::class.java)
+                assertThat(context).hasSingleBean(SsmTxCreateFunctionImpl::class.java)
+            }
+    }
 
-	@Configuration(proxyBeanMethods = false)
-	class UserInitFunctionConfiguration {
-		@Bean
-		fun userSsmTxInitFunction(
-			ssmTxService: SsmTxService,
-			ssmQueryService: SsmQueryService,
-		): SsmTxInitFunctionImpl = SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
-	}
+    @Configuration(proxyBeanMethods = false)
+    class UserInitFunctionConfiguration {
+        @Bean
+        fun userSsmTxInitFunction(
+            ssmTxService: SsmTxService,
+            ssmQueryService: SsmQueryService,
+        ): SsmTxInitFunctionImpl = SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
+    }
 
-	@Configuration(proxyBeanMethods = false)
-	class UserCreateFunctionConfiguration {
-		@Bean
-		fun userSsmTxCreateFunction(
-			ssmTxService: SsmTxService,
-		): SsmTxCreateFunctionImpl = SsmTxCreateFunctionImpl(ssmTxService)
-	}
+    @Configuration(proxyBeanMethods = false)
+    class UserCreateFunctionConfiguration {
+        @Bean
+        fun userSsmTxCreateFunction(
+            ssmTxService: SsmTxService,
+        ): SsmTxCreateFunctionImpl = SsmTxCreateFunctionImpl(ssmTxService)
+    }
 }

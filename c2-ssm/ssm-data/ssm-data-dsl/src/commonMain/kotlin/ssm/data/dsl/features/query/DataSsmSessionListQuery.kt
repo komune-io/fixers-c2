@@ -30,16 +30,16 @@ interface DataSsmSessionListQueryDTO : DataQueryDTO
 @JsExport
 @JsName("DataSsmSessionListQuery")
 class DataSsmSessionListQuery(
-	override val ssmUri: SsmUri,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionListQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionListQueryResultDTO")
 interface DataSsmSessionListQueryResultDTO {
-	/**
-	 * List of all the retrieved sessions
-	 */
-	val items: List<DataSsmSessionDTO>
+    /**
+     * List of all the retrieved sessions
+     */
+    val items: List<DataSsmSessionDTO>
 }
 
 /**
@@ -51,5 +51,5 @@ interface DataSsmSessionListQueryResultDTO {
 @JsExport
 @JsName("DataSsmSessionListQueryResult")
 class DataSsmSessionListQueryResult(
-	override val items: List<DataSsmSession>,
+    override val items: List<DataSsmSession>,
 ) : DataSsmSessionListQueryResultDTO

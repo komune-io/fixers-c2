@@ -15,14 +15,14 @@ typealias ChaincodeId = String
 @JsExport
 @JsName("ChaincodeDTO")
 interface ChaincodeDTO {
-	val id: ChaincodeId
-	val channelId: ChannelId
+    val id: ChaincodeId
+    val channelId: ChannelId
 }
 
 @Serializable
 @JsExport
 @JsName("Chaincode")
 data class Chaincode(
-	override val id: ChaincodeId,
-	override val channelId: ChannelId,
+    override val id: ChaincodeId,
+    override val channelId: ChannelId,
 ) : ChaincodeDTO

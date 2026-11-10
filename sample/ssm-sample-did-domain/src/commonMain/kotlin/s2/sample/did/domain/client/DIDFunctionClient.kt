@@ -13,19 +13,19 @@ import s2.sample.did.domain.features.DidRevokeCommandFunction
 import s2.sample.did.domain.features.DidRevokePublicKeyCommandFunction
 
 fun didClient(
-	urlBase: String,
+    urlBase: String,
 ): F2SupplierSingle<DIDFunctionClient> {
-	return F2SupplierSingle {
-		val s2Client = F2ClientBuilder.get(urlBase)
-		DIDFunctionClient(s2Client)
-	}
+    return F2SupplierSingle {
+        val s2Client = F2ClientBuilder.get(urlBase)
+        DIDFunctionClient(s2Client)
+    }
 }
 
 @JsName("DIDFunctionClient")
 @JsExport
 open class DIDFunctionClient(private val client: F2Client) : DidAggregate {
-	override fun createDid(): DidCreateCommandFunction = client.function("createDid")
-	override fun addPublicKey(): DidAddPublicKeyCommandFunction = client.function("addPublicKey")
-	override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = client.function("revokePublicKey")
-	override fun revoke(): DidRevokeCommandFunction = client.function("revoke")
+    override fun createDid(): DidCreateCommandFunction = client.function("createDid")
+    override fun addPublicKey(): DidAddPublicKeyCommandFunction = client.function("addPublicKey")
+    override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = client.function("revokePublicKey")
+    override fun revoke(): DidRevokeCommandFunction = client.function("revoke")
 }

@@ -9,17 +9,17 @@ import ssm.bdd.config.SsmBddConfig
 import ssm.data.dsl.features.query.DataSsmListQuery
 
 class DataSsmListQueryFunctionImpTest {
-	private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
-		SsmBddConfig.Data.config,
-	)
+    private val dataSsmQueryFunction = DataSsmQueryFunctionImpl(
+        SsmBddConfig.Data.config,
+    )
 
-	private val function = dataSsmQueryFunction.dataSsmListQueryFunction()
+    private val function = dataSsmQueryFunction.dataSsmListQueryFunction()
 
-	@Disabled
-	@Test
-	suspend fun `must return result`() {
-		val response = function.invoke(DataSsmListQuery(emptyList()))
-		Assertions.assertThat(response.items).hasSize(2)
-	}
+    @Disabled
+    @Test
+    suspend fun `must return result`() {
+        val response = function.invoke(DataSsmListQuery(emptyList()))
+        Assertions.assertThat(response.items).hasSize(2)
+    }
 
 }

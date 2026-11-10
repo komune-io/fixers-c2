@@ -12,16 +12,16 @@ import kotlinx.serialization.Serializable
 @JsExport
 @JsName("SsmChaincodePropertiesDTO")
 interface SsmChaincodePropertiesDTO {
-	/**
-	 * URL of the peer hosting the chaincode
-	 * @example "http://peer.sandbox.Komune.io:9000"
-	 */
-	val url: String
+    /**
+     * URL of the peer hosting the chaincode
+     * @example "http://peer.sandbox.Komune.io:9000"
+     */
+    val url: String
 }
 
 @Serializable
 @JsExport
 @JsName("ChaincodeSsmConfig")
 class SsmChaincodeProperties(
-	override val url: String,
+    override val url: String,
 ) : SsmChaincodePropertiesDTO

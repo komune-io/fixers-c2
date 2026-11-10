@@ -9,23 +9,23 @@ import kotlin.js.JsName
 @JsExport
 @JsName("SsmQueryDTO")
 interface SsmQueryDTO : Query {
-	/**
-	 * Uri of the chaincode
-	 * @example "chaincode:sandbox:thessm"
-	 */
-	val chaincodeUri: ChaincodeUri
+    /**
+     * Uri of the chaincode
+     * @example "chaincode:sandbox:thessm"
+     */
+    val chaincodeUri: ChaincodeUri
 }
 
 @JsExport
 @JsName("SsmItemResultDTO")
 interface SsmItemResultDTO<T> : Event {
-	val item: T?
+    val item: T?
 }
 
 @JsExport
 @JsName("SsmItemsResultDTO")
 interface SsmItemsResultDTO<T> : Event {
-	val items: Array<T>
+    val items: Array<T>
 }
 
 

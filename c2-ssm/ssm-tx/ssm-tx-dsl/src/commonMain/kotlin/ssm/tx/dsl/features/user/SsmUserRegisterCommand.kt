@@ -24,13 +24,13 @@ typealias SsmTxUserRegisterFunction = F2Function<SsmUserRegisterCommand, SsmUser
 class SsmUserRegisterCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     /**
-	 * The name of the signer
-	 */
-	val signerName: AgentName,
+     * The name of the signer
+     */
+    val signerName: AgentName,
     /**
-	 * Initial user of the SSM
-	 */
-	val agent: Agent,
+     * Initial user of the SSM
+     */
+    val agent: Agent,
 ) : SsmCommandDTO
 
 /**
@@ -39,5 +39,5 @@ class SsmUserRegisterCommand(
  * @title Register User: Response
  */
 class SsmUserRegisteredResult(
-	override val transactionId: TransactionId
+    override val transactionId: TransactionId
 ) : SsmCommandResultDTO

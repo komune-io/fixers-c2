@@ -11,15 +11,15 @@ import ssm.chaincode.dsl.model.SsmSessionStateDTO
 @JsExport
 @JsName("DataSsmSessionStateDTO")
 interface DataSsmSessionStateDTO {
-	/**
-	 * The state of an SSM session
-	 */
-	val details: SsmSessionStateDTO
+    /**
+     * The state of an SSM session
+     */
+    val details: SsmSessionStateDTO
 
-	/**
-	 * Transaction that initiated the state of the session
-	 */
-	val transaction: TransactionDTO?
+    /**
+     * Transaction that initiated the state of the session
+     */
+    val transaction: TransactionDTO?
 }
 
 /**

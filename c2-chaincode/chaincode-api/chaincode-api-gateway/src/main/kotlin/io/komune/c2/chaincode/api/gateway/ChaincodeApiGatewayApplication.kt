@@ -6,14 +6,14 @@ import org.springframework.boot.runApplication
 
 
 @SpringBootApplication(
-	scanBasePackageClasses = [ChaincodeApiGatewayApplication::class]
+    scanBasePackageClasses = [ChaincodeApiGatewayApplication::class]
 )
 @ConfigurationPropertiesScan
 class ChaincodeApiGatewayApplication
 
 fun main(args: Array<String>) {
-	disableOpenTelemetryExporters()
-	runApplication<ChaincodeApiGatewayApplication>(*args)
+    disableOpenTelemetryExporters()
+    runApplication<ChaincodeApiGatewayApplication>(*args)
 }
 
 /**
@@ -31,7 +31,7 @@ fun main(args: Array<String>) {
  * Setting these system properties disables the exporters entirely.
  */
 private fun disableOpenTelemetryExporters() {
-	System.setProperty("otel.traces.exporter", "none")
-	System.setProperty("otel.metrics.exporter", "none")
-	System.setProperty("otel.logs.exporter", "none")
+    System.setProperty("otel.traces.exporter", "none")
+    System.setProperty("otel.metrics.exporter", "none")
+    System.setProperty("otel.logs.exporter", "none")
 }

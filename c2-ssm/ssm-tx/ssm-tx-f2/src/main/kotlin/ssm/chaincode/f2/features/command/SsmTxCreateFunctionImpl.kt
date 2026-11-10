@@ -9,20 +9,20 @@ import ssm.tx.dsl.features.ssm.SsmCreateResult
 import ssm.tx.dsl.features.ssm.SsmTxCreateFunction
 
 class SsmTxCreateFunctionImpl(
-	private val ssmTxService: SsmTxService,
+    private val ssmTxService: SsmTxService,
 ): SsmTxCreateFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmCreateCommand>): Flow<SsmCreateResult> = msgs.map { payload ->
-		ssm.sdk.core.command.SsmCreateCommand(
-			ssm = payload.ssm,
-			chaincodeUri = payload.chaincodeUri.burst(),
-			signerName = payload.signerName
-		)
-	}.let {
-		ssmTxService.sendCreate(it).map { result ->
-			SsmCreateResult(
-				transactionId = result.transactionId.orEmpty(),
-			)
-		}
-	}
+    override suspend fun invoke(msgs: Flow<SsmCreateCommand>): Flow<SsmCreateResult> = msgs.map { payload ->
+        ssm.sdk.core.command.SsmCreateCommand(
+            ssm = payload.ssm,
+            chaincodeUri = payload.chaincodeUri.burst(),
+            signerName = payload.signerName
+        )
+    }.let {
+        ssmTxService.sendCreate(it).map { result ->
+            SsmCreateResult(
+                transactionId = result.transactionId.orEmpty(),
+            )
+        }
+    }
 }

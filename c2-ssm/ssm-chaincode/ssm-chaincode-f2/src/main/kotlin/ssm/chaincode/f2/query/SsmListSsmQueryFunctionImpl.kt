@@ -8,12 +8,12 @@ import ssm.chaincode.dsl.query.SsmListSsmResult
 import ssm.sdk.core.SsmQueryService
 
 class SsmListSsmQueryFunctionImpl(
-	private val queryService: SsmQueryService
+    private val queryService: SsmQueryService
 ): SsmListSsmQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmListSsmQuery>): Flow<SsmListSsmResult> = msgs.map { payload ->
-		queryService.listSsm(payload.chaincodeUri).let { items ->
-			SsmListSsmResult(items.toTypedArray())
-		}
-	}
+    override suspend fun invoke(msgs: Flow<SsmListSsmQuery>): Flow<SsmListSsmResult> = msgs.map { payload ->
+        queryService.listSsm(payload.chaincodeUri).let { items ->
+            SsmListSsmResult(items.toTypedArray())
+        }
+    }
 }

@@ -8,11 +8,11 @@ import ssm.chaincode.dsl.query.SsmListSessionResult
 import ssm.sdk.core.SsmQueryService
 
 class SsmListSessionQueryFunctionImpl(
-	private val queryService: SsmQueryService
+    private val queryService: SsmQueryService
 ) : SsmListSessionQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmListSessionQuery>): Flow<SsmListSessionResult> = msgs.map { payload ->
-		val list = queryService.listSession(payload.chaincodeUri)
-		SsmListSessionResult(list.toTypedArray())
-	}
+    override suspend fun invoke(msgs: Flow<SsmListSessionQuery>): Flow<SsmListSessionResult> = msgs.map { payload ->
+        val list = queryService.listSession(payload.chaincodeUri)
+        SsmListSessionResult(list.toTypedArray())
+    }
 }

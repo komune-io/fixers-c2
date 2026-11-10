@@ -21,54 +21,54 @@ import ssm.data.dsl.features.query.DataSsmSessionListQuery
 
 class DataSteps : SsmQueryStep(), En {
 
-	companion object {
-		const val GLUE = "ssm.data.bdd"
-	}
+    companion object {
+        const val GLUE = "ssm.data.bdd"
+    }
 
-	val ssmDataConfig: DataSsmConfig = SsmBddConfig.Data.config
-	val dataSsmQueryFunctionImpl =
-		DataSsmQueryFunctionImpl(ssmDataConfig, ChaincodeSsmQueriesImpl(batch, ssmDataConfig.chaincode))
-	val couchdbSsmQueriesFunctionImpl = CouchdbSsmQueriesFunctionImpl(ssmDataConfig.couchdb)
+    val ssmDataConfig: DataSsmConfig = SsmBddConfig.Data.config
+    val dataSsmQueryFunctionImpl =
+        DataSsmQueryFunctionImpl(ssmDataConfig, ChaincodeSsmQueriesImpl(batch, ssmDataConfig.chaincode))
+    val couchdbSsmQueriesFunctionImpl = CouchdbSsmQueriesFunctionImpl(ssmDataConfig.couchdb)
 
-	init {
-		prepareSteps()
-	}
+    init {
+        prepareSteps()
+    }
 
-	override suspend fun getSession(ssmUri: SsmUri, sessionName: SessionName): SsmSessionStateDTO {
-		return DataSsmSessionGetQuery(
-			sessionName = sessionName,
-			ssmUri = ssmUri,
-		).invokeWith(dataSsmQueryFunctionImpl.dataSsmSessionGetQueryFunction())
-			.item!!.state.details
-	}
+    override suspend fun getSession(ssmUri: SsmUri, sessionName: SessionName): SsmSessionStateDTO {
+        return DataSsmSessionGetQuery(
+            sessionName = sessionName,
+            ssmUri = ssmUri,
+        ).invokeWith(dataSsmQueryFunctionImpl.dataSsmSessionGetQueryFunction())
+            .item!!.state.details
+    }
 
-	override suspend fun logSession(ssmUri: SsmUri, sessionName: SessionName): List<SsmSessionStateLog> {
-		return bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
-	}
+    override suspend fun logSession(ssmUri: SsmUri, sessionName: SessionName): List<SsmSessionStateLog> {
+        return bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
+    }
 
-	override suspend fun listSessions(ssmUri: SsmUri): List<SessionName> {
-		return DataSsmSessionListQuery(
-			ssmUri = ssmUri
-		).invokeWith(dataSsmQueryFunctionImpl.dataSsmSessionListQueryFunction())
-			.items.map { it.state.details.session }
-	}
+    override suspend fun listSessions(ssmUri: SsmUri): List<SessionName> {
+        return DataSsmSessionListQuery(
+            ssmUri = ssmUri
+        ).invokeWith(dataSsmQueryFunctionImpl.dataSsmSessionListQueryFunction())
+            .items.map { it.state.details.session }
+    }
 
-	override suspend fun listSsm(): List<SsmName> {
-		return DataSsmListQuery(
-			chaincodes = listOf(bag.chaincodeUri)
-		).invokeWith(dataSsmQueryFunctionImpl.dataSsmListQueryFunction())
-			.items.map { it.ssm.name }
-	}
+    override suspend fun listSsm(): List<SsmName> {
+        return DataSsmListQuery(
+            chaincodes = listOf(bag.chaincodeUri)
+        ).invokeWith(dataSsmQueryFunctionImpl.dataSsmListQueryFunction())
+            .items.map { it.ssm.name }
+    }
 
-	override suspend fun listUsers(): List<String> {
-		return CouchdbUserListQuery(chaincodeUri = bag.chaincodeUri)
-			.invokeWith(couchdbSsmQueriesFunctionImpl.couchdbUserListQueryFunction())
-			.items.map { it.name }
-	}
+    override suspend fun listUsers(): List<String> {
+        return CouchdbUserListQuery(chaincodeUri = bag.chaincodeUri)
+            .invokeWith(couchdbSsmQueriesFunctionImpl.couchdbUserListQueryFunction())
+            .items.map { it.name }
+    }
 
-	override suspend fun listAdmins(): List<String> {
-		return CouchdbAdminListQuery(chaincodeUri = bag.chaincodeUri)
-			.invokeWith(couchdbSsmQueriesFunctionImpl.couchdbAdminListQueryFunction())
-			.items.map { it.name }
-	}
+    override suspend fun listAdmins(): List<String> {
+        return CouchdbAdminListQuery(chaincodeUri = bag.chaincodeUri)
+            .invokeWith(couchdbSsmQueriesFunctionImpl.couchdbAdminListQueryFunction())
+            .items.map { it.name }
+    }
 }

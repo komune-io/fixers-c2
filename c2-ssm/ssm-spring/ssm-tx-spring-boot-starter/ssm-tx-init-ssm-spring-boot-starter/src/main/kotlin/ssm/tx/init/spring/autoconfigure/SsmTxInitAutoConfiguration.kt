@@ -12,13 +12,13 @@ import ssm.tx.dsl.features.ssm.SsmTxInitFunction
 @Configuration(proxyBeanMethods = false)
 class SsmTxInitAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(SsmTxInitFunctionImpl::class)
-	@ConditionalOnBean(SsmTxService::class)
-	fun ssmTxInitFunction(
-		ssmTxService: SsmTxService,
-		ssmQueryService: SsmQueryService,
-	): SsmTxInitFunction {
-		return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
-	}
+    @Bean
+    @ConditionalOnMissingBean(SsmTxInitFunctionImpl::class)
+    @ConditionalOnBean(SsmTxService::class)
+    fun ssmTxInitFunction(
+        ssmTxService: SsmTxService,
+        ssmQueryService: SsmQueryService,
+    ): SsmTxInitFunction {
+        return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
+    }
 }

@@ -24,13 +24,13 @@ typealias SsmTxUserGrantFunction = F2Function<SsmUserGrantCommand, SsmUserGrante
 class SsmUserGrantCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     /**
-	 * The name of the signer
-	 */
-	val signerName: AgentName,
+     * The name of the signer
+     */
+    val signerName: AgentName,
     /**
-	 * Initial user of the SSM
-	 */
-	val agent: Agent,
+     * Initial user of the SSM
+     */
+    val agent: Agent,
 ) : SsmCommandDTO
 
 /**

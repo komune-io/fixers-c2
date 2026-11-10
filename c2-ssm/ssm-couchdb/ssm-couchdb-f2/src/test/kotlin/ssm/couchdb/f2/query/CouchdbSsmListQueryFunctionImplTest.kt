@@ -9,17 +9,17 @@ import ssm.couchdb.dsl.query.CouchdbSsmListQueryFunction
 
 internal class CouchdbSsmListQueryFunctionImplTest : FunctionTestBase() {
 
-	var couchdbSsmListQueryFunctionImpl: CouchdbSsmListQueryFunction = queries.couchdbSsmListQueryFunction()
+    var couchdbSsmListQueryFunctionImpl: CouchdbSsmListQueryFunction = queries.couchdbSsmListQueryFunction()
 
-	@Test
-	suspend fun `must return all ssm`() {
-		val ssmList = CouchdbSsmListQuery(
-			pagination = null,
-			channelId = TestConfig.CHANNEL_ID,
-			chaincodeId = TestConfig.CHAINCODE_ID
-		).invokeWith(couchdbSsmListQueryFunctionImpl)
+    @Test
+    suspend fun `must return all ssm`() {
+        val ssmList = CouchdbSsmListQuery(
+            pagination = null,
+            channelId = TestConfig.CHANNEL_ID,
+            chaincodeId = TestConfig.CHAINCODE_ID
+        ).invokeWith(couchdbSsmListQueryFunctionImpl)
 
-		Assertions.assertThat(ssmList).isNotNull
-		Assertions.assertThat(ssmList.items).isNotNull
-	}
+        Assertions.assertThat(ssmList).isNotNull
+        Assertions.assertThat(ssmList.items).isNotNull
+    }
 }

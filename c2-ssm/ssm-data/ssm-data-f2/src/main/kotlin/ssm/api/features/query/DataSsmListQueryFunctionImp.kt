@@ -17,31 +17,31 @@ import ssm.data.dsl.features.query.DataSsmListQueryResult
 import ssm.data.dsl.model.DataSsm
 
 class DataSsmListQueryFunctionImp(
-	private val couchdbSsmListQueryFunction: CouchdbSsmListQueryFunction
+    private val couchdbSsmListQueryFunction: CouchdbSsmListQueryFunction
 ): DataSsmListQueryFunction {
 
-	private suspend fun CouchdbSsmListQuery.queryEachChannel(chaincode: ChaincodeUri): Flow<DataSsm> =
-		invokeWith(couchdbSsmListQueryFunction)
-			.let { result ->
-				result.items.asFlow().map { ssm ->
-					ssm.toDataSsm(chaincode)
-				}
-			}.filterNotNull()
+    private suspend fun CouchdbSsmListQuery.queryEachChannel(chaincode: ChaincodeUri): Flow<DataSsm> =
+        invokeWith(couchdbSsmListQueryFunction)
+            .let { result ->
+                result.items.asFlow().map { ssm ->
+                    ssm.toDataSsm(chaincode)
+                }
+            }.filterNotNull()
 
-	override suspend fun invoke(msgs: Flow<DataSsmListQuery>): Flow<DataSsmListQueryResult> =
-		msgs.map { payload ->
-			payload.chaincodes
-				.asFlow()
-				.flatMapConcat { chaincodeUri ->
-					CouchdbSsmListQuery(
-						chaincodeId = chaincodeUri.chaincodeId,
-						channelId = chaincodeUri.channelId,
-						pagination = null
-					).queryEachChannel(chaincodeUri)
-				}.let {
-					DataSsmListQueryResult(it.toList())
-				}
+    override suspend fun invoke(msgs: Flow<DataSsmListQuery>): Flow<DataSsmListQueryResult> =
+        msgs.map { payload ->
+            payload.chaincodes
+                .asFlow()
+                .flatMapConcat { chaincodeUri ->
+                    CouchdbSsmListQuery(
+                        chaincodeId = chaincodeUri.chaincodeId,
+                        channelId = chaincodeUri.channelId,
+                        pagination = null
+                    ).queryEachChannel(chaincodeUri)
+                }.let {
+                    DataSsmListQueryResult(it.toList())
+                }
 
-		}
+        }
 }
 

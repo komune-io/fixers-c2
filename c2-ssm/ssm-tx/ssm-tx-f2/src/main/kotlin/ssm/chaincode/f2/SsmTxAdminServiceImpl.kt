@@ -13,23 +13,23 @@ import ssm.tx.dsl.features.user.SsmTxUserGrantFunction
 import ssm.tx.dsl.features.user.SsmTxUserRegisterFunction
 
 class SsmTxAdminServiceImpl(
-	private val ssmTxService: SsmTxService,
-	private val ssmQueryService: SsmQueryService,
+    private val ssmTxService: SsmTxService,
+    private val ssmQueryService: SsmQueryService,
 ) : SsmTxAdminFunctions {
 
-	override fun ssmTxUserGrantFunction(): SsmTxUserGrantFunction {
-		return SsmUserGrantFunctionImpl(ssmTxService)
-	}
+    override fun ssmTxUserGrantFunction(): SsmTxUserGrantFunction {
+        return SsmUserGrantFunctionImpl(ssmTxService)
+    }
 
-	override fun ssmTxUserRegisterFunction(): SsmTxUserRegisterFunction {
-		return SsmUserRegisterFunctionImpl(ssmTxService)
-	}
+    override fun ssmTxUserRegisterFunction(): SsmTxUserRegisterFunction {
+        return SsmUserRegisterFunctionImpl(ssmTxService)
+    }
 
-	override fun ssmTxCreateFunction(): SsmTxCreateFunction {
-		return SsmTxCreateFunctionImpl(ssmTxService)
-	}
+    override fun ssmTxCreateFunction(): SsmTxCreateFunction {
+        return SsmTxCreateFunctionImpl(ssmTxService)
+    }
 
-	override fun ssmTxInitializeFunction(): SsmTxInitFunction {
-		return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
-	}
+    override fun ssmTxInitializeFunction(): SsmTxInitFunction {
+        return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
+    }
 }

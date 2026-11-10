@@ -11,16 +11,16 @@ import ssm.data.dsl.model.DataSsmSessionState
 typealias SyncSsmCommandFunction = F2Function<SyncSsmCommand, SyncSsmCommandResult>
 
 interface SyncSsmCommandDTO {
-	val lastEventId: ChangeEventId?
-	val limit: Long?
-	val chaincodeUri: ChaincodeUri
-	val ssmName: SsmName?
-	val sessionName: SessionName?
+    val lastEventId: ChangeEventId?
+    val limit: Long?
+    val chaincodeUri: ChaincodeUri
+    val ssmName: SsmName?
+    val sessionName: SessionName?
 }
 
 interface SyncSsmCommandResultDTO {
-	val lastEventId: ChangeEventId?
-	val items: List<SsmSessionSyncResult>
+    val lastEventId: ChangeEventId?
+    val items: List<SsmSessionSyncResult>
 }
 
 class SyncSsmCommand(
@@ -32,12 +32,12 @@ class SyncSsmCommand(
 ) : SyncSsmCommandDTO
 
 data class SyncSsmCommandResult(
-	override val lastEventId: ChangeEventId?,
-	override val items: List<SsmSessionSyncResult>
+    override val lastEventId: ChangeEventId?,
+    override val items: List<SsmSessionSyncResult>
 ): SyncSsmCommandResultDTO
 
 data class SsmSessionSyncResult(
-	val ssm: SsmUri,
-	val name: SessionName,
-	val logs: List<DataSsmSessionState>
+    val ssm: SsmUri,
+    val name: SessionName,
+    val logs: List<DataSsmSessionState>
 )

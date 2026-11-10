@@ -8,30 +8,30 @@ import org.springframework.context.support.GenericApplicationContext
 
 class ApplicationContextBuilder {
 
-	fun create(
-		types: Array<Class<*>>, profile: Array<String> = emptyArray(), config: Map<String, String>
-	): GenericApplicationContext {
-		return SpringApplicationBuilder(*types)
-			.profiles(*profile)
-			.withConfig(config)
-			.run() as GenericApplicationContext
-	}
+    fun create(
+        types: Array<Class<*>>, profile: Array<String> = emptyArray(), config: Map<String, String>
+    ): GenericApplicationContext {
+        return SpringApplicationBuilder(*types)
+            .profiles(*profile)
+            .withConfig(config)
+            .run() as GenericApplicationContext
+    }
 
-	private fun SpringApplicationBuilder.withConfig(config: Map<String, String>): SpringApplicationBuilder {
-		val allConfig = buildMap {
-			put("server.port", "0")
-			putAll(config)
-		}
-		return properties(
-			*allConfig.map { pair ->
-				"${pair.key}=${pair.value}"
-			}.toTypedArray()
-		)
-	}
+    private fun SpringApplicationBuilder.withConfig(config: Map<String, String>): SpringApplicationBuilder {
+        val allConfig = buildMap {
+            put("server.port", "0")
+            putAll(config)
+        }
+        return properties(
+            *allConfig.map { pair ->
+                "${pair.key}=${pair.value}"
+            }.toTypedArray()
+        )
+    }
 
-	@EnableAutoConfiguration
-	@Configuration
-	class SimpleConfiguration
+    @EnableAutoConfiguration
+    @Configuration
+    class SimpleConfiguration
 
 
 }

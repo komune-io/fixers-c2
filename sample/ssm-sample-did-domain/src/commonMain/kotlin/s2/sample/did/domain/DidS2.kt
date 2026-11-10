@@ -19,54 +19,54 @@ typealias DidId = String
 @JsExport
 @JsName("didS2")
 val didS2 = s2 {
-	name = "DidS2"
-	init<DidCreateCommand> {
-		to = DidState.Created()
-		role = DidRole.Admin()
-	}
-	transaction<DidAddPublicKeyCommand> {
-		from = DidState.Created()
-		to = DidState.Activated()
-		role = DidRole.Owner()
-	}
-	transaction<DidRevokeCommand> {
-		from = DidState.Activated()
-		to = DidState.Revoked()
-		role = DidRole.Owner()
-	}
-	transaction<DidRevokePublicKeyCommand> {
-		from = DidState.Activated()
-		to = DidState.Activated()
-		role = DidRole.Owner()
-	}
+    name = "DidS2"
+    init<DidCreateCommand> {
+        to = DidState.Created()
+        role = DidRole.Admin()
+    }
+    transaction<DidAddPublicKeyCommand> {
+        from = DidState.Created()
+        to = DidState.Activated()
+        role = DidRole.Owner()
+    }
+    transaction<DidRevokeCommand> {
+        from = DidState.Activated()
+        to = DidState.Revoked()
+        role = DidRole.Owner()
+    }
+    transaction<DidRevokePublicKeyCommand> {
+        from = DidState.Activated()
+        to = DidState.Activated()
+        role = DidRole.Owner()
+    }
 }
 
 @Serializable
 @JsExport
 @JsName("DidRole")
 sealed class DidRole : S2Role {
-	class Admin : DidRole()
-	class Owner : DidRole()
+    class Admin : DidRole()
+    class Owner : DidRole()
 
-	override fun toString(): String {
-		return this::class.simpleName!!
-	}
+    override fun toString(): String {
+        return this::class.simpleName!!
+    }
 }
 
 @Serializable
 @JsExport
 @JsName("DidState")
 open class DidState(
-	override val position: Int,
+    override val position: Int,
 ) : S2State {
-	@Serializable
-	class Created : DidState(0)
+    @Serializable
+    class Created : DidState(0)
 
-	@Serializable
-	class Activated : DidState(1)
+    @Serializable
+    class Activated : DidState(1)
 
-	@Serializable
-	class Revoked : DidState(2)
+    @Serializable
+    class Revoked : DidState(2)
 }
 
 @JsExport

@@ -13,28 +13,28 @@ import ssm.couchdb.dsl.query.CouchdbDatabaseListQueryResult
 import ssm.couchdb.dsl.query.CouchdbDatabaseListQueryResultDTO
 
 class CouchdbDatabaseListQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbDatabaseListQueryFunction {
 
-	override suspend fun invoke(
-		msgs: Flow<CouchdbDatabaseListQueryDTO>
-	): Flow<CouchdbDatabaseListQueryResultDTO> = msgs.map { payload ->
-		val total = 0
-		val filter = listOfNotNull(payload.channelId, "_", payload.chaincodeId).joinToString()
+    override suspend fun invoke(
+        msgs: Flow<CouchdbDatabaseListQueryDTO>
+    ): Flow<CouchdbDatabaseListQueryResultDTO> = msgs.map { payload ->
+        val total = 0
+        val filter = listOfNotNull(payload.channelId, "_", payload.chaincodeId).joinToString()
 
-		couchdbClient.getDatabases()
-			.asFlow()
-			.filter { it.contains(filter) }
-			.toDatabases()
-			.let { list ->
-				CouchdbDatabaseListQueryResult(
-					total = total,
-					items = list,
-					pagination = payload.pagination
-				)
-			}
-	}
+        couchdbClient.getDatabases()
+            .asFlow()
+            .filter { it.contains(filter) }
+            .toDatabases()
+            .let { list ->
+                CouchdbDatabaseListQueryResult(
+                    total = total,
+                    items = list,
+                    pagination = payload.pagination
+                )
+            }
+    }
 
-	private suspend fun Flow<String>.toDatabases(): List<Database> =
-		map(::Database).toList()
+    private suspend fun Flow<String>.toDatabases(): List<Database> =
+        map(::Database).toList()
 }

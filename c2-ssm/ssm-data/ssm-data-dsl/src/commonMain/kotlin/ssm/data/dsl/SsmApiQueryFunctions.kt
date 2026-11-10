@@ -26,11 +26,11 @@ import ssm.data.dsl.features.query.DataSsmSessionLogListQueryFunction
 @JsExport
 @JsName("SsmApiQueryFunctions")
 interface SsmApiQueryFunctions {
-	fun dataChaincodeListQueryFunction(): DataChaincodeListQueryFunction
-	fun dataSsmListQueryFunction(): DataSsmListQueryFunction
-	fun dataSsmGetQueryFunction(): DataSsmGetQueryFunction
-	fun dataSsmSessionListQueryFunction(): DataSsmSessionListQueryFunction
-	fun dataSsmSessionGetQueryFunction(): DataSsmSessionGetQueryFunction
-	fun dataSsmSessionLogListQueryFunction(): DataSsmSessionLogListQueryFunction
-	fun dataSsmSessionLogGetQueryFunction(): DataSsmSessionLogGetQueryFunction
+    fun dataChaincodeListQueryFunction(): DataChaincodeListQueryFunction
+    fun dataSsmListQueryFunction(): DataSsmListQueryFunction
+    fun dataSsmGetQueryFunction(): DataSsmGetQueryFunction
+    fun dataSsmSessionListQueryFunction(): DataSsmSessionListQueryFunction
+    fun dataSsmSessionGetQueryFunction(): DataSsmSessionGetQueryFunction
+    fun dataSsmSessionLogListQueryFunction(): DataSsmSessionLogListQueryFunction
+    fun dataSsmSessionLogGetQueryFunction(): DataSsmSessionLogGetQueryFunction
 }

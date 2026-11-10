@@ -20,57 +20,57 @@ import ssm.data.dsl.model.DataChannel
 import ssm.data.dsl.model.DataSsm
 
 fun SsmDTO.toDataSsm(burst: ChaincodeUri): DataSsm {
-	return DataSsm(
-		ssm = Ssm(
-			name = this.name,
-			transitions = this.transitions.map { transition ->
-				SsmTransition(
-					from = transition.from,
-					to = transition.to,
-					role = transition.role,
-					action = transition.action
-				)
-			}
-		),
-		version = DEFAULT_VERSION,
-		channel = DataChannel(burst.channelId),
-		uri = burst.toSsmUri(this.name)
-	)
+    return DataSsm(
+        ssm = Ssm(
+            name = this.name,
+            transitions = this.transitions.map { transition ->
+                SsmTransition(
+                    from = transition.from,
+                    to = transition.to,
+                    role = transition.role,
+                    action = transition.action
+                )
+            }
+        ),
+        version = DEFAULT_VERSION,
+        channel = DataChannel(burst.channelId),
+        uri = burst.toSsmUri(this.name)
+    )
 }
 
 fun Ssm.toDataSsm(ssm: SsmUri): DataSsm {
-	return DataSsm(
-		ssm = this,
-		version = ssm.ssmVersion,
-		channel = DataChannel(ssm.channelId),
-		uri = ssm
-	)
+    return DataSsm(
+        ssm = this,
+        version = ssm.ssmVersion,
+        channel = DataChannel(ssm.channelId),
+        uri = ssm
+    )
 }
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 suspend fun SessionName.getSessionLogs(
-	ssmUri: SsmUri,
-	ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
+    ssmUri: SsmUri,
+    ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
 ): List<SsmSessionStateLog> {
-	return try {
-		SsmGetSessionLogsQuery(
-			chaincodeUri = ssmUri.chaincodeUri,
-			sessionName = this,
-			ssmName = ssmUri.ssmName
-		).invokeWith(ssmGetSessionLogsQueryFunction).logs
-	} catch (e: Exception) {
-		emptyList()
-	}
+    return try {
+        SsmGetSessionLogsQuery(
+            chaincodeUri = ssmUri.chaincodeUri,
+            sessionName = this,
+            ssmName = ssmUri.ssmName
+        ).invokeWith(ssmGetSessionLogsQueryFunction).logs
+    } catch (e: Exception) {
+        emptyList()
+    }
 }
 
 suspend fun TransactionId?.getTransaction(
-	ssmGetTransactionQueryFunction: SsmGetTransactionQueryFunction,
-	chaincodeUri: ChaincodeUri
+    ssmGetTransactionQueryFunction: SsmGetTransactionQueryFunction,
+    chaincodeUri: ChaincodeUri
 ): Transaction? {
-	return this?.let { transactionId ->
-		SsmGetTransactionQuery(
-			chaincodeUri = chaincodeUri,
-			id = transactionId,
-		).invokeWith(ssmGetTransactionQueryFunction).item
-	}
+    return this?.let { transactionId ->
+        SsmGetTransactionQuery(
+            chaincodeUri = chaincodeUri,
+            id = transactionId,
+        ).invokeWith(ssmGetTransactionQueryFunction).item
+    }
 }

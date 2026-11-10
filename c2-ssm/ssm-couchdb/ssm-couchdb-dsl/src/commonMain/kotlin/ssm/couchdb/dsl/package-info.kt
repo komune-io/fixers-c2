@@ -43,6 +43,6 @@ interface CouchdbSsmD2Query
  * @parent [CouchdbSsmD2Model]
  */
 internal interface Ssm: SsmDTO {
-	override val name: String
-	override val transitions: List<SsmTransitionDTO>
+    override val name: String
+    override val transitions: List<SsmTransitionDTO>
 }

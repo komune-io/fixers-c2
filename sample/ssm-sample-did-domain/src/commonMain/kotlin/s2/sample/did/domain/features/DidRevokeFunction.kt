@@ -15,13 +15,13 @@ typealias DidRevokeCommandFunction = F2Function<DidRevokeCommand, DidRevokedEven
 @JsExport
 @JsName("DidRevokeCommand")
 data class DidRevokeCommand(
-	override val id: DidId,
+    override val id: DidId,
 ) : DidCommand
 
 @Serializable
 @JsExport
 @JsName("DidRevokedEvent")
 data class DidRevokedEvent(
-	override val id: DidId,
-	override val type: DidState,
+    override val id: DidId,
+    override val type: DidState,
 ) : DidEvent

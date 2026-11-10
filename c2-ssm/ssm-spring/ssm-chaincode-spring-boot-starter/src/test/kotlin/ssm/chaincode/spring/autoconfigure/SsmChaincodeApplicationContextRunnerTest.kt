@@ -9,42 +9,42 @@ import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 
 class SsmChaincodeApplicationContextRunnerTest {
 
-	@Test
-	fun `spring context runner must must start`() {
-		ApplicationContextRunnerBuilder()
-			.buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
-				assertThat(context).hasSingleBean(FunctionCatalog::class.java)
-				assertThat(context).hasSingleBean(SsmChaincodeConfiguration::class.java)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetAdminFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionLogsQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionLogsQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetTransactionQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetUserFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListAdminQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListSessionQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListSsmQueryFunction.name)
-				assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListUserQueryFunction.name)
-			}
-	}
+    @Test
+    fun `spring context runner must must start`() {
+        ApplicationContextRunnerBuilder()
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+                assertThat(context).hasSingleBean(FunctionCatalog::class.java)
+                assertThat(context).hasSingleBean(SsmChaincodeConfiguration::class.java)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetAdminFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionLogsQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionLogsQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetSessionQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetTransactionQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmGetUserFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListAdminQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListSessionQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListSsmQueryFunction.name)
+                assertThat(context).hasBean(SsmChaincodeF2AutoConfiguration::ssmListUserQueryFunction.name)
+            }
+    }
 
-	@Test
-	fun `spring context must must start`() {
-		val context = ApplicationContextBuilder().create(
-			types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
-			config = SsmChaincodeConfigTest.localDockerComposeParams
-		)
-		assertThat(context.getBean(SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name)).isNotNull
-		assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
-	}
+    @Test
+    fun `spring context must must start`() {
+        val context = ApplicationContextBuilder().create(
+            types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
+            config = SsmChaincodeConfigTest.localDockerComposeParams
+        )
+        assertThat(context.getBean(SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name)).isNotNull
+        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+    }
 
 
-	object SsmChaincodeConfigTest {
-		val localDockerCompose = SsmBddConfig.Chaincode
+    object SsmChaincodeConfigTest {
+        val localDockerCompose = SsmBddConfig.Chaincode
 
-		val localDockerComposeParams = mapOf(
-			"ssm.chaincode.url" to localDockerCompose.url
-		)
-	}
+        val localDockerComposeParams = mapOf(
+            "ssm.chaincode.url" to localDockerCompose.url
+        )
+    }
 
 }

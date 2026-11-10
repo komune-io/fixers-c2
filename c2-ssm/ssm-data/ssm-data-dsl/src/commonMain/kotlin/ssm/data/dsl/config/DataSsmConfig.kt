@@ -10,17 +10,17 @@ import ssm.couchdb.dsl.config.SsmCouchdbConfig
  * @parent [ssm.data.dsl.DataSsmD2]
  */
 data class DataSsmConfig(
-	/**
-	 * Configuration for chunking.
-	 */
-	val batch: SsmBatchProperties,
-	/**
-	 * Configuration for couchdb.
-	 */
-	val couchdb: SsmCouchdbConfig,
-	/**
-	 *  Configuration for couchdb.
-	 */
-	val chaincode: SsmChaincodeProperties,
+    /**
+     * Configuration for chunking.
+     */
+    val batch: SsmBatchProperties,
+    /**
+     * Configuration for couchdb.
+     */
+    val couchdb: SsmCouchdbConfig,
+    /**
+     *  Configuration for couchdb.
+     */
+    val chaincode: SsmChaincodeProperties,
 
-	)
+    )

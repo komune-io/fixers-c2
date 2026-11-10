@@ -8,10 +8,10 @@ import ssm.chaincode.dsl.query.SsmGetResult
 import ssm.sdk.core.SsmQueryService
 
 class SsmGetQueryFunctionImpl(
-	private val queryService: SsmQueryService
+    private val queryService: SsmQueryService
 ) : SsmGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmGetQuery>): Flow<SsmGetResult> = msgs.map { payload ->
-		queryService.getSsm(payload.chaincodeUri, payload.name).let(::SsmGetResult)
-	}
+    override suspend fun invoke(msgs: Flow<SsmGetQuery>): Flow<SsmGetResult> = msgs.map { payload ->
+        queryService.getSsm(payload.chaincodeUri, payload.name).let(::SsmGetResult)
+    }
 }

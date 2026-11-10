@@ -16,41 +16,41 @@ import s2.sample.did.domain.features.DidRevokePublicKeyCommandFunction
 
 @Service
 class DidAggregateBean(
-	private val didS2Aggregate: DidS2Aggregate,
+    private val didS2Aggregate: DidS2Aggregate,
 ) : DidAggregate {
 
-	@Bean("createDid")
-	override fun createDid() = f2Function<DidCreateCommand, DidCreatedEvent> { cmd ->
-		createDid(cmd)
-	}
+    @Bean("createDid")
+    override fun createDid() = f2Function<DidCreateCommand, DidCreatedEvent> { cmd ->
+        createDid(cmd)
+    }
 
-	@Bean("addPublicKey")
-	override fun addPublicKey() = f2Function<DidAddPublicKeyCommand, DidAddPublicKeyEvent> { cmd ->
-		addPublicKey(cmd)
-	}
+    @Bean("addPublicKey")
+    override fun addPublicKey() = f2Function<DidAddPublicKeyCommand, DidAddPublicKeyEvent> { cmd ->
+        addPublicKey(cmd)
+    }
 
-	@Bean("revokePublicKey")
-	override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = f2Function { _ ->
-		TODO("Not yet implemented")
-	}
+    @Bean("revokePublicKey")
+    override fun revokePublicKey(): DidRevokePublicKeyCommandFunction = f2Function { _ ->
+        TODO("Not yet implemented")
+    }
 
-	@Bean("revoke")
-	override fun revoke(): DidRevokeCommandFunction = f2Function { _ ->
-		TODO("Not yet implemented")
-	}
+    @Bean("revoke")
+    override fun revoke(): DidRevokeCommandFunction = f2Function { _ ->
+        TODO("Not yet implemented")
+    }
 
-	suspend fun createDid(cmd: DidCreateCommand): DidCreatedEvent = didS2Aggregate.createWithEvent(cmd,
-		{ DidCreatedEvent(s2Id(), DidState(this.state)) }
-	) {
-		DidEntity(id = cmd.id, state = DidState.Created().position)
-	}
+    suspend fun createDid(cmd: DidCreateCommand): DidCreatedEvent = didS2Aggregate.createWithEvent(cmd,
+        { DidCreatedEvent(s2Id(), DidState(this.state)) }
+    ) {
+        DidEntity(id = cmd.id, state = DidState.Created().position)
+    }
 
-	suspend fun addPublicKey(cmd: DidAddPublicKeyCommand): DidAddPublicKeyEvent = didS2Aggregate.doTransition(cmd) {
-		this.publicKeys.add(cmd.publicKey)
-		this.state = DidState.Activated().position
-		this to DidAddPublicKeyEvent(
-			id = cmd.id,
-			type = DidState(this.state)
-		)
-	}
+    suspend fun addPublicKey(cmd: DidAddPublicKeyCommand): DidAddPublicKeyEvent = didS2Aggregate.doTransition(cmd) {
+        this.publicKeys.add(cmd.publicKey)
+        this.state = DidState.Activated().position
+        this to DidAddPublicKeyEvent(
+            id = cmd.id,
+            type = DidState(this.state)
+        )
+    }
 }

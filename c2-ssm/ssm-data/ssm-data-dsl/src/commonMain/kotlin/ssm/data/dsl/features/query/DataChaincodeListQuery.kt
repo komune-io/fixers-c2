@@ -32,10 +32,10 @@ class DataChaincodeListQuery : DataChaincodeListQueryDTO
 @JsExport
 @JsName("DataChaincodeListQueryResultDTO")
 interface DataChaincodeListQueryResultDTO {
-	/**
-	 * List of all retrieved SSMs
-	 */
-	val items: List<ChaincodeUri>
+    /**
+     * List of all retrieved SSMs
+     */
+    val items: List<ChaincodeUri>
 }
 
 /**

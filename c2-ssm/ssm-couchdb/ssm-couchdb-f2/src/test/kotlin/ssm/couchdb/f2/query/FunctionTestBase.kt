@@ -4,5 +4,5 @@ import ssm.couchdb.bdd.TestConfig
 import ssm.couchdb.f2.CouchdbSsmQueriesFunctionImpl
 
 open class FunctionTestBase {
-	val queries = CouchdbSsmQueriesFunctionImpl(TestConfig.dbConfig)
+    val queries = CouchdbSsmQueriesFunctionImpl(TestConfig.dbConfig)
 }

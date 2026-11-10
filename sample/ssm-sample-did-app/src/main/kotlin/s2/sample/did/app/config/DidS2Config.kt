@@ -16,24 +16,24 @@ import ssm.sdk.sign.extention.loadFromFile
 
 @Configuration
 class DidS2Config(
-	private val didS2Aggregate: DidS2Aggregate
+    private val didS2Aggregate: DidS2Aggregate
 ) : S2SsmConfigurerAdapter<DidState, String, DidEntity, DidS2Aggregate>() {
 
-	override fun automate(): S2Automate = didS2
-	override fun entityType(): Class<DidEntity> = DidEntity::class.java
+    override fun automate(): S2Automate = didS2
+    override fun entityType(): Class<DidEntity> = DidEntity::class.java
 
-	override fun executor(): DidS2Aggregate = didS2Aggregate
+    override fun executor(): DidS2Aggregate = didS2Aggregate
 
-	override fun chaincodeUri(): ChaincodeUri {
-		return ChaincodeUri.from(
-			channelId = "sandbox",
-			chaincodeId = "ssm",
-		)
-	}
+    override fun chaincodeUri(): ChaincodeUri {
+        return ChaincodeUri.from(
+            channelId = "sandbox",
+            chaincodeId = "ssm",
+        )
+    }
 
-	override fun signerAgent(): Agent {
-		return Agent.loadFromFile("ssm-admin","user/ssm-admin")
-	}
+    override fun signerAgent(): Agent {
+        return Agent.loadFromFile("ssm-admin","user/ssm-admin")
+    }
 }
 
 @Service

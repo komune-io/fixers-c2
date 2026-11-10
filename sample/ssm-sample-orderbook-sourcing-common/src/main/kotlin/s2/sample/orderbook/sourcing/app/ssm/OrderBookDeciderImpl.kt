@@ -18,36 +18,36 @@ import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
 
 @Service
 class OrderBookDeciderImpl(
-	private val aggregate: OrderBookS2Aggregate
+    private val aggregate: OrderBookS2Aggregate
 ) : OrderBookDecider {
 
-	@Bean
-	override fun orderBookCreateDecider(): OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent> =
-		aggregate.init { cmd ->
-			OrderBookCreatedEvent(id = UUID.randomUUID().toString(), name = cmd.name, state = OrderBookState.Created)
-		}
+    @Bean
+    override fun orderBookCreateDecider(): OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent> =
+        aggregate.init { cmd ->
+            OrderBookCreatedEvent(id = UUID.randomUUID().toString(), name = cmd.name, state = OrderBookState.Created)
+        }
 
-	@Bean
-	override fun orderBookUpdateDecider(): OrderBookDecide<OrderBookUpdateCommand, OrderBookUpdatedEvent> =
-		aggregate.decide { cmd, _ ->
-			OrderBookUpdatedEvent(id = cmd.id, name = cmd.name, state = OrderBookState.Created)
-		}
+    @Bean
+    override fun orderBookUpdateDecider(): OrderBookDecide<OrderBookUpdateCommand, OrderBookUpdatedEvent> =
+        aggregate.decide { cmd, _ ->
+            OrderBookUpdatedEvent(id = cmd.id, name = cmd.name, state = OrderBookState.Created)
+        }
 
-	@Bean
-	override fun orderBookPublishDecider(): OrderBookDecide<OrderBookPublishCommand, OrderBookPublishedEvent> =
-		aggregate.decide { cmd, _ ->
-			OrderBookPublishedEvent(
-				id = cmd.id,
-				state = OrderBookState.Published
-			)
-		}
+    @Bean
+    override fun orderBookPublishDecider(): OrderBookDecide<OrderBookPublishCommand, OrderBookPublishedEvent> =
+        aggregate.decide { cmd, _ ->
+            OrderBookPublishedEvent(
+                id = cmd.id,
+                state = OrderBookState.Published
+            )
+        }
 
-	@Bean
-	override fun orderBookCloseDecider(): OrderBookDecide<OrderBookCloseCommand, OrderBookClosedEvent> =
-		aggregate.decide { cmd, _ ->
-			OrderBookClosedEvent(
-				id = cmd.id,
-				state = OrderBookState.Closed
-			)
-		}
+    @Bean
+    override fun orderBookCloseDecider(): OrderBookDecide<OrderBookCloseCommand, OrderBookClosedEvent> =
+        aggregate.decide { cmd, _ ->
+            OrderBookClosedEvent(
+                id = cmd.id,
+                state = OrderBookState.Closed
+            )
+        }
 }

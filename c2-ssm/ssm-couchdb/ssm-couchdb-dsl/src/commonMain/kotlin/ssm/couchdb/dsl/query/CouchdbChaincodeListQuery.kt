@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
  * @parent [ssm.couchdb.dsl.CouchdbSsmD2Query]
  */
 typealias CouchdbChaincodeListQueryFunction
-		= F2Function<CouchdbChaincodeListQueryDTO, CouchdbChaincodeListQueryResultDTO>
+        = F2Function<CouchdbChaincodeListQueryDTO, CouchdbChaincodeListQueryResultDTO>
 
 /**
  * @title Get all chaincode: Parameters
@@ -35,10 +35,10 @@ interface CouchdbChaincodeListQueryDTO : Query
 @JsExport
 @JsName("CouchdbChaincodeListQueryResultDTO")
 interface CouchdbChaincodeListQueryResultDTO : Event {
-	/**
-	 * The name of the database.
-	 */
-	val items: List<ChaincodeUriDTO>
+    /**
+     * The name of the database.
+     */
+    val items: List<ChaincodeUriDTO>
 }
 
 @Serializable

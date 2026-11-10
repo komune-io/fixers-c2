@@ -27,7 +27,7 @@ typealias SsmListUserQueryFunction = F2Function<SsmListUserQuery, SsmListUserRes
 @JsExport
 @JsName("SsmListUserQuery")
 class SsmListUserQuery(
-	override val chaincodeUri: ChaincodeUri
+    override val chaincodeUri: ChaincodeUri
 ) : SsmQueryDTO
 
 /**
@@ -39,5 +39,5 @@ class SsmListUserQuery(
 @JsExport
 @JsName("SsmListUserResult")
 class SsmListUserResult(
-	override val items: Array<AgentName>,
+    override val items: Array<AgentName>,
 ) : SsmItemsResultDTO<AgentName>

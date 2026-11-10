@@ -7,20 +7,20 @@ import ssm.sdk.sign.model.SignerAdmin
 
 @ConfigurationProperties(prefix = "ssm")
 data class SsmTxProperties(
-	val chaincode: SsmChaincodeProperties?,
-	val signer: SignerFileConfig?,
-	val batch: SsmBatchProperties = SsmBatchProperties()
+    val chaincode: SsmChaincodeProperties?,
+    val signer: SignerFileConfig?,
+    val batch: SsmBatchProperties = SsmBatchProperties()
 ) {
-	class SignerFileConfig(
-		val admin: SignerAgentFileConfig?,
-		val user: SignerAgentFileConfig?,
-	)
-	class SignerAgentFileConfig(
-		val name: String,
-		val key: String,
-	)
+    class SignerFileConfig(
+        val admin: SignerAgentFileConfig?,
+        val user: SignerAgentFileConfig?,
+    )
+    class SignerAgentFileConfig(
+        val name: String,
+        val key: String,
+    )
 }
 
 fun SsmTxProperties.SignerAgentFileConfig.signer(): SignerAdmin {
-	return SignerAdmin.loadFromFile(name, key)
+    return SignerAdmin.loadFromFile(name, key)
 }
