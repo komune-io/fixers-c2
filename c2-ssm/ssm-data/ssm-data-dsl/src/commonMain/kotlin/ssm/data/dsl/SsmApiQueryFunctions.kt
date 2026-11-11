@@ -1,7 +1,5 @@
 package ssm.data.dsl
 
-import kotlin.js.JsExport
-import kotlin.js.JsName
 import ssm.data.dsl.features.query.DataChaincodeListQueryFunction
 import ssm.data.dsl.features.query.DataSsmGetQueryFunction
 import ssm.data.dsl.features.query.DataSsmListQueryFunction
@@ -24,20 +22,19 @@ import ssm.data.dsl.features.query.DataSsmSessionLogListQueryFunction
  * @parent [ssm.data.dsl.DataSsmD2]
  * @title Synthesis and global objects of the API
  */
-@JsExport
-@JsName("SsmApiQueryFunctions")
+// Kotlin only: F2Function is not exported to JS, which reaches these functions through f2's JS facade.
 interface SsmApiQueryFunctions {
     fun dataChaincodeListQueryFunction(): DataChaincodeListQueryFunction
     fun dataSsmListQueryFunction(): DataSsmListQueryFunction
     fun dataSsmGetQueryFunction(): DataSsmGetQueryFunction
-    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
     @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionListQueryFunction(): DataSsmSessionListQueryFunction
     fun dataSsmSessionGetQueryFunction(): DataSsmSessionGetQueryFunction
-    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
     @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionLogListQueryFunction(): DataSsmSessionLogListQueryFunction
-    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
     @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionLogGetQueryFunction(): DataSsmSessionLogGetQueryFunction
 }

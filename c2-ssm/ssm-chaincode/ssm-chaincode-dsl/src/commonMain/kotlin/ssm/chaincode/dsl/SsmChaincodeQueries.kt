@@ -1,7 +1,5 @@
 package ssm.chaincode.dsl
 
-import kotlin.js.JsExport
-import kotlin.js.JsName
 import ssm.chaincode.dsl.query.SsmGetAdminFunction
 import ssm.chaincode.dsl.query.SsmGetQueryFunction
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
@@ -30,8 +28,7 @@ import ssm.chaincode.dsl.query.SsmListUserQueryFunction
  * @title Query function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2]
  */
-@JsExport
-@JsName("SsmChaincodeQueries")
+// Kotlin only: F2Function is not exported to JS, which reaches these functions through f2's JS facade.
 interface SsmChaincodeQueries {
     fun ssmGetAdminFunction(): SsmGetAdminFunction
     fun ssmGetQueryFunction(): SsmGetQueryFunction

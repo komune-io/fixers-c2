@@ -62,45 +62,6 @@ export declare interface KtMap<K, out V> {
 export declare namespace KtMap {
     function fromJsMap<K, V>(map: ReadonlyMap<K, V>): KtMap<K, V>;
 }
-export declare interface F2Consumer<T> {
-    readonly __doNotUseOrImplementIt: {
-        readonly "f2.dsl.fnc.F2Consumer": unique symbol;
-    };
-}
-export declare interface F2Function<in T, out R> {
-    readonly __doNotUseOrImplementIt: {
-        readonly "f2.dsl.fnc.F2Function": unique symbol;
-    };
-}
-export declare interface F2Supplier<R> {
-    readonly __doNotUseOrImplementIt: {
-        readonly "f2.dsl.fnc.F2Supplier": unique symbol;
-    };
-}
-export declare interface F2SupplierSingle<R> {
-    readonly __doNotUseOrImplementIt: {
-        readonly "f2.dsl.fnc.F2SupplierSingle": unique symbol;
-    };
-}
-export declare class Batch {
-    constructor(size?: number, concurrency?: number);
-    get size(): number;
-    get concurrency(): number;
-    copy(size?: number, concurrency?: number): Batch;
-    toString(): string;
-    hashCode(): number;
-    equals(other: Nullable<unknown>): boolean;
-}
-export declare namespace Batch {
-    /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
-    namespace $metadata$ {
-        const constructor: abstract new () => Batch;
-    }
-}
-export declare function invokeF2Function<T, R>(fnc: F2Function<T, R>, msgs: Array<T>): Promise<Array<R>>;
-export declare function invokeF2Consumer<T>(fnc: F2Consumer<T>, msgs: Array<T>): Promise<void>;
-export declare function invokeF2Supplier<R>(fnc: F2Supplier<R>): Promise<Array<R>>;
-export declare function invokeF2SupplierSingle<R>(fnc: F2SupplierSingle<R>): Promise<R>;
 export declare interface Command extends Message {
     readonly __doNotUseOrImplementIt: {
         readonly "f2.dsl.cqrs.Command": unique symbol;
@@ -184,6 +145,8 @@ export declare interface F2ErrorDTO extends Problem {
 }
 export declare interface F2RefusalDTO {
     readonly code: string;
+    readonly parameters: KtMap<string, string>;
+    readonly citers: KtList<string>;
     readonly __doNotUseOrImplementIt: {
         readonly "f2.dsl.cqrs.error.F2RefusalDTO": unique symbol;
     };
@@ -191,6 +154,8 @@ export declare interface F2RefusalDTO {
 export declare class F2Refusal implements F2RefusalDTO {
     constructor(code: string, parameters?: KtMap<string, string>, citers?: KtList<string>);
     get code(): string;
+    get parameters(): KtMap<string, string>;
+    get citers(): KtList<string>;
     copy(code?: string, parameters?: KtMap<string, string>, citers?: KtList<string>): F2Refusal;
     toString(): string;
     hashCode(): number;
@@ -218,166 +183,6 @@ export declare namespace F2Error {
     /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
     namespace $metadata$ {
         const constructor: abstract new () => F2Error;
-    }
-}
-export declare function isRefusal(error: F2ErrorDTO): boolean;
-export declare function refusalCode(error: F2ErrorDTO): string;
-export declare abstract class HttpRefusal {
-    private constructor();
-    static get INVALID_PAYLOAD(): HttpRefusal & {
-        get name(): "INVALID_PAYLOAD";
-        get ordinal(): 0;
-    };
-    static get UNAUTHENTICATED(): HttpRefusal & {
-        get name(): "UNAUTHENTICATED";
-        get ordinal(): 1;
-    };
-    static get PAYMENT_REQUIRED(): HttpRefusal & {
-        get name(): "PAYMENT_REQUIRED";
-        get ordinal(): 2;
-    };
-    static get FORBIDDEN(): HttpRefusal & {
-        get name(): "FORBIDDEN";
-        get ordinal(): 3;
-    };
-    static get NOT_FOUND(): HttpRefusal & {
-        get name(): "NOT_FOUND";
-        get ordinal(): 4;
-    };
-    static get METHOD_NOT_ALLOWED(): HttpRefusal & {
-        get name(): "METHOD_NOT_ALLOWED";
-        get ordinal(): 5;
-    };
-    static get NOT_ACCEPTABLE(): HttpRefusal & {
-        get name(): "NOT_ACCEPTABLE";
-        get ordinal(): 6;
-    };
-    static get PROXY_UNAUTHENTICATED(): HttpRefusal & {
-        get name(): "PROXY_UNAUTHENTICATED";
-        get ordinal(): 7;
-    };
-    static get REQUEST_TIMEOUT(): HttpRefusal & {
-        get name(): "REQUEST_TIMEOUT";
-        get ordinal(): 8;
-    };
-    static get CONFLICT(): HttpRefusal & {
-        get name(): "CONFLICT";
-        get ordinal(): 9;
-    };
-    static get GONE(): HttpRefusal & {
-        get name(): "GONE";
-        get ordinal(): 10;
-    };
-    static get LENGTH_REQUIRED(): HttpRefusal & {
-        get name(): "LENGTH_REQUIRED";
-        get ordinal(): 11;
-    };
-    static get PRECONDITION_FAILED(): HttpRefusal & {
-        get name(): "PRECONDITION_FAILED";
-        get ordinal(): 12;
-    };
-    static get PAYLOAD_TOO_LARGE(): HttpRefusal & {
-        get name(): "PAYLOAD_TOO_LARGE";
-        get ordinal(): 13;
-    };
-    static get URI_TOO_LONG(): HttpRefusal & {
-        get name(): "URI_TOO_LONG";
-        get ordinal(): 14;
-    };
-    static get UNSUPPORTED_MEDIA_TYPE(): HttpRefusal & {
-        get name(): "UNSUPPORTED_MEDIA_TYPE";
-        get ordinal(): 15;
-    };
-    static get RANGE_NOT_SATISFIABLE(): HttpRefusal & {
-        get name(): "RANGE_NOT_SATISFIABLE";
-        get ordinal(): 16;
-    };
-    static get EXPECTATION_FAILED(): HttpRefusal & {
-        get name(): "EXPECTATION_FAILED";
-        get ordinal(): 17;
-    };
-    static get MISDIRECTED_REQUEST(): HttpRefusal & {
-        get name(): "MISDIRECTED_REQUEST";
-        get ordinal(): 18;
-    };
-    static get UNPROCESSABLE(): HttpRefusal & {
-        get name(): "UNPROCESSABLE";
-        get ordinal(): 19;
-    };
-    static get LOCKED(): HttpRefusal & {
-        get name(): "LOCKED";
-        get ordinal(): 20;
-    };
-    static get FAILED_DEPENDENCY(): HttpRefusal & {
-        get name(): "FAILED_DEPENDENCY";
-        get ordinal(): 21;
-    };
-    static get TOO_EARLY(): HttpRefusal & {
-        get name(): "TOO_EARLY";
-        get ordinal(): 22;
-    };
-    static get UPGRADE_REQUIRED(): HttpRefusal & {
-        get name(): "UPGRADE_REQUIRED";
-        get ordinal(): 23;
-    };
-    static get PRECONDITION_REQUIRED(): HttpRefusal & {
-        get name(): "PRECONDITION_REQUIRED";
-        get ordinal(): 24;
-    };
-    static get TOO_MANY_REQUESTS(): HttpRefusal & {
-        get name(): "TOO_MANY_REQUESTS";
-        get ordinal(): 25;
-    };
-    static get HEADERS_TOO_LARGE(): HttpRefusal & {
-        get name(): "HEADERS_TOO_LARGE";
-        get ordinal(): 26;
-    };
-    static get UNAVAILABLE_FOR_LEGAL_REASONS(): HttpRefusal & {
-        get name(): "UNAVAILABLE_FOR_LEGAL_REASONS";
-        get ordinal(): 27;
-    };
-    static get UNEXPECTED(): HttpRefusal & {
-        get name(): "UNEXPECTED";
-        get ordinal(): 28;
-    };
-    static get UNAVAILABLE(): HttpRefusal & {
-        get name(): "UNAVAILABLE";
-        get ordinal(): 29;
-    };
-    static values(): [typeof HttpRefusal.INVALID_PAYLOAD, typeof HttpRefusal.UNAUTHENTICATED, typeof HttpRefusal.PAYMENT_REQUIRED, typeof HttpRefusal.FORBIDDEN, typeof HttpRefusal.NOT_FOUND, typeof HttpRefusal.METHOD_NOT_ALLOWED, typeof HttpRefusal.NOT_ACCEPTABLE, typeof HttpRefusal.PROXY_UNAUTHENTICATED, typeof HttpRefusal.REQUEST_TIMEOUT, typeof HttpRefusal.CONFLICT, typeof HttpRefusal.GONE, typeof HttpRefusal.LENGTH_REQUIRED, typeof HttpRefusal.PRECONDITION_FAILED, typeof HttpRefusal.PAYLOAD_TOO_LARGE, typeof HttpRefusal.URI_TOO_LONG, typeof HttpRefusal.UNSUPPORTED_MEDIA_TYPE, typeof HttpRefusal.RANGE_NOT_SATISFIABLE, typeof HttpRefusal.EXPECTATION_FAILED, typeof HttpRefusal.MISDIRECTED_REQUEST, typeof HttpRefusal.UNPROCESSABLE, typeof HttpRefusal.LOCKED, typeof HttpRefusal.FAILED_DEPENDENCY, typeof HttpRefusal.TOO_EARLY, typeof HttpRefusal.UPGRADE_REQUIRED, typeof HttpRefusal.PRECONDITION_REQUIRED, typeof HttpRefusal.TOO_MANY_REQUESTS, typeof HttpRefusal.HEADERS_TOO_LARGE, typeof HttpRefusal.UNAVAILABLE_FOR_LEGAL_REASONS, typeof HttpRefusal.UNEXPECTED, typeof HttpRefusal.UNAVAILABLE];
-    static valueOf(value: string): HttpRefusal;
-    get name(): "INVALID_PAYLOAD" | "UNAUTHENTICATED" | "PAYMENT_REQUIRED" | "FORBIDDEN" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "PROXY_UNAUTHENTICATED" | "REQUEST_TIMEOUT" | "CONFLICT" | "GONE" | "LENGTH_REQUIRED" | "PRECONDITION_FAILED" | "PAYLOAD_TOO_LARGE" | "URI_TOO_LONG" | "UNSUPPORTED_MEDIA_TYPE" | "RANGE_NOT_SATISFIABLE" | "EXPECTATION_FAILED" | "MISDIRECTED_REQUEST" | "UNPROCESSABLE" | "LOCKED" | "FAILED_DEPENDENCY" | "TOO_EARLY" | "UPGRADE_REQUIRED" | "PRECONDITION_REQUIRED" | "TOO_MANY_REQUESTS" | "HEADERS_TOO_LARGE" | "UNAVAILABLE_FOR_LEGAL_REASONS" | "UNEXPECTED" | "UNAVAILABLE";
-    get ordinal(): 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29;
-    get status(): number;
-    get refusal(): string;
-}
-export declare namespace HttpRefusal {
-    /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
-    namespace $metadata$ {
-        const constructor: abstract new () => HttpRefusal;
-    }
-    abstract class Companion extends KtSingleton<Companion.$metadata$.constructor>() {
-        private constructor();
-    }
-    namespace Companion {
-        /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
-        namespace $metadata$ {
-            abstract class constructor {
-                get DOMAIN(): string;
-                ofStatus(status: number): HttpRefusal;
-                private constructor();
-            }
-        }
-    }
-}
-export declare class F2Exception extends /* RuntimeException */ Error {
-    constructor(error: F2ErrorDTO, cause?: Nullable<Error>);
-    get error(): F2ErrorDTO;
-}
-export declare namespace F2Exception {
-    /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
-    namespace $metadata$ {
-        const constructor: abstract new () => F2Exception;
     }
 }
 export declare interface Match<T> {
@@ -518,8 +323,6 @@ export declare namespace PagePagination {
         const constructor: abstract new () => PagePagination;
     }
 }
-export declare function refusalParameters(refusal: F2RefusalDTO): ReadonlyMap<string, string>;
-export declare function refusalCiters(refusal: F2RefusalDTO): ReadonlyArray<string>;
 export declare interface BlockDTO {
     readonly blockId: number;
     readonly previousHash: Int8Array;
@@ -626,21 +429,6 @@ export declare namespace Transaction {
     namespace $metadata$ {
         const constructor: abstract new () => Transaction;
     }
-}
-export declare interface SsmChaincodeQueries {
-    ssmGetAdminFunction(): F2Function<SsmGetAdminQuery, SsmGetAdminResult>;
-    ssmGetQueryFunction(): F2Function<SsmGetQuery, SsmGetResult>;
-    ssmGetSessionLogsQueryFunction(): F2Function<SsmGetSessionLogsQuery, SsmGetSessionLogsQueryResult>;
-    ssmGetSessionQueryFunction(): F2Function<SsmGetSessionQuery, SsmGetSessionResult>;
-    ssmGetTransactionQueryFunction(): F2Function<SsmGetTransactionQuery, SsmGetTransactionQueryResult>;
-    ssmGetUserFunction(): F2Function<SsmGetUserQuery, SsmGetUserResult>;
-    ssmListAdminQueryFunction(): F2Function<SsmListAdminQuery, SsmListAdminResult>;
-    ssmListSessionQueryFunction(): F2Function<SsmListSessionQuery, SsmListSessionResult>;
-    ssmListSsmQueryFunction(): F2Function<SsmListSsmQuery, SsmListSsmResult>;
-    ssmListUserQueryFunction(): F2Function<SsmListUserQuery, SsmListUserResult>;
-    readonly __doNotUseOrImplementIt: {
-        readonly "ssm.chaincode.dsl.SsmChaincodeQueries": unique symbol;
-    };
 }
 export declare interface SsmQueryDTO extends Query {
     readonly chaincodeUri: ChaincodeUri;
@@ -1240,21 +1028,6 @@ export declare namespace SsmListUserResult {
     namespace $metadata$ {
         const constructor: abstract new () => SsmListUserResult;
     }
-}
-export declare interface SsmCouchDbQueries {
-    couchdbDatabaseGetChangesQueryFunction(): F2Function<CouchdbDatabaseGetChangesQueryDTO, CouchdbDatabaseGetChangesQueryResultDTO>;
-    couchdbDatabaseListQueryFunction(): F2Function<CouchdbDatabaseListQueryDTO, CouchdbDatabaseListQueryResultDTO>;
-    couchdbDatabaseGetQueryFunction(): F2Function<CouchdbDatabaseGetQueryDTO, CouchdbDatabaseGetQueryResultDTO>;
-    couchdbChaincodeListQueryFunction(): F2Function<CouchdbChaincodeListQueryDTO, CouchdbChaincodeListQueryResultDTO>;
-    couchdbAdminListQueryFunction(): F2Function<CouchdbAdminListQueryDTO, CouchdbAdminListQueryResultDTO>;
-    couchdbUserListQueryFunction(): F2Function<CouchdbUserListQueryDTO, CouchdbUserListQueryResultDTO>;
-    couchdbSsmGetQueryFunction(): F2Function<CouchdbSsmGetQuery, CouchdbSsmGetQueryResult>;
-    couchdbSsmListQueryFunction(): F2Function<CouchdbSsmListQuery, CouchdbSsmListQueryResult>;
-    couchdbSsmSessionStateListQueryFunction(): F2Function<CouchdbSsmSessionStateListQueryDTO, CouchdbSsmSessionStateListQueryResultDTO>;
-    couchdbSsmSessionStateGetQueryFunction(): F2Function<CouchdbSsmSessionStateGetQueryDTO, CouchdbSsmSessionStateGetQueryResultDTO>;
-    readonly __doNotUseOrImplementIt: {
-        readonly "ssm.couchdb.dsl.SsmCouchDbQueries": unique symbol;
-    };
 }
 export declare interface DatabaseDTO {
     readonly name: string;
