@@ -467,10 +467,6 @@ export declare class Transaction implements TransactionDTO {
     get channelId(): string;
     get creator(): IdentitiesInfo;
     get nonce(): Int8Array;
-    copy(transactionId?: string, blockId?: number, timestamp?: number, isValid?: boolean, channelId?: string, creator?: IdentitiesInfo, nonce?: Int8Array): Transaction;
-    toString(): string;
-    hashCode(): number;
-    equals(other?: unknown): boolean;
 }
 export declare namespace Transaction {
     /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */

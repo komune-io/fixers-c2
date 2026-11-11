@@ -11,8 +11,9 @@ import kotlinx.serialization.Serializable
  *
  * Producers MUST ensure `(source, id)` pairs are unique per CloudEvents 1.0 §3.1.1.
  */
+@Suppress("LongParameterList") // flat by CloudEvents spec: every attribute sits beside the others on the wire
 @Serializable
-data class InvokeEnvelope<T>(
+class InvokeEnvelope<T>(
     override val id: String,
     override val data: T,
     override val type: String,

@@ -57,10 +57,13 @@ interface TransactionDTO {
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Model]
  * @title SSM-CHAINCODE/Blockchain Content
  */
+// Flat as on the wire, one parameter per TransactionDTO field; a data class would add copy and componentN to the
+// exported JS surface, and compare `nonce` by reference.
+@Suppress("LongParameterList", "UseDataClass")
 @Serializable
 @JsName("Transaction")
 @JsExport
-data class Transaction(
+class Transaction(
     override val transactionId: TransactionId,
     override val blockId: BlockId,
     override val timestamp: Long,
