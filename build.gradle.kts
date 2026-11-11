@@ -21,6 +21,9 @@ fixers {
         description = "Aggregate all ssm data source to optimize request"
         url = "https://github.com/komune-io/fixers-c2"
     }
+    kt2Ts {
+        outputDirectory = "ts"
+    }
     sonar {
         organization = "komune-io"
         projectKey = "komune-io_fixers-c2"
@@ -33,9 +36,6 @@ fixers {
             // jacocoTestReport.xml: match both so coverage reaches SonarCloud.
             property("sonar.coverage.jacoco.xmlReportPaths", "**/build/reports/jacoco/**/*.xml")
         }
-    }
-    repositories {
-        sonatypeSnapshots = true
     }
 }
 

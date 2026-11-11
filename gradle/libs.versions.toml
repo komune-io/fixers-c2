@@ -61,9 +61,6 @@ cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
 cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
 
 # Arrow (versions from BOM)
-arrow-core = { group = "io.arrow-kt", name = "arrow-core" }
-arrow-optics = { group = "io.arrow-kt", name = "arrow-optics" }
-arrow-optics-ksp = { group = "io.arrow-kt", name = "arrow-optics-ksp-plugin" }
 
 # Serialization (versions from BOM)
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json" }

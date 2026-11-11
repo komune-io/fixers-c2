@@ -1,0 +1,10 @@
+{
+  "name": "fixers-c2-c2-ssm-ssm-sdk-ssm-sdk-dsl",
+  "version": "0.0.0",
+  "types": "kotlin/fixers-c2-c2-ssm-ssm-sdk-ssm-sdk-dsl.d.mts",
+  "devDependencies": {},
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

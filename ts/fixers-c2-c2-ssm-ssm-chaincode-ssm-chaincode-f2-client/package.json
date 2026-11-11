@@ -1,0 +1,13 @@
+{
+  "name": "fixers-c2-c2-ssm-ssm-chaincode-ssm-chaincode-f2-client",
+  "version": "0.0.0",
+  "types": "kotlin/fixers-c2-c2-ssm-ssm-chaincode-ssm-chaincode-f2-client.d.mts",
+  "devDependencies": {},
+  "dependencies": {
+    "ws": "8.20.1",
+    "@js-joda/core": "3.2.0"
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}
