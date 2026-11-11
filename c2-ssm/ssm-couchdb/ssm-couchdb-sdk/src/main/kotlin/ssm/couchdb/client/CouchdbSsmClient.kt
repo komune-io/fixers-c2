@@ -59,7 +59,7 @@ class CouchdbSsmClient(
         val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
         result.result.docs.mapNotNull { document ->
-            converter.toObject(docType.clazz.java, document.toString())
+            converter.toObject(docType.documentClass, document.toString())
         }
     }
 
@@ -112,7 +112,7 @@ class CouchdbSsmClient(
         val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
         result.result.docs.firstOrNull()?.let { document ->
-            converter.toObject(docType.clazz.java, document.toString())
+            converter.toObject(docType.documentClass, document.toString())
         }
     }
 

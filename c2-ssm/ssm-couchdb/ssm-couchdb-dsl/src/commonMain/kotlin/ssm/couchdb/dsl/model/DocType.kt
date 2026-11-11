@@ -2,7 +2,6 @@ package ssm.couchdb.dsl.model
 
 import kotlin.js.JsExport
 import kotlin.js.JsName
-import kotlin.reflect.KClass
 import kotlinx.serialization.Serializable
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.ChaincodeId
@@ -11,40 +10,19 @@ import ssm.chaincode.dsl.model.SsmSessionState
 
 typealias DocTypeName = String
 
+/** A CouchDB document type, by the name its documents carry; the JVM client reads each into its own class. */
 @Serializable
 @JsExport
 @JsName("DocType")
 sealed class DocType<out T : Any>(
     val name: DocTypeName,
 ) {
-    /** The class a document of this type is read as; Kotlin only, JS has no class to read into. */
-    @JsExport.Ignore
-    abstract val clazz: KClass<out T>
-
-    object Admin : DocType<Agent>("admin") {
-        @JsExport.Ignore
-        override val clazz = Agent::class
-    }
-    object User : DocType<Agent>("user") {
-        @JsExport.Ignore
-        override val clazz = Agent::class
-    }
-    object Grant : DocType<SsmGrant>("grant") {
-        @JsExport.Ignore
-        override val clazz = SsmGrant::class
-    }
-    object Ssm : DocType<ssm.chaincode.dsl.model.Ssm>("ssm") {
-        @JsExport.Ignore
-        override val clazz = ssm.chaincode.dsl.model.Ssm::class
-    }
-    object State : DocType<SsmSessionState>("state") {
-        @JsExport.Ignore
-        override val clazz = SsmSessionState::class
-    }
-    object Chaincode : DocType<ChaincodeLscc>("state") {
-        @JsExport.Ignore
-        override val clazz = ChaincodeLscc::class
-    }
+    object Admin : DocType<Agent>("admin")
+    object User : DocType<Agent>("user")
+    object Grant : DocType<SsmGrant>("grant")
+    object Ssm : DocType<ssm.chaincode.dsl.model.Ssm>("ssm")
+    object State : DocType<SsmSessionState>("state")
+    object Chaincode : DocType<ChaincodeLscc>("state")
 }
 
 @Serializable
