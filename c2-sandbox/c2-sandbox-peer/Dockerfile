@@ -5,6 +5,7 @@ ARG VERSION_FABRIC=2.5.16
 # runners the build network does not resolve *.ubuntu.com, while other hosts (GitHub, Alpine, Go proxy) resolve.
 FROM alpine:${VERSION_ALPINE} AS gosu
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+# gosu-amd64 matches the --platform=linux/amd64 this image is built for (c2-sandbox-peer/Makefile).
 ARG GOSU_VERSION=1.17
 ARG GOSU_SHA256=bbc4136d03ab138b1ad66fa4fc051bafc6cc7ffae632b069a53657279a450de3
 RUN wget -q -O /gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" \
