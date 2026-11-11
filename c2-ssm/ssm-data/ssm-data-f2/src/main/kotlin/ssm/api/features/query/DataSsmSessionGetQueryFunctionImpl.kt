@@ -22,7 +22,7 @@ class DataSsmSessionGetQueryFunctionImpl(
 ) : DataSsmSessionGetQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<DataSsmSessionGetQueryDTO>): Flow<DataSsmSessionGetQueryResultDTO> {
         return msgs.groupBy { it.ssmUri }.map { (ssmUri, queries) ->
             queries.map { payload ->

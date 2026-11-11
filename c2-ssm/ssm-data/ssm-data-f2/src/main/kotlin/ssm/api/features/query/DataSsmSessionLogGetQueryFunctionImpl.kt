@@ -20,7 +20,7 @@ class DataSsmSessionLogGetQueryFunctionImpl(
 ) : DataSsmSessionLogGetQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<DataSsmSessionLogGetQueryDTO>): Flow<DataSsmSessionLogGetQueryResultDTO> =
         msgs.map { payload ->
             val logs = payload.sessionName.getSessionLogs(

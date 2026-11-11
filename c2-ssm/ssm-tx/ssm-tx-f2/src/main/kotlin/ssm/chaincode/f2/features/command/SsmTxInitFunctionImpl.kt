@@ -22,7 +22,7 @@ class SsmTxInitFunctionImpl(
 ): SsmTxInitFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<SsmInitCommand>): Flow<SsmInitdResult> = msgs.map { payload ->
         val retInitUser = initUser(payload.chaincodeUri.burst(), payload.agent, payload.signerName)
         val retInitSsm = initSsm(payload.chaincodeUri.burst(), payload.ssm, payload.signerName)

@@ -15,7 +15,7 @@ class CouchdbAdminListQueryFunctionImpl(
 ) : CouchdbAdminListQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(
         msgs: Flow<CouchdbAdminListQueryDTO>
     ): Flow<CouchdbAdminListQueryResultDTO> = msgs.map { payload ->

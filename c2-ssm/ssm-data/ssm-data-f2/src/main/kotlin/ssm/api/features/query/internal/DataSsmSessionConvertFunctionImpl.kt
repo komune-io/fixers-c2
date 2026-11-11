@@ -31,7 +31,7 @@ class DataSsmSessionConvertFunctionImpl(
 ) : F2Function<DataSsmSessionConvertQuery, DataSsmSession> {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<DataSsmSessionConvertQuery>): Flow<DataSsmSession> {
         val allMsgs = msgs.toList()
         val allSessionState = allMsgs.map { it.sessionState }.associateBy { it.session }

@@ -21,7 +21,7 @@ class CouchdbDatabaseGetQueryFunctionImpl(
     private fun DatabaseInformation.asDatabase() = Database(this.dbName)
 
     // F2Function declares invoke suspend: an override cannot drop it; any failure answers an empty result.
-    @Suppress("SuspendFunWithFlowReturnType", "TooGenericExceptionCaught")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309", "TooGenericExceptionCaught")
     override suspend fun invoke(
         msgs: Flow<CouchdbDatabaseGetQueryDTO>
     ): Flow<CouchdbDatabaseGetQueryResultDTO> = msgs.map { payload ->

@@ -12,7 +12,7 @@ class SsmListAdminQueryFunctionImpl(
 ) : SsmListAdminQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<SsmListAdminQuery>): Flow<SsmListAdminResult> = msgs.map { payload ->
         queryService.listAdmins(payload.chaincodeUri).let { items ->
             SsmListAdminResult(items.toTypedArray())

@@ -32,7 +32,7 @@ class DataSsmListQueryFunctionImp(
     }
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(msgs: Flow<DataSsmListQuery>): Flow<DataSsmListQueryResult> =
         msgs.map { payload ->

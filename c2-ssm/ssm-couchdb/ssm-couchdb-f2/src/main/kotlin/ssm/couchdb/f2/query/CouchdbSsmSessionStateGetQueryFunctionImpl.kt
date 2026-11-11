@@ -17,7 +17,7 @@ class CouchdbSsmSessionStateGetQueryFunctionImpl(
 ) : CouchdbSsmSessionStateGetQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<CouchdbSsmSessionStateGetQueryDTO>):
             Flow<CouchdbSsmSessionStateGetQueryResultDTO> = msgs.map { payload ->
         val filters = mapOf(SsmSessionStateDTO::session.name to payload.sessionName)

@@ -47,6 +47,7 @@ class SsmChaincodeAutoConfiguration {
 
 @ConditionalOnBean(ChaincodeSsmQueriesImpl::class)
 @Configuration(proxyBeanMethods = false)
+@Suppress("kotlin:S6514") // each function must be its own @Bean method: delegation `by` would publish none of them
 class SsmChaincodeF2AutoConfiguration(
     private val functions: ChaincodeSsmQueriesImpl
 ) : SsmChaincodeQueries {

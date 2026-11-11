@@ -15,7 +15,7 @@ class CouchdbUserListQueryFunctionImpl(
 ) : CouchdbUserListQueryFunction {
 
     // F2Function declares invoke suspend: an override cannot drop it.
-    @Suppress("SuspendFunWithFlowReturnType")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<CouchdbUserListQueryDTO>): Flow<CouchdbUserListQueryResultDTO> =
         msgs.map { payload ->
             val dbName = payload.chaincodeUri.chainCodeDbName()

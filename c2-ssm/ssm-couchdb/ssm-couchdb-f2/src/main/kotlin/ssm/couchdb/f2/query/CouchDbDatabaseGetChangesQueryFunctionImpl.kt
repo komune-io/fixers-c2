@@ -22,7 +22,7 @@ class CouchDbDatabaseGetChangesQueryFunctionImpl(
     private val logger = LoggerFactory.getLogger(CouchDbDatabaseGetChangesQueryFunctionImpl::class.java)
 
     // F2Function declares invoke suspend: an override cannot drop it; any failure answers an empty result.
-    @Suppress("SuspendFunWithFlowReturnType", "TooGenericExceptionCaught")
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309", "TooGenericExceptionCaught")
     override suspend fun invoke(msgs: Flow<CouchdbDatabaseGetChangesQueryDTO>)
     : Flow<CouchdbDatabaseGetChangesQueryResultDTO> = msgs.map { payload ->
         try {
