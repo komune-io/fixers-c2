@@ -1,4 +1,14 @@
 VERSION = $(shell cat VERSION)
+SANDBOX_NETWORK = $(shell sed -n 's/^DOCKER_NETWORK=//p' infra/docker-compose/.env_dev)
+
+# Waits for a sandbox init container to finish, prints its logs, and fails on a non-zero exit. `logs -f` used to
+# do the waiting, but the Docker Compose of GitHub's ubuntu-26.04 runner keeps following a container that has already
+# exited, and the job hung for an hour.
+define await-init
+	@code=$$(docker wait cli-init-$(1)-bclan-$(SANDBOX_NETWORK)); \
+		make dev c2-sandbox-$(1) log; \
+		test "$$code" = 0 || { echo "cli-init-$(1) exited with $$code"; exit 1; }
+endef
 
 .PHONY: clean lint build test test-pre check publish promote verify-metadata verify-metadata-dry
 
@@ -18,15 +28,15 @@ test-pre:
 	@#make dev pull
 	@make dev up
 	@echo "///////////////////////2"
-	@make dev c2-sandbox-ssm logs
+	$(call await-init,ssm)
 	@echo "///////////////////////3"
-	@make dev c2-sandbox-ex02 logs
+	$(call await-init,ex02)
 	@echo "///////////////////////4"
 	@make dev up
 	@echo "///////////////////////6"
-	@make dev c2-sandbox-ssm logs
+	$(call await-init,ssm)
 	@echo "///////////////////////7"
-	@make dev c2-sandbox-ex02 logs
+	$(call await-init,ex02)
 	@echo "///////////////////////8"
 	sudo echo "127.0.0.1 ca.bc-coop.bclan" | sudo tee -a /etc/hosts
 	sudo echo "127.0.0.1 peer0.bc-coop.bclan" | sudo tee -a /etc/hosts
