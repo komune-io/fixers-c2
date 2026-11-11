@@ -4,14 +4,14 @@ import kotlinx.serialization.Serializable
 import s2.dsl.automate.S2Role
 import s2.dsl.automate.S2State
 import s2.dsl.automate.builder.s2
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookClosedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreatedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookClosedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdatedEvent
 
 object Role: S2Role
 

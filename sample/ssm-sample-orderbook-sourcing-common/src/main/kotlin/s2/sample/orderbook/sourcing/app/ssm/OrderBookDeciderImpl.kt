@@ -5,16 +5,16 @@ import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Service
 import s2.sample.orderbook.sourcing.app.ssm.config.OrderBookS2Aggregate
 import s2.sample.subautomate.domain.OrderBookState
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookClosedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreatedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookDecide
-import s2.sample.subautomate.domain.orderBook.OrderBookDecider
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookClosedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookDecide
+import s2.sample.subautomate.domain.orderbook.OrderBookDecider
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdatedEvent
 
 @Service
 class OrderBookDeciderImpl(

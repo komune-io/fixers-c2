@@ -27,9 +27,7 @@ class OrderBookAutomateEventConfig(
 
     override fun executor(): OrderBookS2EventAggregate = orderBookS2Aggregate
 
-    override fun entityType(): Class<OrderBook> {
-        return OrderBook::class.java
-    }
+    override fun entityType(): Class<OrderBook> = OrderBook::class.java
 
     override fun chaincodeUri(): ChaincodeUri {
         return ChaincodeUri.from(
@@ -38,9 +36,7 @@ class OrderBookAutomateEventConfig(
         )
     }
 
-    override fun signerAgent(): Agent {
-        return Agent.loadFromFile("ssm-admin","user/ssm-admin")
-    }
+    override fun signerAgent(): Agent = Agent.loadFromFile(name = "ssm-admin", filename = "user/ssm-admin")
 
 }
 

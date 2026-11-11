@@ -13,16 +13,16 @@ import s2.sample.orderbook.sourcing.app.ssm.config.SpringTestBase
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookClosedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreatedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookDecide
-import s2.sample.subautomate.domain.orderBook.OrderBookEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookClosedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookDecide
+import s2.sample.subautomate.domain.orderbook.OrderBookEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdatedEvent
 import s2.sourcing.dsl.Loader
 import s2.sourcing.dsl.event.EventRepository
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
@@ -53,9 +53,10 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
     @Test
     suspend fun `should create order book`() {
         val event = orderBookDeciderImpl.orderBookCreateDecider().invoke(OrderBookCreateCommand("TheNewOrderBook"))
-        orderBookDeciderImpl.orderBookUpdateDecider().invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
-        orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
-        orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookUpdateDecider()
+            .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
+        val _ = orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
 
         val events = eventStore.load(event.id).toList()
         Assertions.assertThat(events).hasSize(4)
@@ -64,9 +65,9 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
     @Test
     suspend fun `should replay event to build entity`() {
         val event = create(OrderBookCreateCommand("TheNewOrderBook"))
-        update(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
-        publish(OrderBookPublishCommand(id = event.id))
-        close(OrderBookCloseCommand(id = event.id))
+        val _ = update(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
+        val _ = publish(OrderBookPublishCommand(id = event.id))
+        val _ = close(OrderBookCloseCommand(id = event.id))
 
         val events = eventStore.load(event.id)
         val entity = builder.load(events)

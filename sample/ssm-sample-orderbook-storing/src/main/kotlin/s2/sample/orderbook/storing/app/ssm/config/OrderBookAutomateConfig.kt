@@ -7,10 +7,10 @@ import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.Role
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
 import s2.spring.automate.executor.S2AutomateExecutorSpring
 import s2.spring.automate.ssm.S2SsmConfigurerAdapter
 import ssm.chaincode.dsl.model.Agent
@@ -32,9 +32,7 @@ class OrderBookAutomateConfig(
 
     override fun executor(): OrderBookS2Aggregate = orderBookS2Aggregate
 
-    override fun entityType(): Class<OrderBook> {
-        return OrderBook::class.java
-    }
+    override fun entityType(): Class<OrderBook> = OrderBook::class.java
 
     override fun chaincodeUri(): ChaincodeUri {
         return ChaincodeUri.from(
@@ -43,9 +41,7 @@ class OrderBookAutomateConfig(
         )
     }
 
-    override fun signerAgent(): Agent {
-        return Agent.loadFromFile("ssm-admin","user/ssm-admin")
-    }
+    override fun signerAgent(): Agent = Agent.loadFromFile(name = "ssm-admin", filename = "user/ssm-admin")
 
 }
 

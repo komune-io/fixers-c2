@@ -11,7 +11,6 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 import s2.sample.subautomate.domain.model.OrderBook
 import tools.jackson.module.kotlin.jacksonObjectMapper
 
-
 @Configuration
 class RedisConfig {
 

@@ -1,4 +1,4 @@
-package s2.sample.subautomate.domain.orderBook
+package s2.sample.subautomate.domain.orderbook
 
 import f2.dsl.fnc.F2Function
 import kotlinx.serialization.SerialName
@@ -22,7 +22,7 @@ data class OrderBookCreatedEvent(
     val name: String,
     val id: OrderBookId,
     val state: OrderBookState
-) : OrderBookEvent() {
+) : OrderBookEvent {
     override fun s2Id() = id
     override fun s2State() = state
 }
@@ -32,7 +32,7 @@ data class OrderBookCreatedEvent(
 data class OrderBookUpdateCommand(
     val name: String,
     override val id: OrderBookId
-) : OrderBookCommand()
+) : OrderBookCommand
 
 @Serializable
 @SerialName("OrderBookUpdatedEvent")
@@ -40,43 +40,42 @@ data class OrderBookUpdatedEvent(
     val name: String,
     val id: OrderBookId,
     val state: OrderBookState
-) : OrderBookEvent() {
+) : OrderBookEvent {
     override fun s2Id() = id
     override fun s2State() = state
 }
 
 @Serializable
 @SerialName("OrderBookPublishCommand")
-data class OrderBookPublishCommand(override val id: OrderBookId) : OrderBookCommand()
+data class OrderBookPublishCommand(override val id: OrderBookId) : OrderBookCommand
 
 @Serializable
 @SerialName("OrderBookPublishedEvent")
 data class OrderBookPublishedEvent(
     val id: OrderBookId,
     val state: OrderBookState
-) : OrderBookEvent() {
+) : OrderBookEvent {
     override fun s2Id() = id
     override fun s2State() = state
 }
 
 @Serializable
 @SerialName("OrderBookCloseCommand")
-data class OrderBookCloseCommand(override val id: OrderBookId) : OrderBookCommand()
+data class OrderBookCloseCommand(override val id: OrderBookId) : OrderBookCommand
 
 @Serializable
 @SerialName("OrderBookClosedEvent")
 data class OrderBookClosedEvent(
     val id: OrderBookId, val state: OrderBookState
-) : OrderBookEvent() {
+) : OrderBookEvent {
     override fun s2Id() = id
     override fun s2State() = state
 }
 
 @Serializable
-sealed class OrderBookEvent : Evt, WithS2Id<OrderBookId>, WithS2State<OrderBookState>
+sealed interface OrderBookEvent : Evt, WithS2Id<OrderBookId>, WithS2State<OrderBookState>
 
 @Serializable
-sealed class OrderBookCommand : S2Command<OrderBookId>
-
+sealed interface OrderBookCommand : S2Command<OrderBookId>
 
 typealias OrderBookDecide<COMMAND, EVENT> = F2Function<COMMAND, EVENT>

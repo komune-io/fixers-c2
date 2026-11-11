@@ -1,4 +1,4 @@
-package s2.sample.subautomate.domain.orderBook
+package s2.sample.subautomate.domain.orderbook
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

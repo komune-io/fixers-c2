@@ -8,7 +8,7 @@ import s2.sample.did.domain.DidState
 data class DidEntity(
     val id: DidId = UUID.randomUUID().toString(),
     val publicKeys: MutableList<String> = mutableListOf(),
-    var state: Int,
+    val state: Int,
 ) : WithS2IdAndStatus<DidId, DidState> {
     override fun s2Id() = id
     override fun s2State() = DidState(state)

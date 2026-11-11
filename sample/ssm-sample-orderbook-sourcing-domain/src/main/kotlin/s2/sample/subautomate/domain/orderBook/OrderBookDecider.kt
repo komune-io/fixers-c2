@@ -1,4 +1,4 @@
-package s2.sample.subautomate.domain.orderBook
+package s2.sample.subautomate.domain.orderbook
 
 interface OrderBookDecider {
     fun orderBookCreateDecider(): OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent>

@@ -9,7 +9,7 @@ import s2.sample.orderbook.sourcing.app.ssm.OrderBookModelView
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.orderBook.OrderBookEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookEvent
 import s2.sample.subautomate.domain.orderBookAutomate
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
 import s2.spring.sourcing.ssm.S2SourcingSsmAdapter
@@ -27,11 +27,11 @@ class OrderBookAutomateSsmPermissiveConfig(orderBookS2Aggregate: OrderBookS2Aggr
         OrderBookId,
         OrderBookS2Aggregate
         >(orderBookS2Aggregate, OrderBookModelView()) {
+    override var isPermissive: Boolean = true
+
     override fun automate() = orderBookAutomate("sourcing-ssm-permissive")
 
-    override fun entityType(): KClass<OrderBookEvent> {
-        return OrderBookEvent::class
-    }
+    override fun entityType(): KClass<OrderBookEvent> = OrderBookEvent::class
 
     override fun json(): Json = Json {
         serializersModule = SerializersModule {
@@ -46,9 +46,5 @@ class OrderBookAutomateSsmPermissiveConfig(orderBookS2Aggregate: OrderBookS2Aggr
         )
     }
 
-    override fun signerAgent(): Agent {
-        return Agent.loadFromFile("ssm-admin","user/ssm-admin")
-    }
-
-    override var permissive: Boolean = true
+    override fun signerAgent(): Agent = Agent.loadFromFile(name = "ssm-admin", filename = "user/ssm-admin")
 }

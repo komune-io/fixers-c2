@@ -12,16 +12,12 @@ class RedisSnapView(
     private val template: ReactiveRedisTemplate<String, OrderBook>,
 ): SnapRepository<OrderBook, String>  {
 
-    override suspend fun get(id: String): OrderBook? {
-        return template.opsForValue().get(id).awaitFirstOrNull()
-    }
+    override suspend fun get(id: String): OrderBook? = template.opsForValue().get(id).awaitFirstOrNull()
 
     override suspend fun save(entity: OrderBook): OrderBook {
         template.opsForValue().set(entity.id, entity).awaitSingle()
         return entity
     }
 
-    override suspend fun remove(id: String): Boolean {
-        return template.delete(id).awaitSingle() > 0
-    }
+    override suspend fun remove(id: String): Boolean = template.delete(id).awaitSingle() > 0
 }

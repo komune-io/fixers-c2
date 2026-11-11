@@ -14,17 +14,17 @@ import s2.sample.orderbook.sourcing.app.ssm.config.SpringTestBase
 import s2.sample.orderbook.storing.app.ssm.OrderBookDeciderImpl
 import s2.sample.orderbook.storing.app.ssm.config.OrderBookAutomateConfig
 import s2.sample.subautomate.domain.OrderBookState
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookClosedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreatedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookDecide
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookClosedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookDecide
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdatedEvent
 
-internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
+internal class OrderBookStoringDeciderImplTest: SpringTestBase {
 
     @Autowired
     lateinit var create: OrderBookDecide<OrderBookCreateCommand, OrderBookCreatedEvent>
@@ -48,10 +48,10 @@ internal class OrderBookStoringDeciderImplTest: SpringTestBase() {
     suspend fun `should create order book`() {
         val event = orderBookDeciderImpl.orderBookCreateDecider()
             .invoke(OrderBookCreateCommand("TheNewOrderBook"))
- 		orderBookDeciderImpl.orderBookUpdateDecider()
-             .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBookAfterUpdate"))
-        orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
-        orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookUpdateDecider()
+            .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBookAfterUpdate"))
+        val _ = orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
         val ssmAutomatePersister = orderBookAutomateConfig.aggregateRepository()
         val entity = ssmAutomatePersister.load(AutomateContext(
             automate = orderBookAutomateConfig.automate(),

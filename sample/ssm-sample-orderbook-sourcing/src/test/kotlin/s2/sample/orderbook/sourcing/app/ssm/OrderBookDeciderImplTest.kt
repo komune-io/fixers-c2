@@ -2,6 +2,7 @@ package s2.sample.orderbook.sourcing.app.ssm
 
 import f2.dsl.fnc.invoke
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOf
@@ -18,16 +19,16 @@ import s2.sample.orderbook.sourcing.app.ssm.config.SpringTestBase
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.orderBook.OrderBookCloseCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookClosedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookCreateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookCreatedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookDecide
-import s2.sample.subautomate.domain.orderBook.OrderBookEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookPublishedEvent
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdateCommand
-import s2.sample.subautomate.domain.orderBook.OrderBookUpdatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCloseCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookClosedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookCreateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookCreatedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookDecide
+import s2.sample.subautomate.domain.orderbook.OrderBookEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookPublishedEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdateCommand
+import s2.sample.subautomate.domain.orderbook.OrderBookUpdatedEvent
 import s2.sourcing.dsl.Loader
 import s2.sourcing.dsl.event.EventRepository
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
@@ -59,10 +60,10 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
     suspend fun `should create order book`() {
         val event = orderBookDeciderImpl.orderBookCreateDecider()
             .invoke(OrderBookCreateCommand("TheNewOrderBook"))
- 		orderBookDeciderImpl.orderBookUpdateDecider()
-             .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
-        orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
-        orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookUpdateDecider()
+            .invoke(OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook2"))
+        val _ = orderBookDeciderImpl.orderBookPublishDecider().invoke(OrderBookPublishCommand(id = event.id))
+        val _ = orderBookDeciderImpl.orderBookCloseDecider().invoke(OrderBookCloseCommand(id = event.id))
         val events = eventStore.load(event.id).toList()
         assertThat(events).hasSize(4)
     }
@@ -124,6 +125,8 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
                 OrderBookUpdateCommand(id = event.id, name = "TheNewOrderBook$it")
             }.asFlow()
             update.invoke(updateCommand).collect()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             exception = e
         }
@@ -148,7 +151,7 @@ internal class OrderBookDeciderImplTest: SpringTestBase() {
 
         val events = create.invoke(all).toList()
         assertThat(events).hasSize(5)
-        events.map { event ->
+        val _ = events.map { event ->
             val loadedEvent = eventStore.load(event.id)
             val entity = builder.load(loadedEvent)
             assertThat(entity?.name).startsWith("TheNewOrderBook")
