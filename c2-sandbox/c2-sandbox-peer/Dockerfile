@@ -6,8 +6,14 @@ RUN useradd -u 1000 -U -M -s /usr/sbin/nologin fabric
 
 # gosu drops root privileges after entrypoint.sh matches this user's supplementary
 # group to the mounted host docker.sock's GID, which varies per host/CI runner.
+# single-request: on GitHub's ubuntu-26.04 runners, glibc's paired A and AAAA lookups over one socket get no answer
+# from the build network's resolver ("Temporary failure resolving archive.ubuntu.com"); one query at a time resolves,
+# as musl images already do. ForceIPv4 asks only for the address apt connects to.
 # hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
+RUN export RES_OPTIONS=single-request \
+    && apt-get -o Acquire::ForceIPv4=true update \
+    && apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG COOP_PEER
 ARG COOP_PEER_DOMAIN

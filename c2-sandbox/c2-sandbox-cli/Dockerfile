@@ -4,8 +4,14 @@ FROM hyperledger/fabric-tools:${VERSION_FABRIC}
 
 # jq is required by set_batch_config.sh (channel config edit); fabric-tools does not ship it.
 # DL3008 ignored: pinning jq to a base-image-specific version is brittle across fabric-tools bumps.
+# single-request: on GitHub's ubuntu-26.04 runners, glibc's paired A and AAAA lookups over one socket get no answer
+# from the build network's resolver ("Temporary failure resolving archive.ubuntu.com"); one query at a time resolves,
+# as musl images already do. ForceIPv4 asks only for the address apt connects to.
 # hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
+RUN export RES_OPTIONS=single-request \
+    && apt-get -o Acquire::ForceIPv4=true update \
+    && apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends jq \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -u 1000 -U -m -d /home/fabric -s /bin/bash fabric
 
