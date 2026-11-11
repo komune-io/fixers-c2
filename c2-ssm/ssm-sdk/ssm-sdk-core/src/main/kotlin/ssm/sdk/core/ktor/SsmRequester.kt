@@ -15,7 +15,6 @@ import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.dsl.buildCommandArgs
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JsonUtils
-import tools.jackson.core.JacksonException
 import tools.jackson.core.type.TypeReference
 
 class SsmRequester(
@@ -132,9 +131,11 @@ class SsmRequester(
         return ssmChaincodeRepository.invoke(args, msgIds)
     }
 
+    // Any failure of the converter, Jackson's or not, is a response this client cannot read: an InvokeException.
+    @Suppress("TooGenericExceptionCaught")
     private fun <R> String.handleResponse(transform: (String) -> R): R = try {
         transform(this)
-    } catch (e: JacksonException) {
+    } catch (e: Exception) {
         val excerpt = this.take(HANDLE_RESPONSE_EXCERPT_LIMIT).ifBlank { "<empty>" }
         throw InvokeException("Error parsing response: $excerpt", e)
     }

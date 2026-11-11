@@ -23,7 +23,7 @@ import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
 import java.util.UUID
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // one function per chaincode command, single and batched
 class SsmTxService(
     private val ssmService: SsmService,
     private val batch: SsmBatchProperties,

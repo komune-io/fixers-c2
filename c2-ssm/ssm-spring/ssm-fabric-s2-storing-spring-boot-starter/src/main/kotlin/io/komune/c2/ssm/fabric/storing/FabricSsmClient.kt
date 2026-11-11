@@ -64,7 +64,7 @@ class FabricSsmClient(
         return channelId to chaincodeId
     }
 
-    // Any transport failure leaves the txs' fate unknown: it becomes Indeterminate outcomes, never an exception.
+    // Any failure, an Error included, leaves the txs' fate unknown: Indeterminate outcomes, never an exception.
     @Suppress("TooGenericExceptionCaught")
     private suspend fun invokeOn(
         channelId: ChannelId,
@@ -80,7 +80,7 @@ class FabricSsmClient(
         ).map { it.toCommandOutcome() }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         logger.warn("invoke failed on [{}:{}]: {}", channelId, chaincodeId, e.message)
         ids.map { id ->
             CommandOutcome(

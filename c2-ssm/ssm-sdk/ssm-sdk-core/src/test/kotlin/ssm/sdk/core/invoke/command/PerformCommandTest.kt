@@ -29,7 +29,7 @@ class PerformCommandTest {
         )
         val (fcn, args) = PerformCmd("Sell", context).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
         Assertions.assertThat(fcn.value).isEqualTo("perform")
-        @Suppress("MaxLineLength")
+        @Suppress("MaxLineLength") // the expected signed arguments stay whole to compare byte for byte
         Assertions.assertThat(args)
             .isNotEmpty
             .containsExactly(
@@ -57,7 +57,7 @@ class PerformCommandTest {
         )
         val (fcn, args) = PerformCmd("Sell", context).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
         Assertions.assertThat(fcn.value).isEqualTo("perform")
-        @Suppress("MaxLineLength")
+        @Suppress("MaxLineLength") // the expected signed arguments stay whole to compare byte for byte
         Assertions.assertThat(args)
             .isNotEmpty
             .containsExactly(

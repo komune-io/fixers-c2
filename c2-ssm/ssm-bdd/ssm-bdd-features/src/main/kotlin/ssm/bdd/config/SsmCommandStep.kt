@@ -25,7 +25,7 @@ abstract class SsmCommandStep {
     val bag: SsmCucumberBag
         get() = checkNotNull(currentBag) { "No cucumber scenario has started" }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod") // the Cucumber DSL registers every step of the glossary in one block
     fun En.prepareSteps() {
         Before { scenario: Scenario ->
             currentBag = SsmCucumberBag.init(scenario)

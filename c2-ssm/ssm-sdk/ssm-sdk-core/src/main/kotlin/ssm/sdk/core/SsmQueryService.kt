@@ -23,7 +23,7 @@ import ssm.sdk.core.ktor.SsmApiQuery
 import ssm.sdk.core.ktor.SsmRequester
 import tools.jackson.core.type.TypeReference
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // one function per chaincode query of SsmQueryServiceI
 class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI {
     override suspend fun listAdmins(chaincodeUri: ChaincodeUri): List<AgentName> {
         val query = AdminQuery()

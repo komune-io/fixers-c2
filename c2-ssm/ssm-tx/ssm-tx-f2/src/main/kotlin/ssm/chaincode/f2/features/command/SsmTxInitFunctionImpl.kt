@@ -46,7 +46,7 @@ class SsmTxInitFunctionImpl(
             { this.createUser(chaincodeUri, it, signerName) })
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught") // a failed create is fine when another writer created it meanwhile
     private suspend fun <T> createIfNotExist(
         objToCreate: T,
         getFnc: suspend () -> T?,
@@ -69,7 +69,7 @@ class SsmTxInitFunctionImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught") // every failure of the send is wrapped as an SsmException
     private suspend fun createSsm(chaincodeUri: ChaincodeUri, ssm: Ssm, signerName: AgentName): CommandOutcome {
         try {
             return txService.sendCreate(chaincodeUri, ssm, signerName)
@@ -80,7 +80,7 @@ class SsmTxInitFunctionImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught") // every failure of the send is wrapped as an SsmException
     private suspend fun createUser(chaincodeUri: ChaincodeUri, agent: Agent, signerName: AgentName): CommandOutcome {
         try {
             return txService.sendRegisterUser(chaincodeUri, agent, signerName)

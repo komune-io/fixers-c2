@@ -152,7 +152,7 @@ class CouchdbSsmClient(
         }
     }
 
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException") // NotFound only says the filter is absent: it is then installed
     suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(dispatcher) {
         suspendCoroutine { continuation ->
             try {
@@ -197,7 +197,7 @@ class CouchdbSsmClient(
             .result
             .rows
             .firstOrNull()
-        (row?.value as? Number)?.toInt() ?: 0
+        countOf(view = COUNTING_VIEW, value = row?.value)
     }
 
     companion object {
@@ -222,6 +222,13 @@ class CouchdbSsmClient(
         const val ID_FIELD = "_id"
 
         fun builder(): SsmCouchDbClientBuilder = SsmCouchDbClientBuilder()
+
+        /** A row's count; no row counts 0, a value that is not a number is an error, never a silent 0. */
+        internal fun countOf(view: String, value: Any?): Int = when (value) {
+            null -> 0
+            is Number -> value.toInt()
+            else -> error("CouchDB view [$view] answered a count that is not a number: ${value.javaClass.name}")
+        }
 
         internal fun <T : Any> docTypeSelector(
             docType: DocType<T>,

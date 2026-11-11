@@ -12,10 +12,13 @@ class FabricClientProperties {
      * practical ceiling is the peer's `CORE_PEER_LIMITS_CONCURRENCY_GATEWAYSERVICE` (default 500)
      * and, beyond that, the orderer/peer throughput itself. Must be >= 1.
      */
-    @Suppress("MagicNumber")
-    var parallelism: Int = 256
+    var parallelism: Int = DEFAULT_PARALLELISM
         set(value) {
             require(value >= 1) { "coop.fabric.parallelism must be >= 1, was $value" }
             field = value
         }
+
+    private companion object {
+        const val DEFAULT_PARALLELISM = 256
+    }
 }

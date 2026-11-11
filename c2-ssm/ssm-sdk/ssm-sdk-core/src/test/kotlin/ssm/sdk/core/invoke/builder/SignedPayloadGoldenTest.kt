@@ -1,4 +1,4 @@
-@file:Suppress("MaxLineLength")
+@file:Suppress("MaxLineLength") // golden signed payloads stay whole, one per line, to compare byte for byte
 
 package ssm.sdk.core.invoke.builder
 

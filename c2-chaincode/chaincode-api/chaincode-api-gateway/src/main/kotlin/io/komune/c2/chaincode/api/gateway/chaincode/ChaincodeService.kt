@@ -54,13 +54,14 @@ class ChaincodeService(
     }
 
     private suspend fun invokeOne(envelope: InvokeEnvelope<InvokeRequest>): InvokeEnvelope<OutcomeData> {
-        // Each envelope answers on its own: any failure of one becomes its REJECTED outcome, never the batch's.
+        // Each envelope answers on its own: any failure of one, an Error included, becomes its REJECTED outcome,
+        // never the batch's; only a cancellation goes on.
         @Suppress("TooGenericExceptionCaught")
         val outcome = try {
             runInvoke(envelope)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             InvokeType.Outcome.REJECTED to OutcomeData(
                 errorCode = "GATEWAY_EXCEPTION",
                 errorMessage = e.message ?: e::class.simpleName.orEmpty(),
@@ -77,7 +78,7 @@ class ChaincodeService(
         )
     }
 
-    internal suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
+    private suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
         val request = envelope.data
         val pair = chaincodeConfiguration.getChannelChaincodePair(
             channelId = request.channelid,

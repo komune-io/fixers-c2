@@ -11,7 +11,6 @@ import s2.dsl.automate.model.WithS2Iteration
 import s2.dsl.automate.s2error
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
-import tools.jackson.core.JacksonException
 import tools.jackson.databind.ObjectMapper
 
 /**
@@ -25,7 +24,7 @@ import tools.jackson.databind.ObjectMapper
  *    [LoadOutcome.Rejected] with `SESSION_NOT_FOUND`;
  *  - session returned but logs empty → [LoadOutcome.Rejected] with
  *    `SESSION_NOT_INITIALIZED`;
- *  - the last log carries no state, or its JSON does not parse → [LoadOutcome.Rejected]
+ *  - the last log carries no state, or it cannot be read as the entity → [LoadOutcome.Rejected]
  *    with `DESERIALIZATION_FAILED` (a bad on-chain write — retry won't fix).
  */
 internal class SsmEntityLoader<ID : Any, ENTITY>(
@@ -93,6 +92,8 @@ internal class SsmEntityLoader<ID : Any, ENTITY>(
         }
     }
 
+    // Any failure to read the entity — Jackson's, or a stamped iteration of another type — rejects this id only.
+    @Suppress("TooGenericExceptionCaught")
     private fun entityFromLastLog(id: ID, lastLog: SsmSessionStateLog): LoadOutcome<ID, ENTITY> {
         val payload = mapOf("id" to id.toString())
         val public = lastLog.state.public ?: return LoadOutcome.Rejected(
@@ -112,7 +113,9 @@ internal class SsmEntityLoader<ID : Any, ENTITY>(
                 raw
             }
             LoadOutcome.Loaded(id = id, entity = entity)
-        } catch (e: JacksonException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             LoadOutcome.Rejected(
                 id = id,
                 error = s2error(

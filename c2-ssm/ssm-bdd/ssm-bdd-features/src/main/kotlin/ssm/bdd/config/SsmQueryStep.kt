@@ -28,7 +28,7 @@ abstract class SsmQueryStep {
         get() = checkNotNull(currentConfig) { "No cucumber scenario has started" }
     var batch: SsmBatchProperties = SsmBatchProperties()
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod") // the Cucumber DSL registers every step of the glossary in one block
     fun En.prepareSteps() {
         Before { scenario: Scenario ->
             val scenarioBag = SsmCucumberBag.init(scenario)

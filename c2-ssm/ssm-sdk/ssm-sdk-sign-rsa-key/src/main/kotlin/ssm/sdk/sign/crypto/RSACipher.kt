@@ -1,4 +1,4 @@
-@file:Suppress("TooGenericExceptionCaught")
+@file:Suppress("TooGenericExceptionCaught") // every JCA failure of a cipher call is wrapped as a CryptoException
 
 package ssm.sdk.sign.crypto
 

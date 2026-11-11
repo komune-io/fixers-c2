@@ -25,6 +25,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.path
 import io.ktor.serialization.jackson.jackson
+import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
@@ -33,8 +34,6 @@ import ssm.sdk.core.auth.BearerTokenAuthCredentials
 import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
-import tools.jackson.core.JacksonException
-import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.time.OffsetDateTime
@@ -110,6 +109,8 @@ class ChaincodeApiGatewayClient(
             "msgIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
         }
         val body = invokeArgs.zip(msgIds).map { (req, msgId) -> buildEnvelope(msgId, req) }
+        // Whatever fails between send and answer leaves the txs' fate unknown: Indeterminate outcomes, never a throw.
+        @Suppress("TooGenericExceptionCaught")
         return try {
             val response = client.post("$baseUrl$INVOKE_PATH") {
                 addAuth()
@@ -117,9 +118,9 @@ class ChaincodeApiGatewayClient(
                 setBody(body)
             }
             mapHttpResponse(response, msgIds)
-        } catch (e: IOException) {
-            mapNetworkError(e, msgIds)
-        } catch (e: JacksonException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
             mapNetworkError(e, msgIds)
         }
     }
@@ -174,7 +175,7 @@ class ChaincodeApiGatewayClient(
             }
     }
 
-    private fun mapNetworkError(e: Exception, msgIds: List<String>): List<CommandOutcome> {
+    private fun mapNetworkError(e: Throwable, msgIds: List<String>): List<CommandOutcome> {
         val code = when (e) {
             is HttpRequestTimeoutException,
             is ConnectTimeoutException,

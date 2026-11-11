@@ -97,7 +97,7 @@ class FabricGatewayClient(
         results
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount") // each endorsement failure returns its own outcome before the submit
     private fun Contract.commitTransaction(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,

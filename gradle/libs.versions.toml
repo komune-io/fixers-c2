@@ -60,8 +60,6 @@ cucumber-java = { group = "io.cucumber", name = "cucumber-java" }
 cucumber-java8 = { group = "io.cucumber", name = "cucumber-java8" }
 cucumber-junit-platform-engine = { group = "io.cucumber", name = "cucumber-junit-platform-engine" }
 
-# Arrow (versions from BOM)
-
 # Serialization (versions from BOM)
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json" }
 

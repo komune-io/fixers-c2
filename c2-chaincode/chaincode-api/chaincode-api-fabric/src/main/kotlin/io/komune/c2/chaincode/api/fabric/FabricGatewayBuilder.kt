@@ -21,11 +21,15 @@ import org.hyperledger.fabric.client.identity.Identity
 import org.hyperledger.fabric.client.identity.Signer
 import org.hyperledger.fabric.client.identity.Signers
 import org.hyperledger.fabric.client.identity.X509Identity
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 open class FabricGatewayBuilder(
     private val fabricConfigLoader: FabricConfigLoader?,
 ) {
     private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
+
+    private val logger: Logger = LoggerFactory.getLogger(FabricGatewayClient::class.java)
 
     /**
      * No-arg constructor for subclassing in tests
@@ -38,11 +42,16 @@ open class FabricGatewayBuilder(
         chaincodeId: ChaincodeId
     ): Contract = contracts(channelId, chaincodeId).shuffled().first()
 
+    // Whatever fails to open the channel is logged with the channel it concerns, then goes on unchanged.
+    @Suppress("TooGenericExceptionCaught")
     open fun contracts(
         channelId: ChannelId,
         chaincodeId: ChaincodeId
-    ): List<Contract> = gateways(channelId).map { gateway ->
-        gateway.getNetwork(channelId).getContract(chaincodeId)
+    ): List<Contract> = try {
+        gateways(channelId).map { gateway -> gateway.getNetwork(channelId).getContract(chaincodeId) }
+    } catch (e: Throwable) {
+        logger.error("Error while querying of channel [{}]", channelId, e)
+        throw e
     }
 
     open fun gateway(channelId: ChannelId): Gateway = gateways(channelId).shuffled().first()
@@ -53,7 +62,7 @@ open class FabricGatewayBuilder(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod") // one gateway per endorser, read from three configuration levels in order
     private fun createGateways(channelId: ChannelId): List<Gateway> {
         val loader = requireNotNull(fabricConfigLoader) { "fabricConfigLoader must not be null" }
         val channelConfig = loader.getChannelConfig(channelId)

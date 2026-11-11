@@ -13,28 +13,20 @@ class BlockchainService(
 
 ) :BlockchainServiceI {
 
-    @Suppress("ReturnCount")
     override fun query(channelId: ChannelId, invokeArgs: InvokeArgs): String {
         val isList = InvokeArgsUtils.isListQuery(invokeArgs)
-
-        if (InvokeArgsUtils.isBlockQuery(invokeArgs)) {
-            return if (isList) {
-                queryAllBlocks(channelId)
-            } else {
-                queryBlockByNumber(channelId, invokeArgs)
-            }
+        val isBlock = InvokeArgsUtils.isBlockQuery(invokeArgs)
+        val isTransaction = InvokeArgsUtils.isTransactionQuery(invokeArgs)
+        return when {
+            isBlock && isList -> queryAllBlocks(channelId)
+            isBlock -> queryBlockByNumber(channelId, invokeArgs)
+            isTransaction && isList -> queryAllTransactions(channelId)
+            isTransaction -> queryTransactionById(channelId, invokeArgs)
+            else -> throw IllegalArgumentException(
+                "invokeArgs[${invokeArgs}] must be ${InvokeArgsUtils.BLOCK_QUERY} or " +
+                    InvokeArgsUtils.TRANSACTION_QUERY
+            )
         }
-
-        if (InvokeArgsUtils.isTransactionQuery(invokeArgs)) {
-            return if (isList) {
-                queryAllTransactions(channelId)
-            } else {
-                queryTransactionById(channelId, invokeArgs)
-            }
-        }
-        throw IllegalArgumentException(
-            "invokeArgs[${invokeArgs}] must be ${InvokeArgsUtils.BLOCK_QUERY} or ${InvokeArgsUtils.TRANSACTION_QUERY}"
-        )
     }
 
     override fun queryAllBlocks(channelId: ChannelId): String =

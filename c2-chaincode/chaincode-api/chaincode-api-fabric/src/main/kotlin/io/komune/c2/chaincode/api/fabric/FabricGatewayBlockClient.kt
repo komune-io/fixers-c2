@@ -86,8 +86,8 @@ class FabricGatewayBlockClient(
         val blockId = getBlockId()
         val identifierHeader = SerializedIdentity.parseFrom(signatureHeader.creator)
 
-        @Suppress("MagicNumber")
-        val millis: Long = channelHeader.timestamp.seconds * 1000 + channelHeader.timestamp.nanos / 1_000_000
+        val millis: Long =
+            channelHeader.timestamp.seconds * MILLIS_PER_SECOND + channelHeader.timestamp.nanos / NANOS_PER_MILLI
         return TransactionDsl(
             transactionId = channelHeader.txId,
             blockId = blockId,
@@ -104,6 +104,8 @@ class FabricGatewayBlockClient(
 
     companion object {
         private const val QSCC = "qscc"
+        private const val MILLIS_PER_SECOND = 1_000L
+        private const val NANOS_PER_MILLI = 1_000_000
         private const val GET_BLOCK_BY_TX_ID = "GetBlockByTxID"
     }
 }

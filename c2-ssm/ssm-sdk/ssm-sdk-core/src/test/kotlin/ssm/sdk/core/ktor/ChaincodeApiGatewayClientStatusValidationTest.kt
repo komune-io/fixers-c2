@@ -13,6 +13,7 @@ import io.ktor.serialization.jackson.jackson
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import java.net.ConnectException
+import java.nio.channels.UnresolvedAddressException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import org.assertj.core.api.Assertions.assertThat
@@ -230,6 +231,21 @@ class ChaincodeApiGatewayClientStatusValidationTest {
             assertThat(outcome.outcome).isEqualTo("Indeterminate")
             assertThat(outcome.errorCode).isEqualTo("CONNECT_REFUSED")
         }
+    }
+
+    @Test
+    suspend fun `a failure that is neither IO nor JSON still yields N×Indeterminate, never an exception`() {
+        val outcomes = MockEngine { _ -> throw UnresolvedAddressException() }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repo = ChaincodeApiGatewayClient(
+                    baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+                )
+                repo.invoke(sampleInvokeArgs, commandIds)
+            }
+        }
+        assertThat(outcomes.map { it.msgId }).containsExactlyElementsOf(commandIds)
+        assertThat(outcomes.map { it.outcome }).containsOnly("Indeterminate")
+        assertThat(outcomes.map { it.errorCode }).containsOnly("TRANSPORT_ERROR")
     }
 
     @Test

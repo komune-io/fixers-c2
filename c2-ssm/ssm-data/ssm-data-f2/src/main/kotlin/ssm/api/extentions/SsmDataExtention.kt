@@ -48,7 +48,7 @@ fun Ssm.toDataSsm(ssm: SsmUri): DataSsm {
     )
 }
 
-@Suppress("TooGenericExceptionCaught", "SwallowedException")
+@Suppress("TooGenericExceptionCaught", "SwallowedException") // a session whose logs cannot be read has none
 suspend fun SessionName.getSessionLogs(
     ssmUri: SsmUri,
     ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
