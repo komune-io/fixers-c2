@@ -29,7 +29,7 @@ open class FabricGatewayBuilder(
 ) {
     private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
 
-    private val logger: Logger = LoggerFactory.getLogger(FabricGatewayClient::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(FabricGatewayBuilder::class.java)
 
     /**
      * No-arg constructor for subclassing in tests
@@ -50,7 +50,7 @@ open class FabricGatewayBuilder(
     ): List<Contract> = try {
         gateways(channelId).map { gateway -> gateway.getNetwork(channelId).getContract(chaincodeId) }
     } catch (e: Throwable) {
-        logger.error("Error while querying of channel [{}]", channelId, e)
+        logger.error("Could not open the contracts of channel [{}]", channelId, e)
         throw e
     }
 

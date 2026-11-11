@@ -12,6 +12,7 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -56,25 +57,22 @@ class ChaincodeServiceExecuteEmbeddedTest {
         @Bean
         @Primary
         fun scriptedFabricGatewayClient(): FabricGatewayClient = mockk {
+            val commandIds = slot<List<String>>()
             coEvery {
                 invoke(
                     channelId = any<String>(),
                     chaincodeId = any<String>(),
                     invokeArgsList = any<List<InvokeArgs>>(),
-                    commandIds = any<List<String>>(),
+                    commandIds = capture(commandIds),
                 )
             } answers {
                 raiseException()?.let { failure -> throw failure }
-                val ids = arg<List<String>>(COMMAND_IDS)
+                val ids = commandIds.captured
                 listOf(
                     scriptedOutcomes.removeFirstOrNull()
                         ?: error("no scripted TxOutcome available for command ids=$ids"),
                 )
             }
-        }
-
-        private companion object {
-            const val COMMAND_IDS = 3
         }
     }
 

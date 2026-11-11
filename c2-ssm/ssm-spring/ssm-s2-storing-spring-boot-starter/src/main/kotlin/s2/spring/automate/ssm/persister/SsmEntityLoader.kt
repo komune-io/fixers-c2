@@ -114,6 +114,7 @@ internal class SsmEntityLoader<ID : Any, ENTITY>(
             }
             LoadOutcome.Loaded(id = id, entity = entity)
         } catch (e: CancellationException) {
+            // Not dead in a non-suspend function: a mapper or a stamping hook can throw one, and it must go on.
             throw e
         } catch (e: Exception) {
             LoadOutcome.Rejected(
