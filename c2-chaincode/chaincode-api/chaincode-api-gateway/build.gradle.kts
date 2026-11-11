@@ -20,7 +20,6 @@ dependencies {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
     imagePlatform.set((project.findProperty("targetPlatform") as String?) ?: "linux/amd64")
-    environment.set(mapOf(
-        "BPE_APPEND_JAVA_TOOL_OPTIONS" to " -XX:MaxDirectMemorySize=64m"
-    ))
+    // Added to fixers' entries (the health checker among them), never in their place.
+    environment.put("BPE_APPEND_JAVA_TOOL_OPTIONS", " -XX:MaxDirectMemorySize=64m")
 }
