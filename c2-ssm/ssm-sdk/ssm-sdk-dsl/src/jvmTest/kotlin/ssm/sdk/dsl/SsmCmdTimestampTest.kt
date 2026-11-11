@@ -31,7 +31,14 @@ class SsmCmdTimestampTest {
 
     @Test
     fun `SsmCmd defaults timestamp to null`() {
-        val cmd = SsmCmd(chaincodeUri, "admin", "{}", SsmCmdName.START, null, "v")
+        val cmd = SsmCmd(
+            chaincodeUri = chaincodeUri,
+            agentName = "admin",
+            json = "{}",
+            command = SsmCmdName.START,
+            performAction = null,
+            valueToSign = "v",
+        )
         assertThat(cmd.timestamp).isNull()
     }
 

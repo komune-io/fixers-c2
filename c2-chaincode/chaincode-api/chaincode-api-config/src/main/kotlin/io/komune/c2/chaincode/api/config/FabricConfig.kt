@@ -6,13 +6,12 @@ import io.komune.c2.chaincode.api.config.utils.JsonUtils
 import java.io.IOException
 import java.net.URL
 
-
-class FabricConfig(
+data class FabricConfig(
     val network: NetworkProperties
 ) {
 
     companion object {
-        @kotlin.Throws(IOException::class)
+        @Throws(IOException::class)
         fun loadFromFile(filename: String): FabricConfig {
             val file: URL = FileUtils.getUrl(filename)
             return JsonUtils.toObject<FabricConfig>(file)

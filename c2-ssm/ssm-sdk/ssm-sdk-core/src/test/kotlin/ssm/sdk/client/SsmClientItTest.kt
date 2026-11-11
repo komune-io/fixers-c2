@@ -40,43 +40,6 @@ import ssm.sdk.sign.model.SignerUser
 @TestMethodOrder(OrderAnnotation::class)
 class SsmClientItTest {
 
-    companion object {
-        private val uuid: String = UUID.randomUUID().toString()
-        private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
-        private const val NETWORK = "bclan-it/"
-        private const val ADMIN_NAME = "ssm-admin"
-        internal val USER1_NAME = "bob-$uuid"
-        private val USER2_NAME = "sam-$uuid"
-        internal const val USER1_FILENAME = NETWORK + "bob"
-        private const val USER2_FILENAME = NETWORK + "sam"
-
-        private lateinit var query: SsmQueryService
-        private lateinit var tx: SsmTxService
-        private lateinit var ssmName: String
-
-        private var signerAdmin: SignerAdmin = SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
-        private var signerUser1: Signer = SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME)
-        private var signerUser2: Signer = SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
-
-        private val signer = SsmCmdSignerSha256RSASigner(
-            SignerAdmin.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME),
-            SignerUser.loadFromFile(USER1_NAME, USER1_FILENAME),
-            SignerUser.loadFromFile(USER2_NAME, USER2_FILENAME)
-        )
-
-        private var agentAdmin: Agent = Agent.loadFromFile(ADMIN_NAME, NETWORK + ADMIN_NAME)
-        private var agentUser1: Agent = Agent.loadFromFile(signerUser1.name, USER1_FILENAME)
-        private var agentUser2: Agent = Agent.loadFromFile(signerUser2.name, USER2_FILENAME)
-
-        @BeforeAll
-        @JvmStatic
-        fun init() {
-            query = SsmClientTestBuilder.build().buildQueryService()
-            tx = SsmClientTestBuilder.build().buildTxService(signer)
-            ssmName = "CarDealership-$uuid"
-        }
-    }
-
     // ------------------------------------------------------------------ //
     //  Bootstrap: register agents + create SSM (using v1 helpers so the  //
     //  SSM exists on chain before the v2 tests run)                       //
@@ -107,8 +70,8 @@ class SsmClientItTest {
     @Order(30)
     @Test
     suspend fun createSsm() {
-        val sell = SsmTransition(0, 1, "Seller", "Sell")
-        val buy = SsmTransition(1, 2, "Buyer", "Buy")
+        val sell = SsmTransition(from = 0, to = 1, role = "Seller", action = "Sell")
+        val buy = SsmTransition(from = 1, to = 2, role = "Buyer", action = "Buy")
         val ssm = Ssm(ssmName, Lists.newArrayList(sell, buy))
         val result = tx.sendCreate(chaincodeUri, ssm, signerAdmin.name)
         assertThat(result).isNotNull
@@ -124,7 +87,13 @@ class SsmClientItTest {
     suspend fun `sendStart returns Committed CommandOutcome with transactionId and blockNumber`() {
         val sessionName = "v2-deal-start-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
-        val session = SsmSession(ssmName, sessionName, roles, "Starting v2 test", emptyMap())
+        val session = SsmSession(
+            ssm = ssmName,
+            session = sessionName,
+            roles = roles,
+            public = "Starting v2 test",
+            private = emptyMap(),
+        )
         val commandId = "cmd-start-$uuid"
 
         val commands = listOf(
@@ -157,13 +126,24 @@ class SsmClientItTest {
         // Need a dedicated session for this test (Order 40 session can't be reused easily)
         val sessionName = "v2-deal-perform-$uuid"
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
-        val session = SsmSession(ssmName, sessionName, roles, "Perform v2 test", emptyMap())
+        val session = SsmSession(
+            ssm = ssmName,
+            session = sessionName,
+            roles = roles,
+            public = "Perform v2 test",
+            private = emptyMap(),
+        )
 
         // Start session via v1 path first so we can perform on it
-        tx.sendStart(chaincodeUri, session, signerAdmin.name)
+        val _ = tx.sendStart(chaincodeUri, session, signerAdmin.name)
 
         val commandId = "cmd-perform-$uuid"
-        val context = SsmContext(sessionName, "Selling via v2", 0, emptyMap())
+        val context = SsmContext(
+            session = sessionName,
+            public = "Selling via v2",
+            iteration = 0,
+            private = emptyMap(),
+        )
         val commands = listOf(
             SsmPerformCommand(
                 msgId = commandId,
@@ -205,13 +185,25 @@ class SsmClientItTest {
         val commands = listOf(
             SsmStartCommand(
                 msgId = commandId1,
-                session = SsmSession(ssmName, sessionName1, roles, "Batch start 1", emptyMap()),
+                session = SsmSession(
+                    ssm = ssmName,
+                    session = sessionName1,
+                    roles = roles,
+                    public = "Batch start 1",
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri,
                 signerName = signerAdmin.name,
             ),
             SsmStartCommand(
                 msgId = commandId2,
-                session = SsmSession(ssmName, sessionName2, roles, "Batch start 2", emptyMap()),
+                session = SsmSession(
+                    ssm = ssmName,
+                    session = sessionName2,
+                    roles = roles,
+                    public = "Batch start 2",
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri,
                 signerName = signerAdmin.name,
             )
@@ -235,10 +227,11 @@ class SsmClientItTest {
         val roles = mapOf(agentUser1.name to "Buyer", agentUser2.name to "Seller")
 
         // Start both sessions via v1 path
-        val session1 = SsmSession(ssmName, sessionName1, roles, "Batch perform 1", emptyMap())
-        val session2 = SsmSession(ssmName, sessionName2, roles, "Batch perform 2", emptyMap())
-        tx.sendStart(chaincodeUri, session1, signerAdmin.name)
-        tx.sendStart(chaincodeUri, session2, signerAdmin.name)
+        listOf(sessionName1 to "Batch perform 1", sessionName2 to "Batch perform 2").forEach { (name, public) ->
+            val session =
+                SsmSession(ssm = ssmName, session = name, roles = roles, public = public, private = emptyMap())
+            val _ = tx.sendStart(chaincodeUri, session, signerAdmin.name)
+        }
 
         val commandId1 = "cmd-batch-perform-1-$uuid"
         val commandId2 = "cmd-batch-perform-2-$uuid"
@@ -247,14 +240,24 @@ class SsmClientItTest {
             SsmPerformCommand(
                 msgId = commandId1,
                 action = "Sell",
-                context = SsmContext(sessionName1, "Selling batch 1 via v2", 0, emptyMap()),
+                context = SsmContext(
+                    session = sessionName1,
+                    public = "Selling batch 1 via v2",
+                    iteration = 0,
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri,
                 signerName = signerUser2.name,
             ),
             SsmPerformCommand(
                 msgId = commandId2,
                 action = "Sell",
-                context = SsmContext(sessionName2, "Selling batch 2 via v2", 0, emptyMap()),
+                context = SsmContext(
+                    session = sessionName2,
+                    public = "Selling batch 2 via v2",
+                    iteration = 0,
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri,
                 signerName = signerUser2.name,
             )
@@ -274,5 +277,43 @@ class SsmClientItTest {
         val state2 = query.getSession(chaincodeUri, sessionName2)
         assertThat(state1!!.current).isEqualTo(1)
         assertThat(state2!!.current).isEqualTo(1)
+    }
+
+    companion object {
+        private val uuid: String = UUID.randomUUID().toString()
+        private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
+        private const val NETWORK = "bclan-it/"
+        private const val ADMIN_NAME = "ssm-admin"
+        internal val USER1_NAME = "bob-$uuid"
+        private val USER2_NAME = "sam-$uuid"
+        internal const val USER1_FILENAME = NETWORK + "bob"
+        private const val USER2_FILENAME = NETWORK + "sam"
+
+        private lateinit var query: SsmQueryService
+        private lateinit var tx: SsmTxService
+        private lateinit var ssmName: String
+
+        private val signerAdmin: SignerAdmin =
+            SignerAdmin.loadFromFile(name = ADMIN_NAME, filename = NETWORK + ADMIN_NAME)
+        private val signerUser1: Signer = SignerUser.loadFromFile(name = USER1_NAME, filename = USER1_FILENAME)
+        private val signerUser2: Signer = SignerUser.loadFromFile(name = USER2_NAME, filename = USER2_FILENAME)
+
+        private val signer = SsmCmdSignerSha256RSASigner(
+            SignerAdmin.loadFromFile(name = ADMIN_NAME, filename = NETWORK + ADMIN_NAME),
+            SignerUser.loadFromFile(name = USER1_NAME, filename = USER1_FILENAME),
+            SignerUser.loadFromFile(name = USER2_NAME, filename = USER2_FILENAME)
+        )
+
+        private val agentAdmin: Agent = Agent.loadFromFile(name = ADMIN_NAME, filename = NETWORK + ADMIN_NAME)
+        private val agentUser1: Agent = Agent.loadFromFile(name = signerUser1.name, filename = USER1_FILENAME)
+        private val agentUser2: Agent = Agent.loadFromFile(name = signerUser2.name, filename = USER2_FILENAME)
+
+        @BeforeAll
+        @JvmStatic
+        fun init() {
+            query = SsmClientTestBuilder.build().buildQueryService()
+            tx = SsmClientTestBuilder.build().buildTxService(signer)
+            ssmName = "CarDealership-$uuid"
+        }
     }
 }

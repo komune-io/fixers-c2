@@ -22,7 +22,7 @@ class FabricSsmClientTest {
         val fabric = mockk<FabricGatewayClient>()
         val capturedArgs = slot<List<InvokeArgs>>()
         coEvery {
-            fabric.query("sandbox", "ssm", capture(capturedArgs))
+            fabric.query(channelId = "sandbox", chaincodeId = "ssm", invokeArgsList = capture(capturedArgs))
         } returns listOf("""{"sessionName":"42"}""")
 
         val repo = FabricSsmClient(fabric)
@@ -44,7 +44,12 @@ class FabricSsmClientTest {
     suspend fun `invoke maps Committed TxOutcome to Committed CommandOutcome`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery {
-            fabric.invoke("sandbox", "ssm", any<List<InvokeArgs>>(), listOf("msg-1"))
+            fabric.invoke(
+                channelId = "sandbox",
+                chaincodeId = "ssm",
+                invokeArgsList = any<List<InvokeArgs>>(),
+                commandIds = listOf("msg-1"),
+            )
         } returns listOf(
             TxOutcome.Committed(msgId = "msg-1", transactionId = "tx-1", blockNumber = 7, payload = "{}"),
         )
@@ -70,7 +75,12 @@ class FabricSsmClientTest {
     suspend fun `invoke maps every TxOutcome variant`() {
         val fabric = mockk<FabricGatewayClient>()
         coEvery {
-            fabric.invoke("sandbox", "ssm", any<List<InvokeArgs>>(), any<List<String>>())
+            fabric.invoke(
+                channelId = "sandbox",
+                chaincodeId = "ssm",
+                invokeArgsList = any<List<InvokeArgs>>(),
+                commandIds = any<List<String>>(),
+            )
         } returns listOf(
             TxOutcome.Committed(msgId = "m-c", transactionId = "tx-c", blockNumber = 1, payload = "{}"),
             TxOutcome.Rejected(msgId = "m-r", errorCode = "ENDORSE_FAILED", errorMessage = "bad"),
@@ -80,7 +90,7 @@ class FabricSsmClientTest {
         )
 
         val req = InvokeRequest(channelid = "sandbox", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
         val repo = FabricSsmClient(fabric)
         val outcomes = repo.invoke(
             invokeArgs = List(5) { req },
@@ -99,34 +109,66 @@ class FabricSsmClientTest {
     @Test
     suspend fun `invoke groups commands by (channelId, chaincodeId) before calling FabricGatewayClient`() {
         val fabric = mockk<FabricGatewayClient>()
-        coEvery { fabric.invoke("chan-A", "ssm", any(), any()) } answers {
-            arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 1, "{}") }
+        coEvery {
+            fabric.invoke(
+                channelId = "chan-A",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = any(),
+            )
+        } answers {
+            arg<List<String>>(3).map { msgId ->
+                TxOutcome.Committed(msgId = msgId, transactionId = "tx-$msgId", blockNumber = 1, payload = "{}")
+            }
         }
-        coEvery { fabric.invoke("chan-B", "ssm", any(), any()) } answers {
-            arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 2, "{}") }
+        coEvery {
+            fabric.invoke(
+                channelId = "chan-B",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = any(),
+            )
+        } answers {
+            arg<List<String>>(3).map { msgId ->
+                TxOutcome.Committed(msgId = msgId, transactionId = "tx-$msgId", blockNumber = 2, payload = "{}")
+            }
         }
 
         val a = InvokeRequest(channelid = "chan-A", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
         val b = InvokeRequest(channelid = "chan-B", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
 
         val repo = FabricSsmClient(fabric)
         val outcomes = repo.invoke(listOf(a, b, a), listOf("a1", "b1", "a2"))
 
         assertEquals(3, outcomes.size)
         assertTrue(outcomes.all { it.outcome == "Committed" })
-        coVerify(exactly = 1) { fabric.invoke("chan-A", "ssm", any(), listOf("a1", "a2")) }
-        coVerify(exactly = 1) { fabric.invoke("chan-B", "ssm", any(), listOf("b1")) }
+        coVerify(exactly = 1) {
+            val _ = fabric.invoke(
+                channelId = "chan-A",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = listOf("a1", "a2"),
+            )
+        }
+        coVerify(exactly = 1) {
+            val _ = fabric.invoke(
+                channelId = "chan-B",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = listOf("b1"),
+            )
+        }
     }
 
     @Test
     suspend fun `invoke throws when an InvokeRequest has null channelid`() {
         val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = null, chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
         assertThrows<IllegalArgumentException> {
-            repo.invoke(listOf(req), listOf("m"))
+            val _ = repo.invoke(listOf(req), listOf("m"))
         }
     }
 
@@ -134,24 +176,40 @@ class FabricSsmClientTest {
     suspend fun `invoke require msgIds size matches invokeArgs size`() {
         val repo = FabricSsmClient(mockk())
         val req = InvokeRequest(channelid = "s", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
         assertThrows<IllegalArgumentException> {
-            repo.invoke(listOf(req, req), listOf("only-one"))
+            val _ = repo.invoke(listOf(req, req), listOf("only-one"))
         }
     }
 
     @Test
     suspend fun `invoke synthesises Indeterminate for failed group and preserves successful ones`() {
         val fabric = mockk<FabricGatewayClient>()
-        coEvery { fabric.invoke("chan-OK", "ssm", any(), any()) } answers {
-            arg<List<String>>(3).map { TxOutcome.Committed(it, "tx-$it", 1, "{}") }
+        coEvery {
+            fabric.invoke(
+                channelId = "chan-OK",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = any(),
+            )
+        } answers {
+            arg<List<String>>(3).map { msgId ->
+                TxOutcome.Committed(msgId = msgId, transactionId = "tx-$msgId", blockNumber = 1, payload = "{}")
+            }
         }
-        coEvery { fabric.invoke("chan-BAD", "ssm", any(), any()) } throws RuntimeException("gateway gone")
+        coEvery {
+            fabric.invoke(
+                channelId = "chan-BAD",
+                chaincodeId = "ssm",
+                invokeArgsList = any(),
+                commandIds = any(),
+            )
+        } throws RuntimeException("gateway gone")
 
         val ok = InvokeRequest(channelid = "chan-OK", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
         val bad = InvokeRequest(channelid = "chan-BAD", chaincodeid = "ssm",
-            cmd = InvokeRequestType.invoke, fcn = "Perform", args = arrayOf())
+            cmd = InvokeRequestType.invoke, fcn = "Perform", args = emptyArray())
 
         val outcomes = FabricSsmClient(fabric).invoke(listOf(ok, bad), listOf("ok-1", "bad-1"))
 

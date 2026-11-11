@@ -13,18 +13,21 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateGetQueryResultDTO
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchdbSsmSessionStateGetQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbSsmSessionStateGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<CouchdbSsmSessionStateGetQueryDTO>):
-			Flow<CouchdbSsmSessionStateGetQueryResultDTO> = msgs.map { payload ->
-		val filters = mapOf(SsmSessionStateDTO::session.name to payload.sessionName)
-		val uri = payload.chaincodeUri.burst()
-		couchdbClient.fetchAllByDocType(chainCodeDbName(uri.channelId, uri.chaincodeId), DocType.State, filters)
-			.let { list ->
-				CouchdbSsmSessionStateGetQueryResult(
-					item = list.first()
-				)
-			}
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(msgs: Flow<CouchdbSsmSessionStateGetQueryDTO>):
+            Flow<CouchdbSsmSessionStateGetQueryResultDTO> = msgs.map { payload ->
+        val filters = mapOf(SsmSessionStateDTO::session.name to payload.sessionName)
+        val uri = payload.chaincodeUri.burst()
+        val dbName = chainCodeDbName(channelId = uri.channelId, chaincodeId = uri.chaincodeId)
+        couchdbClient.fetchAllByDocType(dbName, DocType.State, filters)
+            .let { list ->
+                CouchdbSsmSessionStateGetQueryResult(
+                    item = list.first()
+                )
+            }
+    }
 }

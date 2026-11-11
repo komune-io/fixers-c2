@@ -17,33 +17,35 @@ class SsmGetSessionLogsQueryFunctionImpl(
     private val queryService: SsmQueryService,
 ): SsmGetSessionLogsQueryFunction  {
 
-	override suspend fun invoke(
-		msgs: Flow<SsmGetSessionLogsQuery>
-	): Flow<SsmGetSessionLogsQueryResult> = msgs.map { payload ->
-		GetLogQueryWithSsmName(
-			ssmName = payload.ssmName,
-			getLogQuery = GetLogQuery(
-				chaincodeUri = payload.chaincodeUri,
-				sessionName = payload.sessionName
-			)
-		)
-	}.batch(batch.toBatch()) { queries ->
-		val logsResult = queryService.getLogs(queries.map { it.getLogQuery })
-		val logBySessionName = logsResult.associateBy { log ->
-			log.firstOrNull()?.state?.session
-		}
-		queries.map { query ->
-			val logs = logBySessionName[query.getLogQuery.sessionName] ?: emptyList()
-			SsmGetSessionLogsQueryResult(
-				ssmName = query.ssmName,
-				sessionName = query.getLogQuery.sessionName,
-				logs = logs
-			)
-		}
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(
+        msgs: Flow<SsmGetSessionLogsQuery>
+    ): Flow<SsmGetSessionLogsQueryResult> = msgs.map { payload ->
+        GetLogQueryWithSsmName(
+            ssmName = payload.ssmName,
+            getLogQuery = GetLogQuery(
+                chaincodeUri = payload.chaincodeUri,
+                sessionName = payload.sessionName
+            )
+        )
+    }.batch(batch.toBatch()) { queries ->
+        val logsResult = queryService.getLogs(queries.map { it.getLogQuery })
+        val logBySessionName = logsResult.associateBy { log ->
+            log.firstOrNull()?.run { state.session }
+        }
+        queries.map { query ->
+            val logs = logBySessionName[query.getLogQuery.sessionName].orEmpty()
+            SsmGetSessionLogsQueryResult(
+                ssmName = query.ssmName,
+                sessionName = query.getLogQuery.sessionName,
+                logs = logs
+            )
+        }
+    }
 }
 
-class GetLogQueryWithSsmName(
-	val ssmName: SsmName,
-	val getLogQuery: GetLogQuery,
+data class GetLogQueryWithSsmName(
+    val ssmName: SsmName,
+    val getLogQuery: GetLogQuery,
 )

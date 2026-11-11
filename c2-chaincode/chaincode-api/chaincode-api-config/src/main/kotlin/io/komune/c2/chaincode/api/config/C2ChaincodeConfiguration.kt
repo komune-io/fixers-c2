@@ -11,70 +11,75 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("coop")
 class C2ChaincodeConfiguration(
-	var defaultCcid: String,
-	var ccid: String,
-	var user: UserConfig,
-	var config: FileConfig? = null,
-	var endorsers: String,
-	var batch: BatchProperties? = null
+    var defaultCcid: String,
+    var ccid: String,
+    var user: UserConfig,
+    var config: FileConfig? = null,
+    var endorsers: String,
+    var batch: BatchProperties? = null
 ) {
 
-	private val logger = LoggerFactory.getLogger(C2ChaincodeConfiguration::class.java)
+    private val logger = LoggerFactory.getLogger(C2ChaincodeConfiguration::class.java)
 
-	companion object {
-		const val CCID_SEPARATOR = "/"
-	}
+    fun getEndorsers(): List<Endorser> = Endorser.fromListPair(endorsers)
 
-	fun getEndorsers(): List<Endorser> {
-		return Endorser.fromListPair(endorsers)
-	}
+    fun getCcids(): Array<String> = ccid.split(",").toTypedArray()
 
-	fun getCcids(): Array<String> = ccid.split(",").toTypedArray()
+    fun getChannelChaincodes(): Map<ChannelId, ChannelConfig> {
+        val config = requireNotNull(config) { "Missing coop.config in application.yml" }
+        return ChannelConfig.fromConfig(
+            lines = getCcids(),
+            user = user,
+            config = config,
+            endorsers = getEndorsers()
+        )
+    }
 
-	fun getChannelChaincodes(): Map<ChannelId, ChannelConfig> {
-		val user = requireNotNull(user) { "Bad user[${user}] in application.yml" }
-		val config = requireNotNull(config) { "Bad config[${config}] in application.yml" }
-		return ChannelConfig.fromConfig(getCcids(), user, config, getEndorsers())
-	}
+    fun getChannelChaincodePair(channelId: ChannelId?, chainCodeId: String?): ChannelChaincodePair {
+        val channelAndChaincodeFromConfig = ChannelChaincodePair.fromConfig(defaultCcid)
 
-	fun getChannelChaincodePair(channelId: ChannelId?, chainCodeId: String?): ChannelChaincodePair {
-		val channelAndChaincodeFromConfig = ChannelChaincodePair.fromConfig(defaultCcid)
+        val actualChannelChaincodePair =
+            ChannelChaincodePair(
+                channelId = channelId ?: channelAndChaincodeFromConfig.channelId,
+                chainCodeId = chainCodeId ?: channelAndChaincodeFromConfig.chainCodeId
+            )
 
-		val actualChannelChaincodePair =
-			ChannelChaincodePair(
-				channelId = channelId ?: channelAndChaincodeFromConfig.channelId,
-				chainCodeId = chainCodeId ?: channelAndChaincodeFromConfig.chainCodeId
-			)
+        val givenCcid = "${actualChannelChaincodePair.channelId}$CCID_SEPARATOR" +
+            actualChannelChaincodePair.chainCodeId
+        if (!ccid.contains(givenCcid)) {
+            throw InvokeException("Invalid $givenCcid")
+        }
 
-		val givenCcid = "${actualChannelChaincodePair.channelId}$CCID_SEPARATOR${actualChannelChaincodePair.chainCodeId}"
-		if (!ccid.contains(givenCcid)) {
-			throw InvokeException("Invalid $givenCcid")
-		}
+        logger.debug(
+            "chaincode found " +
+                    "from [${channelId ?: DEFAULT_LABEL}:${chainCodeId ?: DEFAULT_LABEL}] " +
+                    "is ${actualChannelChaincodePair.channelId}:${actualChannelChaincodePair.chainCodeId}"
+        )
+        return actualChannelChaincodePair
+    }
 
-		logger.debug(
-			"chaincode found " +
-					"from [$channelId:$chainCodeId] " +
-					"is ${actualChannelChaincodePair.channelId}:${actualChannelChaincodePair.chainCodeId}"
-		)
-		return actualChannelChaincodePair
-	}
+    fun getBatch() = batch?.let { Batch(size = it.size, concurrency = it.concurrency) } ?: Batch()
 
-	fun getBatch() = batch?.let { Batch(it.size, it.concurrency) } ?: Batch()
+    data class UserConfig(
+        val name: String,
+        val password: String,
+        val org: String
+    ) {
+        override fun toString(): String = "UserConfig(name=$name, org=$org)"
+    }
 
-	class UserConfig {
-		lateinit var name: String
-		lateinit var password: String
-		lateinit var org: String
-	}
+    data class FileConfig(
+        val file: String,
+        val crypto: String
+    )
 
-	class FileConfig {
-		lateinit var file: String
-		lateinit var crypto: String
-	}
-
+    companion object {
+        const val CCID_SEPARATOR = "/"
+        private const val DEFAULT_LABEL = "default"
+    }
 }
 
 open class BatchProperties {
-	var size: Int = BATCH_DEFAULT_SIZE
-	var concurrency: Int = BATCH_DEFAULT_CONCURRENCY
+    var size: Int = BATCH_DEFAULT_SIZE
+    var concurrency: Int = BATCH_DEFAULT_CONCURRENCY
 }

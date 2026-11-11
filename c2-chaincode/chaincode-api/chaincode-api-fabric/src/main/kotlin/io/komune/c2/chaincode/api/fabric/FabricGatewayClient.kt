@@ -9,6 +9,7 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import java.lang.System.currentTimeMillis
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -25,12 +26,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.hyperledger.fabric.protos.peer.Proposal as PeerProposal
 
-
 class FabricGatewayClient(
     private val fabricGatewayBuilder: FabricGatewayBuilder,
     parallelism: Int,
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    val parallelIO = Dispatchers.IO.limitedParallelism(parallelism)
+    val parallelIO = ioDispatcher.limitedParallelism(parallelism)
 
     private val logger: Logger = LoggerFactory.getLogger(FabricGatewayClient::class.java)
 
@@ -45,6 +46,8 @@ class FabricGatewayClient(
         val proposalResponses = invokeArgsList.map { invokeArgs ->
             async(parallelIO) {
                 val contract = fabricGatewayBuilder.contracts(channelId, chaincodeId).shuffled().first()
+                // Contract.evaluateTransaction takes its arguments as varargs only.
+                @Suppress("SpreadOperator")
                 val result = contract.evaluateTransaction(invokeArgs.function.value, *invokeArgs.values.toTypedArray())
                 String(result)
             }
@@ -72,7 +75,14 @@ class FabricGatewayClient(
         val contracts = fabricGatewayBuilder.contracts(channelId, chaincodeId)
         val results = invokeArgsList.zip(commandIds).map { (args, msgId) ->
             async(parallelIO) {
-                runCatching { contracts.random().commitTransaction(channelId, chaincodeId, args, msgId) }
+                runCatching {
+                    contracts.random().commitTransaction(
+                        channelId = channelId,
+                        chaincodeId = chaincodeId,
+                        invokeArgs = args,
+                        msgId = msgId,
+                    )
+                }
                     .getOrElse { e ->
                         TxOutcome.Transient(
                             msgId = msgId,
@@ -87,7 +97,7 @@ class FabricGatewayClient(
         results
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount") // each endorsement failure returns its own outcome before the submit
     private fun Contract.commitTransaction(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,
@@ -95,8 +105,8 @@ class FabricGatewayClient(
         msgId: String,
     ): TxOutcome {
         val endorsed = try {
-            val proposal = newProposal(invokeArgs.function.value)
-                .addArguments(*invokeArgs.values.toTypedArray())
+            val proposal = invokeArgs.values
+                .fold(newProposal(invokeArgs.function.value)) { builder, value -> builder.addArguments(value) }
                 .build()
             val effectiveProposal = invokeArgs.timestamp
                 ?.let { rewriteEnvelopeTimestamp(channelId, proposal, it) }
@@ -108,7 +118,7 @@ class FabricGatewayClient(
                 errorCode = "ENDORSE_FAILED",
                 errorMessage = extractErrorMessage(e),
             )
-        } catch (e: io.grpc.StatusRuntimeException) {
+        } catch (e: StatusRuntimeException) {
             return TxOutcome.Transient(
                 msgId = msgId,
                 errorCode = "GRPC_${e.status.code.name}",
@@ -117,6 +127,8 @@ class FabricGatewayClient(
         }
 
         logger.debug("Submit transaction[${endorsed.transactionId}] in [${channelId}:$chaincodeId]...")
+        // Once endorsed, any failure leaves the transaction's fate unknown: each one must map to an outcome.
+        @Suppress("TooGenericExceptionCaught")
         val submitted = try {
             endorsed.submitAsync()
         } catch (e: Exception) {
@@ -145,15 +157,9 @@ class FabricGatewayClient(
         }
     }
 
-    /**
-     * Rewrites the transaction envelope's `ChannelHeader.timestamp` to [epochMillis] (a business/replay
-     * time) instead of the wall-clock value fabric-gateway stamps at `build()` time. The transaction id is
-     * derived from the nonce + creator identity — NOT the timestamp — so it stays valid after the rewrite.
-     *
-     * The rewritten proposal is recreated via [org.hyperledger.fabric.client.Gateway.newProposal], which
-     * returns it unsigned; [Proposal.endorse] then re-signs the modified bytes lazily. This is a simulation
-     * aid (historical drain replay) and must not be enabled against a shared/production chain.
-     */
+    // The transaction id derives from nonce + creator, not the timestamp, so it survives the rewrite.
+    // Gateway.newProposal returns the proposal unsigned and endorse() re-signs the new bytes.
+    // A replay aid only: never enable it against a shared or production chain.
     private fun rewriteEnvelopeTimestamp(
         channelId: ChannelId,
         proposal: Proposal,
@@ -205,13 +211,14 @@ class FabricGatewayClient(
      */
     internal fun mapSubmitFailure(e: Exception, msgId: String): TxOutcome {
         if (e is CancellationException) throw e
-        return when (e) {
-            is io.grpc.StatusRuntimeException -> TxOutcome.Transient(
+        return if (e is StatusRuntimeException) {
+            TxOutcome.Transient(
                 msgId = msgId,
                 errorCode = "GRPC_${e.status.code.name}",
                 errorMessage = e.message ?: "gRPC submit failure",
             )
-            else -> TxOutcome.Indeterminate(
+        } else {
+            TxOutcome.Indeterminate(
                 msgId = msgId,
                 errorCode = "SUBMIT_FAILED",
                 errorMessage = e.message ?: "submit failed",
@@ -221,25 +228,22 @@ class FabricGatewayClient(
 
     internal fun extractErrorMessage(e: EndorseException): String {
         val cause = e.cause
-        if (cause !is StatusRuntimeException) return e.message ?: e::class.simpleName ?: ""
+        if (cause !is StatusRuntimeException) return e.message ?: e::class.simpleName.orEmpty()
         return grpcErrorDetails(cause)?.takeIf { it.isNotEmpty() }
             ?: cause.status.description
-            ?: cause.message
-            ?: ""
+            ?: cause.message.orEmpty()
     }
 
-    /**
-     * Joins the gateway [ErrorDetail] messages carried in the gRPC `grpc-status-details-bin` trailer,
-     * or null when the trailer is absent. The `"chaincode response 500, "` prefix strip and the `;`
-     * separator are part of the emitted error-message contract — do not change them.
-     */
+    // The "chaincode response 500, " strip and the ";" separator are part of the error-message contract.
     private fun grpcErrorDetails(cause: StatusRuntimeException): String? {
         val grpcStatusDetailsKey =
             Metadata.Key.of("grpc-status-details-bin", Metadata.BINARY_BYTE_MARSHALLER)
         val statusBytes = cause.trailers?.get(grpcStatusDetailsKey) ?: return null
         return Status.parseFrom(statusBytes).detailsList
             .filter { it.typeUrl == "type.googleapis.com/gateway.ErrorDetail" }
-            .joinToString(";") { ErrorDetail.parseFrom(it.value).message.replace("chaincode response 500, ", "") }
+            .joinToString(";") {
+                ErrorDetail.parseFrom(it.value).message.replace(oldValue = "chaincode response 500, ", newValue = "")
+            }
     }
 
     companion object {

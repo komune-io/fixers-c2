@@ -11,11 +11,11 @@ import ssm.sdk.core.SsmTxService
 @Configuration(proxyBeanMethods = false)
 class SsmSessionStartAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(SsmTxSessionStartFunctionImpl::class)
-	@ConditionalOnBean(SsmTxService::class)
-	fun ssmTxSessionStartFunction(
-		ssmTxService: SsmTxService,
-	): SsmTxSessionStartFunction =
-		SsmTxSessionStartFunctionImpl(ssmTxService)
+    @Bean
+    @ConditionalOnMissingBean(SsmTxSessionStartFunctionImpl::class)
+    @ConditionalOnBean(SsmTxService::class)
+    fun ssmTxSessionStartFunction(
+        ssmTxService: SsmTxService,
+    ): SsmTxSessionStartFunction =
+        SsmTxSessionStartFunctionImpl(ssmTxService)
 }

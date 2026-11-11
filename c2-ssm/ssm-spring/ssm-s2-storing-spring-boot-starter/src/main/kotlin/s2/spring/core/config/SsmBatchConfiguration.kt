@@ -10,16 +10,16 @@ import ssm.chaincode.dsl.config.SsmBatchProperties
 @Configuration
 @ConditionalOnClass(SsmBatchProperties::class)
 @EnableConfigurationProperties(S2Properties::class)
-open class SsmBatchConfiguration {
+class SsmBatchConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(SsmBatchProperties::class)
-	open fun ssmBatchProperties(s2Properties: S2Properties): SsmBatchProperties {
-		return s2Properties.batch?.let {
-			SsmBatchProperties(
-				size = it.size,
-				concurrency = it.concurrency
-			)
-		} ?: SsmBatchProperties()
-	}
+    @Bean
+    @ConditionalOnMissingBean(SsmBatchProperties::class)
+    fun ssmBatchProperties(s2Properties: S2Properties): SsmBatchProperties {
+        return s2Properties.batch?.let { batch ->
+            SsmBatchProperties(
+                size = batch.size,
+                concurrency = batch.concurrency
+            )
+        } ?: SsmBatchProperties()
+    }
 }

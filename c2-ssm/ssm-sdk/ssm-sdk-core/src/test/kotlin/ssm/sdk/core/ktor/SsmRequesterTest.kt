@@ -14,6 +14,8 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import ssm.chaincode.dsl.model.SsmSessionStateLog
+import ssm.sdk.core.invoke.query.SsmQueryName
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.dsl.SsmCmd
 import ssm.sdk.dsl.SsmCmdName
@@ -21,16 +23,25 @@ import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.dsl.isRetryable
 import ssm.sdk.dsl.isSuccess
 import ssm.sdk.dsl.isPermanent
+import ssm.sdk.core.invoke.builder.HasList
+import ssm.sdk.dsl.InvokeException
+import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JSONConverterObjectMapper
+import tools.jackson.core.type.TypeReference
 
 class SsmRequesterTest {
 
-    private fun buildMockRequester(responseBody: String): SsmRequester {
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
+    private fun buildMockRequester(
+        responseBody: String,
+        jsonConverter: JSONConverter = JSONConverterObjectMapper(),
+    ): SsmRequester {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = responseBody,
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
             )
         }
         val mockHttpClient = HttpClient(mockEngine) {
@@ -45,7 +56,7 @@ class SsmRequesterTest {
             client = mockHttpClient,
         )
         return SsmRequester(
-            jsonConverter = JSONConverterObjectMapper(),
+            jsonConverter = jsonConverter,
             ssmChaincodeRepository = repository,
         )
     }
@@ -132,9 +143,28 @@ class SsmRequesterTest {
         val commandIds = listOf("cmd-1", "cmd-2")
 
         assertThatThrownBy {
-            runBlocking { requester.invokeAll(cmds, commandIds) }
+            runBlocking { val _ = requester.invokeAll(cmds, commandIds) }
         }.isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("msgIds.size=2 must match cmds.size=1")
+    }
+
+    @Test
+    fun `a converter failure that is not Jackson's is an InvokeException`() {
+        val failing = object : JSONConverter {
+            override fun <T> toCompletableObjects(clazz: Class<T>, value: String): List<T> = error("converter broke")
+            override fun <T> toCompletableObject(clazz: Class<T>, value: String): T? = error("converter broke")
+            override fun <T> toObject(clazz: Class<T>, value: String): T? = error("converter broke")
+        }
+        val requester = buildMockRequester(responseBody = "[]", jsonConverter = failing)
+        val query = object : HasList {
+            override val queryName = SsmQueryName.LOG
+        }
+
+        assertThatThrownBy {
+            runBlocking { val _ = requester.list(ChaincodeUri("chaincode:sandbox:ssm"), query, String::class.java) }
+        }.isInstanceOf(InvokeException::class.java)
+            .hasMessageContaining("Error parsing response")
+            .hasCauseInstanceOf(IllegalStateException::class.java)
     }
 
     @Test
@@ -157,10 +187,15 @@ class SsmRequesterTest {
             ]
         """.trimIndent()
         val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
-        val query = StubGetQuery(ssm.sdk.core.invoke.query.SsmQueryName.LOG)
-        val type = object : tools.jackson.core.type.TypeReference<List<ssm.chaincode.dsl.model.SsmSessionStateLog>>() {}
+        val query = StubGetQuery(SsmQueryName.LOG)
+        val type = object : TypeReference<List<SsmSessionStateLog>>() {}
 
-        val logs = buildMockRequester(logsJson).queryLogs(chaincodeUri, "session-1", query, type)
+        val logs = buildMockRequester(logsJson).queryLogs(
+            chaincodeUri = chaincodeUri,
+            value = "session-1",
+            query = query,
+            clazz = type,
+        )
 
         assertThat(logs).hasSize(1)
         assertThat(logs[0].txId).isEqualTo("tx-42")

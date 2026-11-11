@@ -4,34 +4,23 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.runApplication
 
-
 @SpringBootApplication(
-	scanBasePackageClasses = [ChaincodeApiGatewayApplication::class]
+    scanBasePackageClasses = [ChaincodeApiGatewayApplication::class]
 )
 @ConfigurationPropertiesScan
 class ChaincodeApiGatewayApplication
 
+// The context runs until the JVM exits; Spring takes varargs, so the arguments are copied once at boot.
+@Suppress("MissingUseCall", "SpreadOperator")
 fun main(args: Array<String>) {
-	disableOpenTelemetryExporters()
-	runApplication<ChaincodeApiGatewayApplication>(*args)
+    disableOpenTelemetryExporters()
+    val _ = runApplication<ChaincodeApiGatewayApplication>(*args)
 }
 
-/**
- * Disables OpenTelemetry OTLP exporters to prevent connection errors.
- *
- * The Hyperledger Fabric SDK (org.hyperledger.fabric-sdk-java:fabric-sdk-java)
- * pulls in OpenTelemetry dependencies:
- * - io.opentelemetry:opentelemetry-sdk
- * - io.opentelemetry:opentelemetry-exporter-otlp
- *
- * By default, these exporters try to connect to localhost:4317 (gRPC) and
- * localhost:4318 (HTTP) to send traces/metrics/logs. When no collector is
- * running, this causes connection errors and performance degradation.
- *
- * Setting these system properties disables the exporters entirely.
- */
+// The Fabric SDK pulls in the OpenTelemetry OTLP exporters, which keep dialing localhost:4317/4318
+// when no collector runs.
 private fun disableOpenTelemetryExporters() {
-	System.setProperty("otel.traces.exporter", "none")
-	System.setProperty("otel.metrics.exporter", "none")
-	System.setProperty("otel.logs.exporter", "none")
+    System.setProperty("otel.traces.exporter", "none")
+    System.setProperty("otel.metrics.exporter", "none")
+    System.setProperty("otel.logs.exporter", "none")
 }

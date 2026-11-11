@@ -1,7 +1,5 @@
 package ssm.chaincode.dsl
 
-import kotlin.js.JsExport
-import kotlin.js.JsName
 import ssm.chaincode.dsl.query.SsmGetAdminFunction
 import ssm.chaincode.dsl.query.SsmGetQueryFunction
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
@@ -14,6 +12,8 @@ import ssm.chaincode.dsl.query.SsmListSsmQueryFunction
 import ssm.chaincode.dsl.query.SsmListUserQueryFunction
 
 /**
+ * Query functions of the SSM chaincode.
+ *
  * - fun ssmGetAdminFunction(): [ssm.chaincode.dsl.query.SsmGetAdminFunction]
  * - fun ssmGetQueryFunction(): [ssm.chaincode.dsl.query.SsmGetQueryFunction]
  * - fun ssmGetSessionLogsQueryFunction(): [ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction]
@@ -28,17 +28,16 @@ import ssm.chaincode.dsl.query.SsmListUserQueryFunction
  * @title Query function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2]
  */
-@JsExport
-@JsName("SsmChaincodeQueries")
+// Kotlin only: F2Function is not exported to JS, which reaches these functions through f2's JS facade.
 interface SsmChaincodeQueries {
-	fun ssmGetAdminFunction(): SsmGetAdminFunction
-	fun ssmGetQueryFunction(): SsmGetQueryFunction
-	fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction
-	fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction
-	fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction
-	fun ssmGetUserFunction(): SsmGetUserFunction
-	fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction
-	fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction
-	fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction
-	fun ssmListUserQueryFunction(): SsmListUserQueryFunction
+    fun ssmGetAdminFunction(): SsmGetAdminFunction
+    fun ssmGetQueryFunction(): SsmGetQueryFunction
+    fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction
+    fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction
+    fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction
+    fun ssmGetUserFunction(): SsmGetUserFunction
+    fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction
+    fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction
+    fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction
+    fun ssmListUserQueryFunction(): SsmListUserQueryFunction
 }

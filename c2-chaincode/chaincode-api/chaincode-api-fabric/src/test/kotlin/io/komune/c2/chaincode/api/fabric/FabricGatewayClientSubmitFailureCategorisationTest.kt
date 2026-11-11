@@ -3,6 +3,7 @@ package io.komune.c2.chaincode.api.fabric
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
 import org.assertj.core.api.Assertions.assertThat
+import org.hyperledger.fabric.client.Contract
 import org.junit.jupiter.api.Test
 
 /**
@@ -22,7 +23,7 @@ class FabricGatewayClientSubmitFailureCategorisationTest {
             override fun contracts(
                 channelId: io.komune.c2.chaincode.dsl.ChannelId,
                 chaincodeId: io.komune.c2.chaincode.dsl.ChaincodeId,
-            ) = emptyList<org.hyperledger.fabric.client.Contract>()
+            ) = emptyList<Contract>()
         },
         parallelism = 1,
     )

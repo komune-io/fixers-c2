@@ -13,18 +13,19 @@ import ssm.data.dsl.features.query.DataSsmGetQueryResult
 import ssm.data.dsl.features.query.DataSsmGetQueryResultDTO
 
 class DataSsmGetQueryFunctionImpl(
-	private val ssmGetQueryFunction: SsmGetQueryFunction
+    private val ssmGetQueryFunction: SsmGetQueryFunction
 ) : DataSsmGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataSsmGetQueryDTO>): Flow<DataSsmGetQueryResultDTO> =
-		msgs.map { payload ->
-			SsmGetQuery(
-				chaincodeUri = payload.ssmUri.burst().chaincodeUri,
-				name = payload.ssmUri.burst().ssmName,
-			).invokeWith(ssmGetQueryFunction)
-				.item
-				?.toDataSsm(payload.ssmUri.burst())
-				.let(::DataSsmGetQueryResult)
-
-		}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(msgs: Flow<DataSsmGetQueryDTO>): Flow<DataSsmGetQueryResultDTO> =
+        msgs.map { payload ->
+            val ssm = SsmGetQuery(
+                chaincodeUri = payload.ssmUri.burst().chaincodeUri,
+                name = payload.ssmUri.burst().ssmName,
+            ).invokeWith(ssmGetQueryFunction)
+                .item
+                ?.toDataSsm(payload.ssmUri.burst())
+            DataSsmGetQueryResult(ssm)
+        }
 }

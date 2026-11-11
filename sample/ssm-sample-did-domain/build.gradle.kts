@@ -1,13 +1,13 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
-	alias(catalogue.plugins.kotlin.serialization)
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.kotlin.serialization)
 }
 
 dependencies {
-	commonMainImplementation(libs.s2.automate.dsl)
-	commonMainApi(catalogue.client.core)
-	commonMainApi(catalogue.client.ktor)
-	commonMainApi(catalogue.dsl.function)
+    implementation(libs.s2.automate.dsl)
+    api(catalogue.client.core)
+    api(catalogue.client.ktor)
+    api(catalogue.dsl.function)
 
-	jvmTestImplementation(libs.bundles.test)
+    testImplementation(libs.bundles.test)
 }

@@ -15,15 +15,17 @@ typealias ChangeEventId = String
 @JsExport
 @JsName("DatabaseChangesDTO")
 interface DatabaseChangesDTO {
-	val changeEventId: ChangeEventId
-	val docType: DocType<*>?
-	val objectId: String
+    val changeEventId: ChangeEventId
+    val docType: DocType<Any>?
+    val objectId: String
 }
 
 @JsExport
 @JsName("DatabaseChanges")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DatabaseChanges(
-	override val changeEventId: ChangeEventId,
-	override val docType: DocType<*>?,
-	override val objectId: String
+    override val changeEventId: ChangeEventId,
+    override val docType: DocType<Any>?,
+    override val objectId: String
 ) : DatabaseChangesDTO

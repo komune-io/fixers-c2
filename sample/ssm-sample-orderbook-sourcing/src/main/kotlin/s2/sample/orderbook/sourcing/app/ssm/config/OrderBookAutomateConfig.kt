@@ -9,7 +9,7 @@ import s2.sample.orderbook.sourcing.app.ssm.OrderBookModelView
 import s2.sample.subautomate.domain.OrderBookState
 import s2.sample.subautomate.domain.model.OrderBook
 import s2.sample.subautomate.domain.model.OrderBookId
-import s2.sample.subautomate.domain.orderBook.OrderBookEvent
+import s2.sample.subautomate.domain.orderbook.OrderBookEvent
 import s2.sample.subautomate.domain.orderBookAutomate
 import s2.spring.sourcing.ssm.PolymorphicEnumSerializer
 import s2.spring.sourcing.ssm.S2SourcingSsmAdapter
@@ -20,34 +20,30 @@ import ssm.sdk.sign.extention.loadFromFile
 
 @Configuration
 class OrderBookAutomateConfig(orderBookS2Aggregate: OrderBookS2Aggregate)
-	: S2SourcingSsmAdapter<
-		OrderBook,
-		OrderBookState,
-		OrderBookEvent,
-		OrderBookId,
-		OrderBookS2Aggregate
-	>(orderBookS2Aggregate, OrderBookModelView()) {
-	override fun automate() = orderBookAutomate("sourcing-ssm")
+    : S2SourcingSsmAdapter<
+        OrderBook,
+        OrderBookState,
+        OrderBookEvent,
+        OrderBookId,
+        OrderBookS2Aggregate
+    >(orderBookS2Aggregate, OrderBookModelView()) {
+    override fun automate() = orderBookAutomate("sourcing-ssm")
 
-	override fun entityType(): KClass<OrderBookEvent> {
-		return OrderBookEvent::class
-	}
+    override fun entityType(): KClass<OrderBookEvent> = OrderBookEvent::class
 
-	override fun json(): Json = Json {
-		serializersModule = SerializersModule {
-			polymorphic(OrderBookState::class, PolymorphicEnumSerializer(OrderBookState.serializer()))
-		}
-	}
+    override fun json(): Json = Json {
+        serializersModule = SerializersModule {
+            polymorphic(OrderBookState::class, PolymorphicEnumSerializer(OrderBookState.serializer()))
+        }
+    }
 
-	override fun chaincodeUri(): ChaincodeUri {
-		return ChaincodeUri.from(
-			channelId = "sandbox",
-			chaincodeId = "ssm",
-		)
-	}
+    override fun chaincodeUri(): ChaincodeUri {
+        return ChaincodeUri.from(
+            channelId = "sandbox",
+            chaincodeId = "ssm",
+        )
+    }
 
-	override fun signerAgent(): Agent {
-		return Agent.loadFromFile("ssm-admin","user/ssm-admin")
-	}
+    override fun signerAgent(): Agent = Agent.loadFromFile(name = "ssm-admin", filename = "user/ssm-admin")
 
 }

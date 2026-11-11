@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.Agent
 
 /**
- * Retrieves an admin
+ * Retrieves an admin.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get User
@@ -29,10 +29,10 @@ typealias SsmGetUserFunction = F2Function<SsmGetUserQuery, SsmGetUserResult>
 class SsmGetUserQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-	 * The name of the user.
-	 * @example ["Chuck"]
-	 */
-	val name: String,
+     * The name of the user.
+     * @example ["Chuck"]
+     */
+    val name: String,
 ) : SsmQueryDTO
 
 /**
@@ -44,8 +44,8 @@ class SsmGetUserQuery(
 @JsExport
 @JsName("SsmGetUserResult")
 class SsmGetUserResult(
-	/**
-	 * The user found.
-	 */
-	override val item: Agent?,
+    /**
+     * The user found.
+     */
+    override val item: Agent?,
 ) : SsmItemResultDTO<Agent>

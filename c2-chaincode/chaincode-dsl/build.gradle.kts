@@ -1,11 +1,11 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
-	alias(catalogue.plugins.fixers.gradle.publish)
-	alias(catalogue.plugins.kotlin.serialization)
+    alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
+    alias(catalogue.plugins.fixers.gradle.publish)
+    alias(catalogue.plugins.kotlin.serialization)
 }
 
 dependencies {
-	commonMainApi(libs.f2.dsl.cqrs)
+    commonMainApi(libs.f2.dsl.cqrs)
 
-	jvmTestImplementation(libs.bundles.test)
+    jvmTestImplementation(libs.bundles.test)
 }

@@ -16,52 +16,42 @@ import tools.jackson.module.kotlin.KotlinModule
 
 object JsonUtils {
 
-	private val timestampModule = SimpleModule("TimestampModule")
-		.addDeserializer(Long::class.javaObjectType, LongTimestampDeserializer())
-		.addDeserializer(Long::class.javaPrimitiveType, LongTimestampDeserializer())
+    private val timestampModule = SimpleModule("TimestampModule")
+        .addDeserializer(Long::class.javaObjectType, LongTimestampDeserializer())
+        .addDeserializer(Long::class.javaPrimitiveType, LongTimestampDeserializer())
 
-	@PublishedApi
-	internal val mapper: ObjectMapper = JsonMapper.builder()
-		.addModule(KotlinModule.Builder().build())
-		.addModule(timestampModule)
-		.changeDefaultPropertyInclusion { JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, null) }
-		.build()
+    @PublishedApi
+    internal val mapper: ObjectMapper = JsonMapper.builder()
+        .addModule(KotlinModule.Builder().build())
+        .addModule(timestampModule)
+        .changeDefaultPropertyInclusion { JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, null) }
+        .build()
 
-	@Throws(IOException::class)
-	fun <T> toJson(obj: T): String {
-		return mapper.writeValueAsString(obj)
-	}
+    @Throws(IOException::class)
+    fun <T> toJson(obj: T): String = mapper.writeValueAsString(obj)
 
-	@Throws(IOException::class)
-	fun <T> toObject(value: String, clazz: Class<T>): T {
-		return mapper.readValue(value, clazz)
-	}
+    @Throws(IOException::class)
+    fun <T> toObject(value: String, clazz: Class<T>): T = mapper.readValue(value, clazz)
 
-	@Throws(IOException::class)
-	fun <T> toObject(value: Reader, clazz: Class<T>): T {
-		return mapper.readValue(value, clazz)
-	}
+    @Throws(IOException::class)
+    fun <T> toObject(value: Reader, clazz: Class<T>): T = mapper.readValue(value, clazz)
 
-	@Throws(IOException::class)
-	fun <T> toObject(value: String, clazz: TypeReference<T>): T {
-		return mapper.readValue(value, clazz)
-	}
+    @Throws(IOException::class)
+    fun <T> toObject(value: String, clazz: TypeReference<T>): T = mapper.readValue(value, clazz)
 
-	/**
-	 * Deserializes a JSON array into a List of [clazz] elements. Unlike an erased
-	 * TypeReference<List<T>>, the collection type is built from the actual element
-	 * class, so complex DTOs deserialize as T instead of LinkedHashMap.
-	 */
-	@Throws(IOException::class)
-	fun <T> toObjects(value: String, clazz: Class<T>): List<T> {
-		val type = mapper.typeFactory.constructCollectionType(List::class.java, clazz)
-		return mapper.readValue(value, type)
-	}
+    /**
+     * Deserializes a JSON array into a List of [clazz] elements. Unlike an erased
+     * TypeReference<List<T>>, the collection type is built from the actual element
+     * class, so complex DTOs deserialize as T instead of LinkedHashMap.
+     */
+    @Throws(IOException::class)
+    fun <T> toObjects(value: String, clazz: Class<T>): List<T> {
+        val type = mapper.typeFactory.constructCollectionType(List::class.java, clazz)
+        return mapper.readValue(value, type)
+    }
 
-	@Throws(IOException::class)
-	inline fun <reified T> toObject(value: String): T {
-		return mapper.readValue(value, object : TypeReference<T>() {})
-	}
+    @Throws(IOException::class)
+    inline fun <reified T> toObject(value: String): T = mapper.readValue(value, object : TypeReference<T>() {})
 }
 
 /**
@@ -69,9 +59,9 @@ object JsonUtils {
  * Handles the blockchain API returning timestamps as ISO strings.
  */
 private class LongTimestampDeserializer : ValueDeserializer<Long>() {
-	override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Long = when (p.currentToken()) {
-		JsonToken.VALUE_NUMBER_INT -> p.longValue
-		JsonToken.VALUE_STRING -> p.string.toLongOrNull() ?: Instant.parse(p.string).toEpochMilli()
-		else -> throw ctxt.weirdStringException(p.string, Long::class.java, "Expected number or ISO string")
-	}
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Long = when (p.currentToken()) {
+        JsonToken.VALUE_NUMBER_INT -> p.longValue
+        JsonToken.VALUE_STRING -> p.string.toLongOrNull() ?: Instant.parse(p.string).toEpochMilli()
+        else -> throw ctxt.weirdStringException(p.string, Long::class.java, "Expected number or ISO string")
+    }
 }

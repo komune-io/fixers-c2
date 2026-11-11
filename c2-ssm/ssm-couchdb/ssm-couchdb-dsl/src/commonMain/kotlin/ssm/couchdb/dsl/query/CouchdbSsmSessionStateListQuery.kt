@@ -13,39 +13,39 @@ import ssm.chaincode.dsl.model.SsmName
 import ssm.chaincode.dsl.model.SsmSessionStateDTO
 
 /**
- * Retrieve the list of all known sessions of a given SSM
+ * Retrieve the list of all known sessions of a given SSM.
  * @d2 function
  * @parent [ssm.couchdb.dsl.CouchdbSsmD2Query]
  * @order 40
  * @title List Sessions
  */
 typealias CouchdbSsmSessionStateListQueryFunction
-		= F2Function<CouchdbSsmSessionStateListQueryDTO, CouchdbSsmSessionStateListQueryResultDTO>
+        = F2Function<CouchdbSsmSessionStateListQueryDTO, CouchdbSsmSessionStateListQueryResultDTO>
 
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryDTO")
 interface CouchdbSsmSessionStateListQueryDTO : PageQueryDTO {
-	/**
-	 * The unique uri of a channel.
-	 */
-	val chaincodeUri: ChaincodeUriDTO
-	/**
-	 * The unique identifier of a ssm.
-	 */
-	val ssm: SsmName?
+    /**
+     * The unique uri of a channel.
+     */
+    val chaincodeUri: ChaincodeUriDTO
+    /**
+     * The unique identifier of a ssm.
+     */
+    val ssm: SsmName?
 }
 
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryResultDTO")
 interface CouchdbSsmSessionStateListQueryResultDTO : PageQueryResultDTO<SsmSessionStateDTO> {
-	/**
-	 * Retrieved sessions
-	 */
-	override val pagination: OffsetPaginationDTO?
-	/**
-	 * Retrieved sessions
-	 */
-	override val items: List<SsmSessionStateDTO>
+    /**
+     * Retrieved sessions.
+     */
+    override val pagination: OffsetPaginationDTO?
+    /**
+     * Retrieved sessions.
+     */
+    override val items: List<SsmSessionStateDTO>
 }
 
 /**
@@ -56,6 +56,8 @@ interface CouchdbSsmSessionStateListQueryResultDTO : PageQueryResultDTO<SsmSessi
 @Serializable
 @JsExport
 @JsName("CouchdbSsmSessionStateListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmSessionStateListQuery(
     override val pagination: OffsetPaginationDTO? = null,
     override val chaincodeUri: ChaincodeUri,
@@ -70,8 +72,10 @@ class CouchdbSsmSessionStateListQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbSsmSessionStateListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmSessionStateListQueryResult(
-	override val pagination: OffsetPaginationDTO?,
-	override val total: Int,
-	override val items: List<SsmSessionStateDTO>,
+    override val pagination: OffsetPaginationDTO?,
+    override val total: Int,
+    override val items: List<SsmSessionStateDTO>,
 ) : CouchdbSsmSessionStateListQueryResultDTO

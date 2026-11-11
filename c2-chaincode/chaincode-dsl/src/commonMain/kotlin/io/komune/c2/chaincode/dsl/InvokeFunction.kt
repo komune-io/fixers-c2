@@ -4,5 +4,5 @@ import kotlin.jvm.JvmInline
 
 @JvmInline
 value class InvokeFunction(val value: String) {
-	override fun toString(): String = value
+    override fun toString(): String = value
 }

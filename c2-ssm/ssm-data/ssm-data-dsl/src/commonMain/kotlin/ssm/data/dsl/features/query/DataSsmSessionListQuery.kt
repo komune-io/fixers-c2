@@ -9,7 +9,7 @@ import ssm.data.dsl.model.DataSsmSession
 import ssm.data.dsl.model.DataSsmSessionDTO
 
 /**
- * Retrieve a list of all known sessions of a given SSM
+ * Retrieve a list of all known sessions of a given SSM.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 20
@@ -29,17 +29,19 @@ interface DataSsmSessionListQueryDTO : DataQueryDTO
 @Serializable
 @JsExport
 @JsName("DataSsmSessionListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionListQuery(
-	override val ssmUri: SsmUri,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionListQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionListQueryResultDTO")
 interface DataSsmSessionListQueryResultDTO {
-	/**
-	 * List of all the retrieved sessions
-	 */
-	val items: List<DataSsmSessionDTO>
+    /**
+     * List of all the retrieved sessions.
+     */
+    val items: List<DataSsmSessionDTO>
 }
 
 /**
@@ -50,6 +52,8 @@ interface DataSsmSessionListQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionListQueryResult(
-	override val items: List<DataSsmSession>,
+    override val items: List<DataSsmSession>,
 ) : DataSsmSessionListQueryResultDTO

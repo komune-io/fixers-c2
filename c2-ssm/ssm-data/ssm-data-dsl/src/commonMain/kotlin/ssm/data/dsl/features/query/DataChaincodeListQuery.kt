@@ -7,7 +7,7 @@ import kotlin.js.JsName
 import kotlinx.serialization.Serializable
 
 /**
- * Retrieves all known SSMs
+ * Retrieves all known SSMs.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 20
@@ -32,10 +32,10 @@ class DataChaincodeListQuery : DataChaincodeListQueryDTO
 @JsExport
 @JsName("DataChaincodeListQueryResultDTO")
 interface DataChaincodeListQueryResultDTO {
-	/**
-	 * List of all retrieved SSMs
-	 */
-	val items: List<ChaincodeUri>
+    /**
+     * List of all retrieved SSMs.
+     */
+    val items: List<ChaincodeUri>
 }
 
 /**
@@ -46,6 +46,8 @@ interface DataChaincodeListQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataChaincodeListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataChaincodeListQueryResult(
     override val items: List<ChaincodeUri>,
 ) : DataChaincodeListQueryResultDTO

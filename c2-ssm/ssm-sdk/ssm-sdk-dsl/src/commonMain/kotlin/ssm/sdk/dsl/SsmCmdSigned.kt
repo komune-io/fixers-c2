@@ -16,23 +16,23 @@ data class SsmCmdSigned(
 )
 
 fun SsmCmdSigned.buildArgs(): InvokeArgs {
-	return InvokeArgs(
-		function = InvokeFunction(cmd.command.value),
-		values = listOfNotNull(cmd.performAction, cmd.json, signer, signature),
-		timestamp = cmd.timestamp,
-	)
+    return InvokeArgs(
+        function = InvokeFunction(cmd.command.value),
+        values = listOfNotNull(cmd.performAction, cmd.json, signer, signature),
+        timestamp = cmd.timestamp,
+    )
 }
 
 fun SsmCmdSigned.buildCommandArgs(
-	type: InvokeRequestType,
-	): InvokeRequest {
-	val args = buildArgs()
-	return InvokeRequest(
-		cmd = type,
-		channelid = chaincodeUri.channelId,
-		chaincodeid = chaincodeUri.chaincodeId,
-		fcn = args.function.value,
-		args = args.values.toTypedArray(),
-		timestamp = args.timestamp,
-	)
+    type: InvokeRequestType,
+    ): InvokeRequest {
+    val args = buildArgs()
+    return InvokeRequest(
+        cmd = type,
+        channelid = chaincodeUri.channelId,
+        chaincodeid = chaincodeUri.chaincodeId,
+        fcn = args.function.value,
+        args = args.values.toTypedArray(),
+        timestamp = args.timestamp,
+    )
 }

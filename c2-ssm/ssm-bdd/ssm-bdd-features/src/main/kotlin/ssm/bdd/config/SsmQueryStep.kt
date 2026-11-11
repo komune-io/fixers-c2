@@ -19,16 +19,22 @@ import ssm.chaincode.dsl.model.uri.toSsmUri
 
 abstract class SsmQueryStep {
 
-    lateinit var bag: SsmCucumberBag
-    lateinit var config: SsmChaincodeProperties
+    private var currentBag: SsmCucumberBag? = null
+    private var currentConfig: SsmChaincodeProperties? = null
+
+    val bag: SsmCucumberBag
+        get() = checkNotNull(currentBag) { "No cucumber scenario has started" }
+    val config: SsmChaincodeProperties
+        get() = checkNotNull(currentConfig) { "No cucumber scenario has started" }
     var batch: SsmBatchProperties = SsmBatchProperties()
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod") // the Cucumber DSL registers every step of the glossary in one block
     fun En.prepareSteps() {
         Before { scenario: Scenario ->
-            bag = SsmCucumberBag.init(scenario)
-            config = SsmChaincodeProperties(
-                url = bag.config.baseUrl,
+            val scenarioBag = SsmCucumberBag.init(scenario)
+            currentBag = scenarioBag
+            currentConfig = SsmChaincodeProperties(
+                url = scenarioBag.config.baseUrl,
             )
         }
 
@@ -88,8 +94,10 @@ abstract class SsmQueryStep {
                     getSession(bag.chaincodeUri.toSsmUri(ssmName), sessionName)
                 ).hasFieldOrProperty(SsmSessionState::origin.name)
                     .isEqualTo(origin)
-                    .hasFieldOrProperty(SsmSessionState::current.name).isEqualTo(current)
-                    .hasFieldOrProperty(SsmSessionState::iteration.name).isEqualTo(iteration)
+                    .hasFieldOrProperty(SsmSessionState::current.name)
+                    .isEqualTo(current)
+                    .hasFieldOrProperty(SsmSessionState::iteration.name)
+                    .isEqualTo(iteration)
             }
         }
 
@@ -157,8 +165,8 @@ abstract class SsmQueryStep {
     fun DataTable.asCucumberSessionLog(): List<CucumberSessionLog> {
         return asMaps().map { columns ->
             CucumberSessionLog(
-                current = columns[CucumberSessionLog::current.name]?.toInt()!!,
-                iteration = columns[CucumberSessionLog::iteration.name]?.toInt()!!,
+                current = requireNotNull(columns[CucumberSessionLog::current.name]) { "Missing current" }.toInt(),
+                iteration = requireNotNull(columns[CucumberSessionLog::iteration.name]) { "Missing iteration" }.toInt(),
                 originAction = columns[CucumberSessionLog::originAction.name],
                 originFrom = columns[CucumberSessionLog::originFrom.name]?.toInt(),
                 originTo = columns[CucumberSessionLog::originTo.name]?.toInt(),
@@ -180,7 +188,7 @@ abstract class SsmQueryStep {
     protected abstract suspend fun listAdmins(): List<String>
 }
 
-class CucumberSessionLog(
+data class CucumberSessionLog(
     val current: Int,
     val iteration: Int,
     val originAction: SsmAction?,

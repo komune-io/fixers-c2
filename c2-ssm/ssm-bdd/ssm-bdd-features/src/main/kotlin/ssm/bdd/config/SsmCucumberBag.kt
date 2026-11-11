@@ -15,44 +15,43 @@ import ssm.sdk.sign.model.SignerAdmin
 import ssm.sdk.sign.model.SignerUser
 
 class SsmCucumberBag(
-	val config: SsmSdkConfig
+    val config: SsmSdkConfig
 ) {
 
-	companion object {
-		val cucumbers: MutableMap<String, SsmCucumberBag> = mutableMapOf()
+    val uuid: String = UUID.randomUUID().toString()
 
-		fun init(scenario: Scenario): SsmCucumberBag {
-			if (!cucumbers.containsKey(scenario.id)) {
-				cucumbers[scenario.id] = SsmCucumberBag(SsmSdkConfig(SsmBddConfig.Chaincode.url)).apply {
-					uuid = UUID.randomUUID().toString()
-				}
-			}
-			return cucumbers.getValue(scenario.id)
-		}
-	}
+    val clientQuery = SsmServiceFactory
+        .builder(config, SsmBatchProperties())
+        .buildQueryService()
 
-	lateinit var uuid: String
+    val chaincodeUri: ChaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 
-	val clientQuery = SsmServiceFactory
-		.builder(config, SsmBatchProperties())
-		.buildQueryService()
+    //  SsmSdkTxSteps
+    private var currentAdminSigner: SignerAdmin? = null
+    var adminSigner: SignerAdmin
+        get() = checkNotNull(currentAdminSigner) { "No admin signer has been loaded" }
+        set(value) {
+            currentAdminSigner = value
+        }
+    val userSigners: MutableMap<AgentName, SignerUser> = mutableMapOf()
+    val ssms: MutableMap<SsmName, Ssm> = mutableMapOf()
 
-	fun clientTx(signer: Signer) = SsmServiceFactory
-		.builder(config, SsmBatchProperties())
-		.buildTxService(SsmCmdSignerSha256RSASigner(signer))
+    // SsmChaincodeBddSteps
+    var adminsName: List<AgentName> = emptyList()
+    var usersName: List<AgentName> = emptyList()
+    var ssmsName: List<SsmName> = emptyList()
+    var sessions: List<String> = emptyList()
 
-	val chaincodeUri: ChaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
+    fun clientTx(signer: Signer) = SsmServiceFactory
+        .builder(config, SsmBatchProperties())
+        .buildTxService(SsmCmdSignerSha256RSASigner(signer))
 
-	//	SsmSdkTxSteps
-	lateinit var adminSigner: SignerAdmin
-	var userSigners: MutableMap<AgentName, SignerUser> = mutableMapOf()
-	var ssms: MutableMap<SsmName, Ssm> = mutableMapOf()
+    companion object {
+        val cucumbers: MutableMap<String, SsmCucumberBag> = mutableMapOf()
 
-	// SsmChaincodeBddSteps
-	var adminsName: List<AgentName> = emptyList()
-	var usersName: List<AgentName> = emptyList()
-	var ssmsName: List<SsmName> = emptyList()
-	var sessions: List<String> = emptyList()
+        fun init(scenario: Scenario): SsmCucumberBag =
+            cucumbers.getOrPut(scenario.id) { SsmCucumberBag(SsmSdkConfig(SsmBddConfig.Chaincode.url)) }
+    }
 }
 
 fun String.contextualize(bag: SsmCucumberBag) = "$this-${bag.uuid}"

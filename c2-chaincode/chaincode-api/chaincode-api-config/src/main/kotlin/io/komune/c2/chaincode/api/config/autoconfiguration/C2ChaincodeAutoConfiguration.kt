@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration
 class C2ChaincodeAutoConfiguration {
 
     @Bean
-    fun fabricConfigLoader(coopConfig: C2ChaincodeConfiguration): FabricConfigLoader {
-        return FabricConfigLoader(coopConfig)
-    }
+    fun fabricConfigLoader(coopConfig: C2ChaincodeConfiguration): FabricConfigLoader =
+        FabricConfigLoader(coopConfig)
 }

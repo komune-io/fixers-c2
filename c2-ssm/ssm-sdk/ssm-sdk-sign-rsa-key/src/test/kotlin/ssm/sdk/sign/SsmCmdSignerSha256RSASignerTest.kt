@@ -15,64 +15,64 @@ import ssm.sdk.sign.model.SignerUser
 
 internal class SsmCmdSignerSha256RSASignerTest {
 
-	companion object {
-		private const val KEY_NAME = "command/vivi"
-		private const val AGENT_NAME = "vivi"
-	}
+    private val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
+    private val signerUser = SignerUser(AGENT_NAME, keyPair)
 
-	private val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
-	private val signerUser = SignerUser(AGENT_NAME, keyPair)
+    private fun cmd(agentName: String = AGENT_NAME) = SsmCmd(
+        chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+        agentName = agentName,
+        json = """{"session":"session"}""",
+        command = SsmCmdName.PERFORM,
+        performAction = "confirm",
+        valueToSign = "value-to-sign"
+    )
 
-	private fun cmd(agentName: String = AGENT_NAME) = SsmCmd(
-		chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
-		agentName = agentName,
-		json = """{"session":"session"}""",
-		command = SsmCmdName.PERFORM,
-		performAction = "confirm",
-		valueToSign = "value-to-sign"
-	)
+    @Test
+    fun signShouldProduceVerifiableSignature() {
+        val signed = SsmCmdSignerSha256RSASigner(signerUser).sign(cmd())
 
-	@Test
-	fun signShouldProduceVerifiableSignature() {
-		val signed = SsmCmdSignerSha256RSASigner(signerUser).sign(cmd())
+        Assertions.assertThat(signed.signer).isEqualTo(AGENT_NAME)
+        Assertions.assertThat(signed.cmd).isEqualTo(cmd())
+        Assertions.assertThat(signed.chaincodeUri).isEqualTo(ChaincodeUri("chaincode:sandbox:ssm"))
 
-		Assertions.assertThat(signed.signer).isEqualTo(AGENT_NAME)
-		Assertions.assertThat(signed.cmd).isEqualTo(cmd())
-		Assertions.assertThat(signed.chaincodeUri).isEqualTo(ChaincodeUri("chaincode:sandbox:ssm"))
+        val verifier = Signature.getInstance("SHA256withRSA")
+        verifier.initVerify(keyPair.public)
+        verifier.update("value-to-sign".toByteArray(Charsets.UTF_8))
+        val isValid = verifier.verify(Base64.getDecoder().decode(signed.signature))
+        Assertions.assertThat(isValid).isTrue()
+    }
 
-		val verifier = Signature.getInstance("SHA256withRSA")
-		verifier.initVerify(keyPair.public)
-		verifier.update("value-to-sign".toByteArray(Charsets.UTF_8))
-		val valid = verifier.verify(Base64.getDecoder().decode(signed.signature))
-		Assertions.assertThat(valid).isTrue()
-	}
+    @Test
+    fun signShouldFailForUnknownAgent() {
+        val signer = SsmCmdSignerSha256RSASigner(signerUser)
+        Assertions.assertThatThrownBy { val _ = signer.sign(cmd(agentName = "unknown")) }
+            .isInstanceOf(SsmSignException::class.java)
+    }
 
-	@Test
-	fun signShouldFailForUnknownAgent() {
-		val signer = SsmCmdSignerSha256RSASigner(signerUser)
-		Assertions.assertThatThrownBy { signer.sign(cmd(agentName = "unknown")) }
-			.isInstanceOf(SsmSignException::class.java)
-	}
+    @Test
+    fun signShouldReportOnlyTheAgentNameOnFailure() {
+        val signer = SsmCmdSignerSha256RSASigner(signerUser)
+        Assertions.assertThatThrownBy { val _ = signer.sign(cmd(agentName = "unknown")) }
+            .isInstanceOf(SsmSignException::class.java)
+            .hasMessage("Invalid agent name: unknown")
+    }
 
-	@Test
-	fun signShouldReportOnlyTheAgentNameOnFailure() {
-		val signer = SsmCmdSignerSha256RSASigner(signerUser)
-		Assertions.assertThatThrownBy { signer.sign(cmd(agentName = "unknown")) }
-			.isInstanceOf(SsmSignException::class.java)
-			.hasMessage("Invalid agent name: unknown")
-	}
+    @Test
+    fun rsaSignAsB64ShouldMatchRsaSign() {
+        val raw = Sha256RSASigner.rsaSign("payload", keyPair.private)
+        val b64 = Sha256RSASigner.rsaSignAsB64("payload", keyPair.private)
+        Assertions.assertThat(Base64.getDecoder().decode(b64)).isEqualTo(raw)
+    }
 
-	@Test
-	fun rsaSignAsB64ShouldMatchRsaSign() {
-		val raw = Sha256RSASigner.rsaSign("payload", keyPair.private)
-		val b64 = Sha256RSASigner.rsaSignAsB64("payload", keyPair.private)
-		Assertions.assertThat(Base64.getDecoder().decode(b64)).isEqualTo(raw)
-	}
+    @Test
+    fun asAgentShouldExposePublicKey() {
+        val agent = signerUser.asAgent()
+        Assertions.assertThat(agent.name).isEqualTo(AGENT_NAME)
+        Assertions.assertThat(agent.pub).isEqualTo(keyPair.public.encoded)
+    }
 
-	@Test
-	fun asAgentShouldExposePublicKey() {
-		val agent = signerUser.asAgent()
-		Assertions.assertThat(agent.name).isEqualTo(AGENT_NAME)
-		Assertions.assertThat(agent.pub).isEqualTo(keyPair.public.encoded)
-	}
+    companion object {
+        private const val KEY_NAME = "command/vivi"
+        private const val AGENT_NAME = "vivi"
+    }
 }

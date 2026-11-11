@@ -10,10 +10,6 @@ import org.springframework.web.reactive.config.WebFluxConfigurer
 @Configuration
 @EnableWebFlux
 class WebFluxConfiguration : WebFluxConfigurer {
-    companion object {
-        private const val MAX_AGE = 3600L
-        private const val BYTE_COUNT = 10 * 1024 * 1024
-    }
     override fun addCorsMappings(corsRegistry: CorsRegistry) {
         corsRegistry.addMapping("/**")
                 .allowedOrigins("*")
@@ -28,5 +24,10 @@ class WebFluxConfiguration : WebFluxConfigurer {
 
     override fun configureHttpMessageCodecs(configurer: ServerCodecConfigurer) {
         configurer.defaultCodecs().maxInMemorySize(BYTE_COUNT) // Set to 10 MB
+    }
+
+    companion object {
+        private const val MAX_AGE = 3600L
+        private const val BYTE_COUNT = 10 * 1024 * 1024
     }
 }

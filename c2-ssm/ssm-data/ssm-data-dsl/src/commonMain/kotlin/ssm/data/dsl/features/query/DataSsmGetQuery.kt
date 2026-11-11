@@ -9,7 +9,7 @@ import ssm.chaincode.dsl.model.uri.SsmUriDTO
 import ssm.data.dsl.model.DataSsm
 
 /**
- * Retrieves a given SSM
+ * Retrieves a given SSM.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 10
@@ -20,7 +20,7 @@ typealias DataSsmGetQueryFunction = F2Function<DataSsmGetQueryDTO, DataSsmGetQue
 @JsExport
 @JsName("DataSsmGetQueryDTO")
 interface DataSsmGetQueryDTO : DataQueryDTO {
-	override val ssmUri: SsmUriDTO
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -31,17 +31,19 @@ interface DataSsmGetQueryDTO : DataQueryDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmGetQuery(
-	override val ssmUri: SsmUri,
+    override val ssmUri: SsmUri,
 ) : DataSsmGetQueryDTO
 
 @JsExport
 @JsName("DataSsmGetQueryResultDTO")
 interface DataSsmGetQueryResultDTO {
-	/**
-	 * The retrieved SSM if it exists
-	 */
-	val item: DataSsm?
+    /**
+     * The retrieved SSM if it exists.
+     */
+    val item: DataSsm?
 }
 
 /**
@@ -52,6 +54,8 @@ interface DataSsmGetQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmGetQueryResult(
-	override val item: DataSsm?,
+    override val item: DataSsm?,
 ) : DataSsmGetQueryResultDTO

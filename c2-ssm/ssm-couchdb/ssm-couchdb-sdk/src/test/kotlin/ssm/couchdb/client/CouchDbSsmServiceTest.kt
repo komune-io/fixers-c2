@@ -9,27 +9,27 @@ import ssm.couchdb.dsl.model.DocType
 
 class CouchDbSsmServiceTest {
 
-	@BeforeEach
-	fun requireCouchDb() {
-		CouchDbSandbox.assumeAvailable()
-	}
+    @BeforeEach
+    fun requireCouchDb() {
+        CouchDbSandbox.assumeAvailable()
+    }
 
-	@Test
-	suspend fun shouldReturnAdmin() {
-		val admin = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Admin)
-		Assertions.assertThat(admin).isNotNull
-	}
+    @Test
+    suspend fun shouldReturnAdmin() {
+        val admin = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Admin)
+        Assertions.assertThat(admin).isNotNull
+    }
 
-	@Test
-	suspend fun shouldReturnSsmCount() {
-		val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
-		Assertions.assertThat(ssms).isNotNull
-	}
+    @Test
+    suspend fun shouldReturnSsmCount() {
+        val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
+        Assertions.assertThat(ssms).isNotNull
+    }
 
-	@Test
-	suspend fun shouldReturnSsm() {
-		val ssmCount = DataTest.ssmCouchDbClient.getCount(DataTest.dbSsmName, DocType.Ssm)
-		val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
-		Assertions.assertThat(ssms.size).isEqualTo(ssmCount)
-	}
+    @Test
+    suspend fun shouldReturnSsm() {
+        val ssmCount = DataTest.ssmCouchDbClient.getCount(DataTest.dbSsmName, DocType.Ssm)
+        val ssms = DataTest.ssmCouchDbClient.fetchAllByDocType(DataTest.dbSsmName, DocType.Ssm)
+        Assertions.assertThat(ssms.size).isEqualTo(ssmCount)
+    }
 }

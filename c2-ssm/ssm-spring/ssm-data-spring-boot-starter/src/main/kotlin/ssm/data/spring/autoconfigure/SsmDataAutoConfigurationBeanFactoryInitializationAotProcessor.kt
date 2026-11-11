@@ -17,18 +17,17 @@ class SsmDataAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFactor
                 ctx: GenerationContext, _: BeanFactoryInitializationCode? ->
             val hints = ctx.runtimeHints
             registerConfigMethodHints(
-                hints,
-                DataSsmAutoConfiguration::class.java,
-                DataSsmAutoConfiguration::dataCouchdbSsmConfig.name,
-                SsmDataProperties::class.java,
+                hints = hints,
+                configClass = DataSsmAutoConfiguration::class.java,
+                methodName = DataSsmAutoConfiguration::dataCouchdbSsmConfig.name,
+                propsClass = SsmDataProperties::class.java,
             )
             registerConfigMethodHints(
-                hints,
-                DataSsmAutoConfiguration::class.java,
-                DataSsmAutoConfiguration::ssmChaincodeConfig.name,
-                SsmDataProperties::class.java,
-                SsmCouchdbConfig::class.java,
-                SsmChaincodeProperties::class.java,
+                hints = hints,
+                configClass = DataSsmAutoConfiguration::class.java,
+                methodName = DataSsmAutoConfiguration::ssmChaincodeConfig.name,
+                propsClass = SsmDataProperties::class.java,
+                extraTypes = listOf(SsmCouchdbConfig::class.java, SsmChaincodeProperties::class.java),
             )
             listOf(
                 SsmCouchdbConfig::class.java,
@@ -45,21 +44,17 @@ class SsmDataAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFactor
     }
 }
 
-/**
- * Registers the reflection hints needed to invoke a config `@Bean` method ahead of time:
- * the method itself ([ExecutableMode.INVOKE]) plus its properties class and any extra types.
- *
- * Deliberately duplicated in each ssm-spring starter: the starters share no Spring-aware
- * module in this repo, and a dedicated module for one helper would add a dependency edge.
- */
+// Duplicated in each ssm-spring starter: they share no Spring-aware module, and one helper is no reason to add one.
 private fun registerConfigMethodHints(
     hints: RuntimeHints,
     configClass: Class<*>,
     methodName: String,
     propsClass: Class<*>,
-    vararg extraTypes: Class<*>,
+    extraTypes: List<Class<*>> = emptyList(),
 ) {
-    val method = ReflectionUtils.findMethod(configClass, methodName, propsClass)!!
+    val method = checkNotNull(ReflectionUtils.findMethod(configClass, methodName, propsClass)) {
+        "No @Bean method $methodName(${propsClass.simpleName}) on ${configClass.name}"
+    }
     hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
     hints.reflection().registerType(propsClass)
     extraTypes.forEach { hints.reflection().registerType(it) }

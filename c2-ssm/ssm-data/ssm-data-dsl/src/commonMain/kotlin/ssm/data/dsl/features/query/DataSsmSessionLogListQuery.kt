@@ -10,24 +10,24 @@ import ssm.chaincode.dsl.model.uri.SsmUriDTO
 import ssm.data.dsl.model.DataSsmSessionState
 
 /**
- * Retrieve all the logs of a given SSM session
+ * Retrieve all the logs of a given SSM session.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 40
  * @title List Session Logs
  */
 typealias DataSsmSessionLogListQueryFunction
-		= F2Function<DataSsmSessionLogListQueryDTO, DataSsmSessionLogListQueryResultDTO>
+        = F2Function<DataSsmSessionLogListQueryDTO, DataSsmSessionLogListQueryResultDTO>
 
 @JsExport
 @JsName("DataSsmSessionLogListQueryDTO")
 interface DataSsmSessionLogListQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example "DataSsmSessionId"
-	 */
-	val sessionName: SessionName
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the session to retrieve.
+     * @example "DataSsmSessionId"
+     */
+    val sessionName: SessionName
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -38,18 +38,20 @@ interface DataSsmSessionLogListQueryDTO : DataQueryDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionLogListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionLogListQuery(
-	override val sessionName: SessionName,
-	override val ssmUri: SsmUri,
+    override val sessionName: SessionName,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionLogListQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionLogListQueryResultDTO")
 interface DataSsmSessionLogListQueryResultDTO {
-	/**
-	 * All retrieved logs of the given session
-	 */
-	val items: List<DataSsmSessionState>
+    /**
+     * All retrieved logs of the given session.
+     */
+    val items: List<DataSsmSessionState>
 }
 
 /**
@@ -60,6 +62,8 @@ interface DataSsmSessionLogListQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("SsmSessionLogListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionLogListQueryResult(
-	override val items: List<DataSsmSessionState>,
+    override val items: List<DataSsmSessionState>,
 ) : DataSsmSessionLogListQueryResultDTO

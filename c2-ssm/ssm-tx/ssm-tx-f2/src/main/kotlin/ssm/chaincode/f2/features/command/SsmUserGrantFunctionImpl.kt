@@ -10,21 +10,23 @@ import ssm.tx.dsl.features.user.SsmUserGrantCommand
 import ssm.tx.dsl.features.user.SsmUserGrantedResult
 
 class SsmUserGrantFunctionImpl(
-	private val ssmTxService: SsmTxService,
+    private val ssmTxService: SsmTxService,
 ): SsmTxUserGrantFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmUserGrantCommand>): Flow<SsmUserGrantedResult> = msgs.map { payload ->
-		UserRegisterCommand(
-			agent = payload.agent,
-			chaincodeUri = payload.chaincodeUri.burst(),
-			signerName = payload.signerName
-		)
-	}.let {
-		ssmTxService.sendRegisterUser(it).map { result ->
-			SsmUserGrantedResult(
-				transactionId = result.transactionId.orEmpty(),
-			)
-		}
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(msgs: Flow<SsmUserGrantCommand>): Flow<SsmUserGrantedResult> = msgs.map { payload ->
+        UserRegisterCommand(
+            agent = payload.agent,
+            chaincodeUri = payload.chaincodeUri.burst(),
+            signerName = payload.signerName
+        )
+    }.let { commands ->
+        ssmTxService.sendRegisterUser(commands).map { result ->
+            SsmUserGrantedResult(
+                transactionId = result.transactionId.orEmpty(),
+            )
+        }
+    }
 
 }

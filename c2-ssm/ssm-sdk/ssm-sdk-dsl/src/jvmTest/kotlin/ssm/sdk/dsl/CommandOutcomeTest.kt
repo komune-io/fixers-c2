@@ -14,7 +14,7 @@ class CommandOutcomeTest {
 
         assertThat(byOutcome.filterValues { it.isSuccess }.keys).containsExactly("Committed")
         assertThat(byOutcome.filterValues { it.isPermanent }.keys).containsExactly("Rejected")
-        assertThat(byOutcome.filterValues { it.needsStateCheck }.keys).containsExactly("Indeterminate")
+        assertThat(byOutcome.filterValues { it.isStateCheckNeeded }.keys).containsExactly("Indeterminate")
         assertThat(byOutcome.filterValues { it.isRetryable }.keys)
             .containsExactlyInAnyOrder("Transient", "Conflict")
     }
@@ -25,6 +25,6 @@ class CommandOutcomeTest {
         assertThat(unknown.isSuccess).isFalse()
         assertThat(unknown.isRetryable).isFalse()
         assertThat(unknown.isPermanent).isFalse()
-        assertThat(unknown.needsStateCheck).isFalse()
+        assertThat(unknown.isStateCheckNeeded).isFalse()
     }
 }

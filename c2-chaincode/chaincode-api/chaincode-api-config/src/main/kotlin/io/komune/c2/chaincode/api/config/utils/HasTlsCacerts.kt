@@ -5,14 +5,12 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Properties
 
-
 interface HasTlsCacerts {
     val tlsCacerts: String
 
     @Throws(MalformedURLException::class)
-    fun getTlsCacertsAsUrl(cryptoBase: String): URL {
-        return FileUtils.getUrl(cryptoBase, tlsCacerts)
-    }
+    fun getTlsCacertsAsUrl(cryptoBase: String): URL =
+        FileUtils.getUrl(path = cryptoBase, resource = tlsCacerts)
 
     @Throws(IOException::class)
     fun getPeerTlsProperties(cryptoBase: String): Properties {

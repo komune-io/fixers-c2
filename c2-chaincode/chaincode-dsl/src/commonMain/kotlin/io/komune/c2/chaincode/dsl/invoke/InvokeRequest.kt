@@ -13,7 +13,7 @@ data class InvokeRequest(
     val timestamp: Long? = null,
 )
 
-@Suppress("EnumNaming")
+@Suppress("EnumNaming") // wire names: `query` and `invoke` are what the gateway reads
 enum class InvokeRequestType {
     query, invoke
 }
@@ -23,7 +23,6 @@ fun List<InvokeRequest>.toInvokeArgs(): List<InvokeArgs> = map {
     it.toInvokeArgs()
 }
 
-fun InvokeRequest.toInvokeArgs(): InvokeArgs {
-    return InvokeArgs(InvokeFunction(fcn), args.toList(), timestamp = timestamp)
-}
+fun InvokeRequest.toInvokeArgs(): InvokeArgs =
+    InvokeArgs(function = InvokeFunction(fcn), values = args.toList(), timestamp = timestamp)
 

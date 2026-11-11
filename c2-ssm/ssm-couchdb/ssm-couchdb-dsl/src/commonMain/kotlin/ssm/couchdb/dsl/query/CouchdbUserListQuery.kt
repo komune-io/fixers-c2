@@ -28,10 +28,10 @@ typealias CouchdbUserListQueryFunction = F2Function<CouchdbUserListQueryDTO, Cou
 @JsExport
 @JsName("CouchdbUserListQueryDTO")
 interface CouchdbUserListQueryDTO : Query {
-	/**
-	 * The unique id of a chaincode.
-	 */
-	val chaincodeUri: ChaincodeUriDTO
+    /**
+     * The unique id of a chaincode.
+     */
+    val chaincodeUri: ChaincodeUriDTO
 }
 
 /**
@@ -42,22 +42,26 @@ interface CouchdbUserListQueryDTO : Query {
 @JsExport
 @JsName("CouchdbUserListQueryResultDTO")
 interface CouchdbUserListQueryResultDTO : Event {
-	/**
-	 * Names of the admin.
-	 */
-	val items: List<AgentDTO>
+    /**
+     * Names of the admin.
+     */
+    val items: List<AgentDTO>
 }
 
 @Serializable
 @JsExport
 @JsName("CouchdbUserListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbUserListQuery(
-	override val chaincodeUri: ChaincodeUri
+    override val chaincodeUri: ChaincodeUri
 ) : CouchdbUserListQueryDTO
 
 @Serializable
 @JsExport
 @JsName("CouchdbUserListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbUserListQueryResult(
-	override val items: List<Agent>,
+    override val items: List<Agent>,
 ) : CouchdbUserListQueryResultDTO

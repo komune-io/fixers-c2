@@ -9,7 +9,7 @@ import ssm.data.dsl.model.DataSsm
 import ssm.data.dsl.model.DataSsmDTO
 
 /**
- * Retrieves all known SSMs
+ * Retrieves all known SSMs.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 20
@@ -29,17 +29,19 @@ interface DataSsmListQueryDTO
 @Serializable
 @JsExport
 @JsName("DataSsmListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmListQuery(
-	val chaincodes: List<ChaincodeUri>
+    val chaincodes: List<ChaincodeUri>
 ) : DataSsmListQueryDTO
 
 @JsExport
 @JsName("DataSsmListQueryResultDTO")
 interface DataSsmListQueryResultDTO {
-	/**
-	 * List of all retrieved SSMs
-	 */
-	val items: List<DataSsmDTO>
+    /**
+     * List of all retrieved SSMs.
+     */
+    val items: List<DataSsmDTO>
 }
 
 /**
@@ -50,6 +52,8 @@ interface DataSsmListQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmListQueryResult(
-	override val items: List<DataSsm>,
+    override val items: List<DataSsm>,
 ) : DataSsmListQueryResultDTO

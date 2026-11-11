@@ -11,7 +11,7 @@ import ssm.chaincode.dsl.SsmItemResultDTO
 import ssm.chaincode.dsl.SsmQueryDTO
 
 /**
- * Retrieves an Transaction
+ * Retrieves an Transaction.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get a transaction

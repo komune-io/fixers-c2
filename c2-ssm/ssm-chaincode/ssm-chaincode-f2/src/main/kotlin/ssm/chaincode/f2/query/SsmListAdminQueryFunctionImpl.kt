@@ -8,12 +8,14 @@ import ssm.chaincode.dsl.query.SsmListAdminResult
 import ssm.sdk.core.SsmQueryService
 
 class SsmListAdminQueryFunctionImpl(
-	private val queryService: SsmQueryService
+    private val queryService: SsmQueryService
 ) : SsmListAdminQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<SsmListAdminQuery>): Flow<SsmListAdminResult> = msgs.map { payload ->
-		queryService.listAdmins(payload.chaincodeUri).let { items ->
-			SsmListAdminResult(items.toTypedArray())
-		}
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(msgs: Flow<SsmListAdminQuery>): Flow<SsmListAdminResult> = msgs.map { payload ->
+        queryService.listAdmins(payload.chaincodeUri).let { items ->
+            SsmListAdminResult(items.toTypedArray())
+        }
+    }
 }

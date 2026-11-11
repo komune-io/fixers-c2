@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.AgentName
 
 /**
- * Retrieves all users
+ * Retrieves all users.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title List Users
@@ -27,7 +27,7 @@ typealias SsmListUserQueryFunction = F2Function<SsmListUserQuery, SsmListUserRes
 @JsExport
 @JsName("SsmListUserQuery")
 class SsmListUserQuery(
-	override val chaincodeUri: ChaincodeUri
+    override val chaincodeUri: ChaincodeUri
 ) : SsmQueryDTO
 
 /**
@@ -39,5 +39,5 @@ class SsmListUserQuery(
 @JsExport
 @JsName("SsmListUserResult")
 class SsmListUserResult(
-	override val items: Array<AgentName>,
+    override val items: Array<AgentName>,
 ) : SsmItemsResultDTO<AgentName>

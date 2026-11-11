@@ -9,17 +9,17 @@ typealias AgentName = String
 @JsExport
 @JsName("AgentDTO")
 interface AgentDTO {
-	/**
-	 * Identifier of the agent
-	 * @example "Adam"
-	 */
-	val name: AgentName
+    /**
+     * Identifier of the agent.
+     * @example "Adam"
+     */
+    val name: AgentName
 
-	/**
-	 * Public key used when signing transactions
-	 * @example "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3MO+2nIRi/cs4WbE+ykzA1ErTfs0QmBIdpZoAsU7YVMKBnBNulxhy2BI93QHK9uQreLhANBDexagMZg9ZzCxtKLi9UNHSm08099znPfMKn2cITHI8ShyZC7OogsbNmqrY0iy01r4IVpPi4CMNhLTCWyLGWS+L0hsmZOQQWV5BeER4nufBgGmA8plD14T/AXaHF7pMJAGlvauqjcjhb9YAoDUjSmdy4h3KzNq0c1KSQwORgQhgGItUxs5X8jvAXsikRDs7OkqbEDWpSf5z6FSyenvPmnplrqL/5bjiis6ObbOA+BjpMpyuouXOA3WuGv61a5Wrx62bcfeCx9471EKFQIDAQAB"
-	 */
-	val pub: ByteArray
+    /**
+     * Public key used when signing transactions.
+     * @example "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3MO+2nIRi/cs4WbE+ykzA1ErTfs0QmBIdpZoAsU7YVMKBnBNulxhy2B..."
+     */
+    val pub: ByteArray
 }
 
 /**
@@ -39,26 +39,26 @@ interface AgentDTO {
 @JsExport
 @JsName("Agent")
 data class Agent(
-	override val name: AgentName,
-	override val pub: ByteArray,
+    override val name: AgentName,
+    override val pub: ByteArray,
 ) : AgentDTO {
 
-	override fun equals(other: Any?): Boolean {
-		if (this === other) return true
-		if (other == null || this::class != other::class) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
 
-		other as Agent
+        other as Agent
 
-		if (name != other.name) return false
-		if (!pub.contentEquals(other.pub)) return false
+        if (name != other.name) return false
+        if (!pub.contentEquals(other.pub)) return false
 
-		return true
-	}
+        return true
+    }
 
-	override fun hashCode(): Int {
-		var result = name.hashCode()
-		result = 31 * result + pub.contentHashCode()
-		return result
-	}
-	companion object
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + pub.contentHashCode()
+        return result
+    }
+    companion object
 }

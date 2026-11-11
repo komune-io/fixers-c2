@@ -10,23 +10,27 @@ import ssm.couchdb.dsl.query.CouchdbSsmListQueryResult
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchdbSsmListQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbSsmListQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<CouchdbSsmListQuery>): Flow<CouchdbSsmListQueryResult> = msgs.map { payload ->
-		val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
-		val pagination = payload.pagination
-		val items = couchdbClient.fetchAllByDocType(
-			dbName = dbName,
-			docType = DocType.Ssm,
-			limit = pagination?.limit?.toLong(),
-			skip = pagination?.offset?.toLong(),
-		)
-		CouchdbSsmListQueryResult(
-			items = items,
-			// Without a requested page everything was fetched, so the item count is the total.
-			total = pagination?.let { couchdbClient.countByDocType(dbName, DocType.Ssm) } ?: items.size,
-			pagination = pagination
-		)
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(
+        msgs: Flow<CouchdbSsmListQuery>
+    ): Flow<CouchdbSsmListQueryResult> = msgs.map { payload ->
+        val dbName = chainCodeDbName(channelId = payload.channelId, chaincodeId = payload.chaincodeId)
+        val pagination = payload.pagination
+        val items = couchdbClient.fetchAllByDocType(
+            dbName = dbName,
+            docType = DocType.Ssm,
+            limit = pagination?.run { limit.toLong() },
+            skip = pagination?.run { offset.toLong() },
+        )
+        CouchdbSsmListQueryResult(
+            items = items,
+            // Without a requested page everything was fetched, so the item count is the total.
+            total = pagination?.let { couchdbClient.countByDocType(dbName, DocType.Ssm) } ?: items.size,
+            pagination = pagination
+        )
+    }
 }

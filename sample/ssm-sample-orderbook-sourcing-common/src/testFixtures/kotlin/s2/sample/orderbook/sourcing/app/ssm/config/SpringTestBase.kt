@@ -11,7 +11,7 @@ import s2.sample.orderbook.sourcing.app.ssm.SubAutomateSsmApp
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(classes = [SubAutomateSsmApp::class])
-@Suppress("UtilityClassWithPublicConstructor")
+@Suppress("UtilityClassWithPublicConstructor") // Spring test classes extend it for its shared containers
 abstract class SpringTestBase {
 
     companion object {

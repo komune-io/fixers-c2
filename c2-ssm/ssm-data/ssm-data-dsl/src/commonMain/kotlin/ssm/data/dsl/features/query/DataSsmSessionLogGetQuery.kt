@@ -12,30 +12,30 @@ import ssm.data.dsl.model.DataSsmSessionState
 import ssm.data.dsl.model.DataSsmSessionStateDTO
 
 /**
- * Retrieve the state of a session corresponding to a given transaction within the blockchain
+ * Retrieve the state of a session corresponding to a given transaction within the blockchain.
  * @d2 function
  * @parent [ssm.data.dsl.model.DataSsmSession]
  * @order 30
  * @title Get Session Log
  */
 typealias DataSsmSessionLogGetQueryFunction
-		= F2Function<DataSsmSessionLogGetQueryDTO, DataSsmSessionLogGetQueryResultDTO>
+        = F2Function<DataSsmSessionLogGetQueryDTO, DataSsmSessionLogGetQueryResultDTO>
 
 @JsExport
 @JsName("DataSsmSessionLogGetQueryDTO")
 interface DataSsmSessionLogGetQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example [ssm.data.dsl.model.DataSsmSession.sessionName]
-	 */
-	val sessionName: SessionName
+    /**
+     * Identifier of the session to retrieve.
+     * @example [ssm.data.dsl.model.DataSsmSession.sessionName]
+     */
+    val sessionName: SessionName
 
-	/**
-	 * Identifier of the transaction to retrieve
-	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
-	 */
-	val txId: TransactionId
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the transaction to retrieve.
+     * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
+     */
+    val txId: TransactionId
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -46,6 +46,8 @@ interface DataSsmSessionLogGetQueryDTO : DataQueryDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionLogGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionLogGetQuery(
     override val sessionName: SessionName,
     override val txId: TransactionId,
@@ -55,10 +57,10 @@ class DataSsmSessionLogGetQuery(
 @JsExport
 @JsName("DataSsmSessionLogGetQueryResultDTO")
 interface DataSsmSessionLogGetQueryResultDTO {
-	/**
-	 * The retrieved session state and transaction
-	 */
-	val item: DataSsmSessionStateDTO?
+    /**
+     * The retrieved session state and transaction.
+     */
+    val item: DataSsmSessionStateDTO?
 }
 
 /**
@@ -69,6 +71,8 @@ interface DataSsmSessionLogGetQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionLogGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionLogGetQueryResult(
-	override val item: DataSsmSessionState?,
+    override val item: DataSsmSessionState?,
 ) : DataSsmSessionLogGetQueryResultDTO

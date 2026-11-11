@@ -30,7 +30,7 @@ class S2SsmConfigurerAdapterTest {
         override fun chaincodeUri() = ChaincodeUri("chaincode:sandbox:ssm")
         override fun signerAgent() = Agent(name = "agent", pub = ByteArray(0))
         override fun executor() = TestExecutor()
-        override fun automate() = S2Automate("test-ssm", null, arrayOf())
+        override fun automate() = S2Automate("test-ssm", null, emptyArray())
     }
 
     @Test

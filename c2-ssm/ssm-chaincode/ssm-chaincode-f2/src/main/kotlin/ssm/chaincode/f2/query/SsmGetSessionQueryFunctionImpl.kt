@@ -14,15 +14,17 @@ class SsmGetSessionQueryFunctionImpl(
     private val queryService: SsmQueryService
 ) : SsmGetSessionQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
     override suspend fun invoke(msgs: Flow<SsmGetSessionQuery>): Flow<SsmGetSessionResult> {
         return msgs.map { payload ->
             GetSessionQuery(payload.chaincodeUri, payload.sessionName)
-        }.let {
-            val getSessionQueries = it.toList()
+        }.let { queries ->
+            val getSessionQueries = queries.toList()
             queryService.getSessions(getSessionQueries)
-        }.map {
+        }.map { session ->
             SsmGetSessionResult(
-                item = it,
+                item = session,
             )
         }.asFlow()
     }

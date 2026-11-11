@@ -11,22 +11,22 @@ import kotlinx.serialization.encoding.encodeStructure
 
 @OptIn(ExperimentalSerializationApi::class)
 open class PolymorphicEnumSerializer<T>(private val enumSerializer: KSerializer<T>) : KSerializer<T> {
-	override val descriptor: SerialDescriptor = buildClassSerialDescriptor(enumSerializer.descriptor.serialName)
-	{
-		element("value", enumSerializer.descriptor)
-	}
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(enumSerializer.descriptor.serialName)
+    {
+        element("value", enumSerializer.descriptor)
+    }
 
-	override fun deserialize(decoder: Decoder): T =
-		decoder.decodeStructure(descriptor)
-		{
-			val index = decodeElementIndex(descriptor)
-			require(index == 0) { "Expected element at index 0 but got $index" }
-			decodeSerializableElement(descriptor, 0, enumSerializer)
-		}
+    override fun deserialize(decoder: Decoder): T =
+        decoder.decodeStructure(descriptor)
+        {
+            val index = decodeElementIndex(descriptor)
+            require(index == 0) { "Expected element at index 0 but got $index" }
+            decodeSerializableElement(descriptor, 0, enumSerializer)
+        }
 
-	override fun serialize(encoder: Encoder, value: T) =
-		encoder.encodeStructure(descriptor)
-		{
-			encodeSerializableElement(descriptor, 0, enumSerializer, value)
-		}
+    override fun serialize(encoder: Encoder, value: T) {
+        encoder.encodeStructure(descriptor) {
+            encodeSerializableElement(descriptor = descriptor, index = 0, serializer = enumSerializer, value = value)
+        }
+    }
 }

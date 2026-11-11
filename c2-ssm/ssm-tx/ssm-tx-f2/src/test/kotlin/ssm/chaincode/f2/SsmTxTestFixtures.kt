@@ -22,35 +22,35 @@ import ssm.sdk.sign.model.SignerUser
  */
 internal object SsmTxTestFixtures {
 
-	const val SIGNER_NAME = "adam"
-	const val CHANNEL_ID = "sandbox"
-	const val CHAINCODE_ID = "ssm"
+    const val SIGNER_NAME = "adam"
+    const val CHANNEL_ID = "sandbox"
+    const val CHAINCODE_ID = "ssm"
 
-	val chaincodeUri = ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID")
+    val chaincodeUri = ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID")
 
-	/** Generated once: RSA key generation is slow and the key material is irrelevant to the assertions. */
-	private val signerKeyPair = SignerUser.generate(SIGNER_NAME)
+    // Generated once: RSA key generation is slow and the key material is irrelevant to the assertions.
+    private val signerKeyPair = SignerUser.generate(SIGNER_NAME)
 
-	val signer = SsmCmdSignerSha256RSASigner(signerKeyPair)
+    val signer = SsmCmdSignerSha256RSASigner(signerKeyPair)
 
-	fun ssm(name: String = "CarDealership") = Ssm(
-		name = name,
-		transitions = listOf(SsmTransition(from = 0, to = 1, role = "Seller", action = "Sell"))
-	)
+    fun ssm(name: String = "CarDealership") = Ssm(
+        name = name,
+        transitions = listOf(SsmTransition(from = 0, to = 1, role = "Seller", action = "Sell"))
+    )
 
-	fun agent(name: String = "bob") = Agent(name = name, pub = signerKeyPair.pair.public.encoded)
+    fun agent(name: String = "bob") = Agent(name = name, pub = signerKeyPair.pair.public.encoded)
 
-	fun json(value: Any): String = JsonUtils.toJson(value)
+    fun json(value: Any): String = JsonUtils.toJson(value)
 
-	fun txService(repository: SsmChaincodeRepository): SsmTxService =
-		SsmTxService(ssmService(repository), SsmBatchProperties())
+    fun txService(repository: SsmChaincodeRepository): SsmTxService =
+        SsmTxService(ssmService(repository), SsmBatchProperties())
 
-	fun queryService(repository: SsmChaincodeRepository): SsmQueryService =
-		SsmQueryService(requester(repository))
+    fun queryService(repository: SsmChaincodeRepository): SsmQueryService =
+        SsmQueryService(requester(repository))
 
-	private fun ssmService(repository: SsmChaincodeRepository): SsmService =
-		SsmService(requester(repository), signer)
+    private fun ssmService(repository: SsmChaincodeRepository): SsmService =
+        SsmService(requester(repository), signer)
 
-	private fun requester(repository: SsmChaincodeRepository): SsmRequester =
-		SsmRequester(JSONConverterObjectMapper(), repository)
+    private fun requester(repository: SsmChaincodeRepository): SsmRequester =
+        SsmRequester(JSONConverterObjectMapper(), repository)
 }

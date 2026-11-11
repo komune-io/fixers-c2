@@ -2,6 +2,7 @@ package ssm.couchdb.f2.query
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.from
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.filter
@@ -15,35 +16,33 @@ import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryResult
 import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryResultDTO
 
 class CouchdbChaincodeListQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbChaincodeListQueryFunction {
-	companion object {
-		const val DB_LSCC = "_lscc"
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override suspend fun invoke(
+        msgs: Flow<CouchdbChaincodeListQueryDTO>
+    ): Flow<CouchdbChaincodeListQueryResultDTO> = msgs.map { _ ->
+        couchdbClient.getDatabases()
+            .asFlow()
+            .filter { it.contains(DB_LSCC) }
+            .flatMapMerge { dbName ->
+                val channelId = dbName.removeSuffix(DB_LSCC)
+                couchdbClient.fetchAll(dbName).map { document ->
+                    document.id
+                }.map { chaincodeId ->
+                    ChaincodeUri.from(
+                        channelId = channelId,
+                        chaincodeId = chaincodeId
+                    )
+                }.asFlow()
+            }
+            .toList()
+            .let { items -> CouchdbChaincodeListQueryResult(items = items) }
+    }
 
-	override suspend fun invoke(
-		msgs: Flow<CouchdbChaincodeListQueryDTO>
-	): Flow<CouchdbChaincodeListQueryResultDTO> = msgs.map { _ ->
-		couchdbClient.getDatabases()
-			.asFlow()
-			.filter { it.contains(DB_LSCC) }
-			.flatMapMerge { dbName ->
-				val channelId = dbName.removeSuffix(DB_LSCC)
-				couchdbClient.fetchAll(dbName).map { document ->
-					document.id
-				}.map { chaincodeId ->
-					ChaincodeUri.from(
-						channelId = channelId,
-						chaincodeId = chaincodeId
-					)
-				}.asFlow()
-			}.toList()
-			.let {
-				CouchdbChaincodeListQueryResult(
-					items = it
-				)
-			}
-
-	}
-
+    companion object {
+        const val DB_LSCC = "_lscc"
+    }
 }

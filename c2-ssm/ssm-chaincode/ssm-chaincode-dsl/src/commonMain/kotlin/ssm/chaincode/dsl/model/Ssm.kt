@@ -15,33 +15,33 @@ typealias SsmName = String
 @JsExport
 @JsName("SsmDTO")
 interface SsmDTO {
-	/**
-	 * The unique identifier of a ssm.
-	 */
-	val name: SsmName
+    /**
+     * The unique identifier of a ssm.
+     */
+    val name: SsmName
 
-	/**
-	 * The definition of the State Machine
-	 * @example [[
-	 * 	{
-	 * 		"from": 0,
-	 * 		"to": 1,
-	 * 		"role": "Provider",
-	 * 		"action": "Build"
-	 * 	}, {
-	 * 		"from": 1,
-	 * 		"to": 2,
-	 * 		"role": "Seller",
-	 * 		"action": "Sell"
-	 * 	}, {
-	 * 		"from": 2,
-	 * 	    "to": 3,
-	 * 	    "role": "Buyer",
-	 * 	    "action": "Buy"
-	 * 	}
-	 * ]]
-	 */
-	val transitions: List<SsmTransitionDTO>
+    /**
+     * The definition of the State Machine.
+     * @example [[
+     * 	{
+     * 		"from": 0,
+     * 		"to": 1,
+     * 		"role": "Provider",
+     * 		"action": "Build"
+     * 	}, {
+     * 		"from": 1,
+     * 		"to": 2,
+     * 		"role": "Seller",
+     * 		"action": "Sell"
+     * 	}, {
+     * 		"from": 2,
+     * 	    "to": 3,
+     * 	    "role": "Buyer",
+     * 	    "action": "Buy"
+     * 	}
+     * ]]
+     */
+    val transitions: List<SsmTransitionDTO>
 }
 
 /**
@@ -59,6 +59,6 @@ interface SsmDTO {
 @JsExport
 @JsName("Ssm")
 data class Ssm(
-	override val name: SsmName,
-	override val transitions: List<SsmTransition>,
+    override val name: SsmName,
+    override val transitions: List<SsmTransition>,
 ) : SsmDTO

@@ -10,7 +10,7 @@ class SsmBatchPropertiesTest {
     @Test
     fun `defaults align with the f2 batch defaults`() {
         val properties = SsmBatchProperties()
-        assertThat(properties.timeout).isEqualTo(120000)
+        assertThat(properties.timeout).isEqualTo(120_000)
         assertThat(properties.size).isEqualTo(BATCH_DEFAULT_SIZE)
         assertThat(properties.concurrency).isEqualTo(BATCH_DEFAULT_CONCURRENCY)
     }

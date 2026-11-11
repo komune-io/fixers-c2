@@ -6,9 +6,7 @@ class InvokeException(
 ) : Exception(message, cause) {
 
     companion object {
-        fun List<String>.asInvokeException(): InvokeException {
-            return InvokeException(this.joinToString(";"))
-        }
+        fun List<String>.asInvokeException(): InvokeException = InvokeException(this.joinToString(";"))
     }
 }
 

@@ -24,10 +24,10 @@ import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
 
-abstract class S2SourcingSsmAdapter<ENTITY, STATE, EVENT, ID, EXECUTOR>(
-	executor: EXECUTOR,
-	view: View<EVENT, ENTITY>,
-	snapRepository: SnapRepository<ENTITY, ID>? = null
+abstract class S2SourcingSsmAdapter<ENTITY, STATE, EVENT, ID : Any, EXECUTOR>(
+    executor: EXECUTOR,
+    view: View<EVENT, ENTITY>,
+    snapRepository: SnapRepository<ENTITY, ID>? = null
 ): S2AutomateDeciderSpringAdapter<ENTITY, STATE, EVENT, ID, EXECUTOR>(executor, view, snapRepository) where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
@@ -36,57 +36,70 @@ EVENT: WithS2Id<ID>,
 EVENT: Evt,
 EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 
-	@Autowired
-	lateinit var ssmTxInitFunction: SsmTxInitFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var ssmTxInitFunction: SsmTxInitFunction
 
-	@Autowired
-	lateinit var ssmSessionStartFunction: SsmTxSessionStartFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var ssmSessionStartFunction: SsmTxSessionStartFunction
 
-	@Autowired
-	lateinit var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction
 
-	@Autowired
-	lateinit var dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
 
-	@Autowired
-	lateinit var dataSsmSessionListQueryFunction: DataSsmSessionListQueryFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var dataSsmSessionListQueryFunction: DataSsmSessionListQueryFunction
 
-	@Autowired
-	lateinit var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction
 
-	override fun eventStore(): EventRepository<EVENT, ID> = runBlocking {
-		val automate = automate()
-		val signer = signerAgent()
-		val chaincodeUri = chaincodeUri()
-		EventPersisterSsm(
-			s2Automate = automate,
-			eventType = entityType(),
-			batchParams = batchParams,
-			ssmSessionStartFunction = ssmSessionStartFunction,
-			ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
-			dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction,
-			ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
-			dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction,
-			chaincodeUri = chaincodeUri,
-			agentSigner = signer,
-			json = json(),
-			versioning = versioning,
-		).also {
-			ssmTxInitFunction.invoke(
-				SsmInitCommand(
-					signerName = signer.name,
-					ssm = automate.toSsm(permissive),
-					agent = signer,
-					chaincodeUri = chaincodeUri
-				)
-			)
-		}
-	}
+    open var isPermissive = false
+    open var isVersioning = false
 
-	open fun json(): Json = Json
+    override fun eventStore(): EventRepository<EVENT, ID> = runBlocking {
+        val automate = automate()
+        val signer = signerAgent()
+        val chaincodeUri = chaincodeUri()
+        EventPersisterSsm(
+            s2Automate = automate,
+            batchParams = batchParams,
+            functions = SsmSourcingFunctions(
+                ssmSessionStartFunction = ssmSessionStartFunction,
+                ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
+                dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction,
+                ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
+                dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction,
+            ),
+            target = SsmSourcingTarget(chaincodeUri = chaincodeUri, agentSigner = signer),
+            format = SsmEventFormat(eventType = entityType(), json = json()),
+            isVersioning = isVersioning,
+        ).also {
+            val _ = ssmTxInitFunction.invoke(
+                SsmInitCommand(
+                    signerName = signer.name,
+                    ssm = automate.toSsm(permissive = isPermissive),
+                    agent = signer,
+                    chaincodeUri = chaincodeUri
+                )
+            )
+        }
+    }
 
-	abstract fun chaincodeUri(): ChaincodeUri
-	abstract fun signerAgent(): Agent
-	open var permissive = false
-	open var versioning = false
+    open fun json(): Json = Json
+
+    abstract fun chaincodeUri(): ChaincodeUri
+    abstract fun signerAgent(): Agent
 }

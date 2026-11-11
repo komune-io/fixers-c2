@@ -26,78 +26,61 @@ import ssm.chaincode.f2.ChaincodeSsmQueriesImpl
 @Configuration(proxyBeanMethods = false)
 class SsmChaincodeAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(SsmChaincodeProperties::class)
-	fun ssmChaincodeProperties(
-		ssmChaincodeProperties: SsmChaincodeConfiguration
-	): SsmChaincodeProperties = ssmChaincodeProperties.chaincode
+    @Bean
+    @ConditionalOnMissingBean(SsmChaincodeProperties::class)
+    fun ssmChaincodeProperties(
+        ssmChaincodeProperties: SsmChaincodeConfiguration
+    ): SsmChaincodeProperties = ssmChaincodeProperties.chaincode
 
-	@Bean
-	@ConditionalOnMissingBean(SsmBatchProperties::class)
-	fun ssmBatchProperties(
-		ssmChaincodeProperties: SsmChaincodeConfiguration
-	): SsmBatchProperties = ssmChaincodeProperties.batch
+    @Bean
+    @ConditionalOnMissingBean(SsmBatchProperties::class)
+    fun ssmBatchProperties(
+        ssmChaincodeProperties: SsmChaincodeConfiguration
+    ): SsmBatchProperties = ssmChaincodeProperties.batch
 
-	@Bean
-	fun ssmChaincodeQueryFunctions(
-		ssmChaincodeProperties: SsmChaincodeProperties,
-		ssmBatchProperties: SsmBatchProperties,
-	): ChaincodeSsmQueriesImpl = ChaincodeSsmQueriesImpl(ssmBatchProperties, ssmChaincodeProperties)
+    @Bean
+    fun ssmChaincodeQueryFunctions(
+        ssmChaincodeProperties: SsmChaincodeProperties,
+        ssmBatchProperties: SsmBatchProperties,
+    ): ChaincodeSsmQueriesImpl = ChaincodeSsmQueriesImpl(ssmBatchProperties, ssmChaincodeProperties)
 }
 
 @ConditionalOnBean(ChaincodeSsmQueriesImpl::class)
 @Configuration(proxyBeanMethods = false)
+@Suppress("kotlin:S6514") // each function must be its own @Bean method: delegation `by` would publish none of them
 class SsmChaincodeF2AutoConfiguration(
-	private val functions: ChaincodeSsmQueriesImpl
+    private val functions: ChaincodeSsmQueriesImpl
 ) : SsmChaincodeQueries {
 
-	@Bean
-	override fun ssmGetAdminFunction(): SsmGetAdminFunction {
-		return functions.ssmGetAdminFunction()
-	}
+    @Bean
+    override fun ssmGetAdminFunction(): SsmGetAdminFunction = functions.ssmGetAdminFunction()
 
-	@Bean
-	override fun ssmGetQueryFunction(): SsmGetQueryFunction {
-		return functions.ssmGetQueryFunction()
-	}
+    @Bean
+    override fun ssmGetQueryFunction(): SsmGetQueryFunction = functions.ssmGetQueryFunction()
 
-	@Bean
-	override fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction {
-		return functions.ssmGetSessionLogsQueryFunction()
-	}
+    @Bean
+    override fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction =
+        functions.ssmGetSessionLogsQueryFunction()
 
-	@Bean
-	override fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction {
-		return functions.ssmGetSessionQueryFunction()
-	}
+    @Bean
+    override fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction = functions.ssmGetSessionQueryFunction()
 
-	@Bean
-	override fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction {
-		return functions.ssmGetTransactionQueryFunction()
-	}
+    @Bean
+    override fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction =
+        functions.ssmGetTransactionQueryFunction()
 
-	@Bean
-	override fun ssmGetUserFunction(): SsmGetUserFunction {
-		return functions.ssmGetUserFunction()
-	}
+    @Bean
+    override fun ssmGetUserFunction(): SsmGetUserFunction = functions.ssmGetUserFunction()
 
-	@Bean
-	override fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction {
-		return functions.ssmListAdminQueryFunction()
-	}
+    @Bean
+    override fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction = functions.ssmListAdminQueryFunction()
 
-	@Bean
-	override fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction {
-		return functions.ssmListSessionQueryFunction()
-	}
+    @Bean
+    override fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction = functions.ssmListSessionQueryFunction()
 
-	@Bean
-	override fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction {
-		return functions.ssmListSsmQueryFunction()
-	}
+    @Bean
+    override fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction = functions.ssmListSsmQueryFunction()
 
-	@Bean
-	override fun ssmListUserQueryFunction(): SsmListUserQueryFunction {
-		return functions.ssmListUserQueryFunction()
-	}
+    @Bean
+    override fun ssmListUserQueryFunction(): SsmListUserQueryFunction = functions.ssmListUserQueryFunction()
 }

@@ -11,19 +11,19 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQueryFunction
 
 internal class CouchdbSsmSessionListQueryFunctionImplTest : FunctionTestBase() {
 
-	var couchdbSsmSessionListQueryFunction: CouchdbSsmSessionStateListQueryFunction
-		= queries.couchdbSsmSessionStateListQueryFunction()
+    var couchdbSsmSessionListQueryFunction: CouchdbSsmSessionStateListQueryFunction
+        = queries.couchdbSsmSessionStateListQueryFunction()
 
-	@Test
-	suspend fun `must return all sessions`() {
-		val sessions = CouchdbSsmSessionStateListQuery(
-			chaincodeUri = ChaincodeUri.from(
-				channelId = TestConfig.CHANNEL_ID,
-				chaincodeId = TestConfig.CHAINCODE_ID,
-			),
-			ssm = null,
-			pagination = null
-		).invokeWith(couchdbSsmSessionListQueryFunction)
-		Assertions.assertThat(sessions.items).isNotNull
-	}
+    @Test
+    suspend fun `must return all sessions`() {
+        val sessions = CouchdbSsmSessionStateListQuery(
+            chaincodeUri = ChaincodeUri.from(
+                channelId = TestConfig.CHANNEL_ID,
+                chaincodeId = TestConfig.CHAINCODE_ID,
+            ),
+            ssm = null,
+            pagination = null
+        ).invokeWith(couchdbSsmSessionListQueryFunction)
+        Assertions.assertThat(sessions.items).isNotNull
+    }
 }

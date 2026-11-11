@@ -23,8 +23,6 @@ import ssm.sdk.core.command.SsmStartCommand
 import ssm.sdk.core.ktor.ChaincodeApiGatewayClient
 import ssm.sdk.core.ktor.SsmRequester
 import ssm.sdk.dsl.CommandOutcome
-import ssm.sdk.dsl.SsmCmd
-import ssm.sdk.dsl.SsmCmdName
 import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.json.JSONConverterObjectMapper
@@ -53,9 +51,6 @@ class SsmTxServiceTest {
 
     private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 
-    /**
-     * Stub signer: creates a deterministic SsmCmdSigned without real crypto.
-     */
     private val stubSigner: SsmCmdSigner = SsmCmdSigner { cmd ->
         SsmCmdSigned(
             cmd = cmd,
@@ -65,16 +60,14 @@ class SsmTxServiceTest {
         )
     }
 
-    /**
-     * Build a SsmRequester backed by a mock HTTP engine that always returns
-     * the given JSON response body for any request.
-     */
+    // The returned requester holds the client for the whole test: no scope here to close it in.
+    @Suppress("MissingUseCall")
     private fun buildRequester(responseBody: String): SsmRequester {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = responseBody,
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString()),
             )
         }
         val client = HttpClient(mockEngine) {
@@ -92,15 +85,9 @@ class SsmTxServiceTest {
         )
     }
 
-    /**
-     * Build a SsmService with the given requester and the stub signer.
-     */
     private fun buildService(requester: SsmRequester): SsmService =
         SsmService(requester, stubSigner)
 
-    /**
-     * Build a SsmTxService with the given service and default batch properties.
-     */
     private fun buildTxService(service: SsmService): SsmTxService =
         SsmTxService(service, SsmBatchProperties())
 
@@ -119,7 +106,11 @@ class SsmTxServiceTest {
 
     private fun committedJson(commandIds: List<String>): String {
         val items = commandIds.joinToString(",\n") { id ->
-            ceEnvelope(id, "io.komune.c2.invoke.outcome.committed", """{"transactionId":"tx-$id","blockNumber":42}""")
+            ceEnvelope(
+                subject = id,
+                type = "io.komune.c2.invoke.outcome.committed",
+                data = """{"transactionId":"tx-$id","blockNumber":42}""",
+            )
         }
         return "[$items]"
     }
@@ -127,16 +118,31 @@ class SsmTxServiceTest {
     private fun mixedOutcomesJson(commandIds: List<String>): String {
         val items = commandIds.mapIndexed { i, id ->
             when (i % 5) {
-                0 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.committed",
-                    """{"transactionId":"tx-$id","blockNumber":$i}""")
-                1 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.rejected",
-                    """{"errorCode":"ERR","errorMessage":"rejected"}""")
-                2 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.transient",
-                    """{"errorCode":"RETRY","errorMessage":"transient"}""")
-                3 -> ceEnvelope(id, "io.komune.c2.invoke.outcome.indeterminate",
-                    """{"errorCode":"X","errorMessage":"u"}""")
-                else -> ceEnvelope(id, "io.komune.c2.invoke.outcome.conflict",
-                    """{"errorCode":"MVCC","errorMessage":"conflict"}""")
+                0 -> ceEnvelope(
+                    subject = id,
+                    type = "io.komune.c2.invoke.outcome.committed",
+                    data = """{"transactionId":"tx-$id","blockNumber":$i}""",
+                )
+                1 -> ceEnvelope(
+                    subject = id,
+                    type = "io.komune.c2.invoke.outcome.rejected",
+                    data = """{"errorCode":"ERR","errorMessage":"rejected"}""",
+                )
+                2 -> ceEnvelope(
+                    subject = id,
+                    type = "io.komune.c2.invoke.outcome.transient",
+                    data = """{"errorCode":"RETRY","errorMessage":"transient"}""",
+                )
+                3 -> ceEnvelope(
+                    subject = id,
+                    type = "io.komune.c2.invoke.outcome.indeterminate",
+                    data = """{"errorCode":"X","errorMessage":"u"}""",
+                )
+                else -> ceEnvelope(
+                    subject = id,
+                    type = "io.komune.c2.invoke.outcome.conflict",
+                    data = """{"errorCode":"MVCC","errorMessage":"conflict"}""",
+                )
             }
         }.joinToString(",\n")
         return "[$items]"
@@ -151,44 +157,51 @@ class SsmTxServiceTest {
         val ids = listOf("start-cmd-A", "start-cmd-B", "start-cmd-C")
 
         val capturedBody = mutableListOf<String>()
-        val mockEngine = MockEngine { request ->
+        MockEngine { request ->
             capturedBody += request.url.toString()
             respond(
                 content = committedJson(ids),
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString()),
             )
+        }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repository = ChaincodeApiGatewayClient(
+                    baseUrl = "http://localhost:9090",
+                    timeout = 5_000L,
+                    authCredentials = null,
+                    client = client,
+                )
+                val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
+                val txService = SsmTxService(service, SsmBatchProperties())
+
+                val commands = ids.map { id ->
+                    SsmStartCommand(
+                        msgId = id,
+                        session = SsmSession(
+                            ssm = "test-ssm",
+                            session = "session-$id",
+                            roles = mapOf("admin" to "Admin"),
+                            public = "{}",
+                            private = emptyMap(),
+                        ),
+                        chaincodeUri = chaincodeUri,
+                        signerName = "admin",
+                    )
+                }
+
+                val outcomes: List<CommandOutcome> = txService.sendStart(commands)
+
+                // One HTTP call was made (invokeAll batches all commands together)
+                assertThat(capturedBody).hasSize(1)
+                // Outcomes are returned verbatim (one per input)
+                assertThat(outcomes).hasSize(ids.size)
+                // commandIds in outcomes match input order
+                assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
+                // All Committed in this scripted response
+                outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
+            }
         }
-        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
-        val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
-        val txService = SsmTxService(service, SsmBatchProperties())
-
-        val commands = ids.map { id ->
-            SsmStartCommand(
-                msgId = id,
-                session = SsmSession(
-                    ssm = "test-ssm",
-                    session = "session-$id",
-                    roles = mapOf("admin" to "Admin"),
-                    public = "{}",
-                    private = mapOf(),
-                ),
-                chaincodeUri = chaincodeUri,
-                signerName = "admin",
-            )
-        }
-
-        val outcomes: List<CommandOutcome> = txService.sendStart(commands)
-
-        // One HTTP call was made (invokeAll batches all commands together)
-        assertThat(capturedBody).hasSize(1)
-        // Outcomes are returned verbatim (one per input)
-        assertThat(outcomes).hasSize(ids.size)
-        // commandIds in outcomes match input order
-        assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
-        // All Committed in this scripted response
-        outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
     }
 
     @Test
@@ -200,7 +213,13 @@ class SsmTxServiceTest {
         val commands = ids.map { id ->
             SsmStartCommand(
                 msgId = id,
-                session = SsmSession("test-ssm", "session-$id", mapOf("admin" to "Admin"), "{}", mapOf()),
+                session = SsmSession(
+                    ssm = "test-ssm",
+                    session = "session-$id",
+                    roles = mapOf("admin" to "Admin"),
+                    public = "{}",
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri,
                 signerName = "admin",
             )
@@ -225,35 +244,47 @@ class SsmTxServiceTest {
         val ids = listOf("perform-cmd-X", "perform-cmd-Y")
 
         val capturedBody = mutableListOf<String>()
-        val mockEngine = MockEngine { request ->
+        MockEngine { request ->
             capturedBody += request.url.toString()
             respond(
                 content = committedJson(ids),
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString()),
             )
+        }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repository = ChaincodeApiGatewayClient(
+                    baseUrl = "http://localhost:9090",
+                    timeout = 5_000L,
+                    authCredentials = null,
+                    client = client,
+                )
+                val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
+                val txService = SsmTxService(service, SsmBatchProperties())
+
+                val commands = ids.map { id ->
+                    SsmPerformCommand(
+                        msgId = id,
+                        action = "Validate",
+                        context = SsmContext(
+                            session = "session-$id",
+                            public = "{}",
+                            private = emptyMap(),
+                            iteration = 1,
+                        ),
+                        chaincodeUri = chaincodeUri,
+                        signerName = "user1",
+                    )
+                }
+
+                val outcomes: List<CommandOutcome> = txService.sendPerform(commands)
+
+                assertThat(capturedBody).hasSize(1)
+                assertThat(outcomes).hasSize(ids.size)
+                assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
+                outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
+            }
         }
-        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repository = ChaincodeApiGatewayClient("http://localhost:9090", 5_000L, null, client = client)
-        val service = SsmService(SsmRequester(JSONConverterObjectMapper(), repository), stubSigner)
-        val txService = SsmTxService(service, SsmBatchProperties())
-
-        val commands = ids.map { id ->
-            SsmPerformCommand(
-                msgId = id,
-                action = "Validate",
-                context = SsmContext(session = "session-$id", public = "{}", private = mapOf(), iteration = 1),
-                chaincodeUri = chaincodeUri,
-                signerName = "user1",
-            )
-        }
-
-        val outcomes: List<CommandOutcome> = txService.sendPerform(commands)
-
-        assertThat(capturedBody).hasSize(1)
-        assertThat(outcomes).hasSize(ids.size)
-        assertThat(outcomes.map { it.msgId }).isEqualTo(ids)
-        outcomes.forEach { assertThat(it.outcome).isEqualTo("Committed") }
     }
 
     // ---------------------------------------------------------------------------
@@ -286,17 +317,29 @@ class SsmTxServiceTest {
         val commands = listOf(
             SsmStartCommand(
                 msgId = "s-with-ts",
-                session = SsmSession("ssm", "session-1", mapOf("admin" to "Admin"), "{}", mapOf()),
+                session = SsmSession(
+                    ssm = "ssm",
+                    session = "session-1",
+                    roles = mapOf("admin" to "Admin"),
+                    public = "{}",
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri, signerName = "admin", timestamp = 1_623_715_200_000L,
             ),
             SsmStartCommand(
                 msgId = "s-no-ts",
-                session = SsmSession("ssm", "session-2", mapOf("admin" to "Admin"), "{}", mapOf()),
+                session = SsmSession(
+                    ssm = "ssm",
+                    session = "session-2",
+                    roles = mapOf("admin" to "Admin"),
+                    public = "{}",
+                    private = emptyMap(),
+                ),
                 chaincodeUri = chaincodeUri, signerName = "admin",
             ),
         )
 
-        txServiceWith(repo).sendStart(commands)
+        val _ = txServiceWith(repo).sendStart(commands)
 
         assertThat(repo.captured).hasSize(2)
         assertThat(repo.captured[0].timestamp).isEqualTo(1_623_715_200_000L)
@@ -311,12 +354,12 @@ class SsmTxServiceTest {
         val commands = listOf(
             SsmPerformCommand(
                 msgId = "p-with-ts", action = "Validate",
-                context = SsmContext("session-1", "{}", 1, mapOf()),
+                context = SsmContext(session = "session-1", public = "{}", iteration = 1, private = emptyMap()),
                 chaincodeUri = chaincodeUri, signerName = "user1", timestamp = 1_600_000_000_000L,
             ),
         )
 
-        txServiceWith(repo).sendPerform(commands)
+        val _ = txServiceWith(repo).sendPerform(commands)
 
         assertThat(repo.captured).hasSize(1)
         assertThat(repo.captured[0].timestamp).isEqualTo(1_600_000_000_000L)
@@ -332,7 +375,7 @@ class SsmTxServiceTest {
             SsmPerformCommand(
                 msgId = id,
                 action = "Perform",
-                context = SsmContext("session-$id", "{}", 0, mapOf()),
+                context = SsmContext(session = "session-$id", public = "{}", iteration = 0, private = emptyMap()),
                 chaincodeUri = chaincodeUri,
                 signerName = "admin",
             )

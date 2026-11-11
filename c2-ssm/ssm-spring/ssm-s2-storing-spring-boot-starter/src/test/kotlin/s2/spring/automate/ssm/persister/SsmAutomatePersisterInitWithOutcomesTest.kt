@@ -14,15 +14,14 @@ import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2InitCommand
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
 import s2.dsl.automate.model.WithS2Id
+import s2.dsl.automate.model.WithS2Iteration
 import s2.dsl.automate.model.WithS2State
 import ssm.chaincode.dsl.model.Agent
-import ssm.chaincode.dsl.model.SsmSessionState
-import ssm.chaincode.dsl.model.SsmSessionStateLog
-import ssm.chaincode.dsl.model.SsmTransition
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
 import ssm.sdk.dsl.CommandOutcome
@@ -47,7 +46,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
     // Shared fixtures (parallel to SsmAutomatePersisterTest)
     // ---------------------------------------------------------------------------
 
-    interface TestState : s2.dsl.automate.S2State {
+    interface TestState : S2State {
         override val position: Int
     }
 
@@ -55,7 +54,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val id: String,
         val status: Int,
         val iteration: Int,
-    ) : WithS2Id<String>, WithS2State<TestState>, s2.dsl.automate.model.WithS2Iteration {
+    ) : WithS2Id<String>, WithS2State<TestState>, WithS2Iteration {
         override fun s2Id() = id
         override fun s2State() = object : TestState { override val position = status }
         override fun s2Iteration() = iteration
@@ -92,11 +91,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
             entity = entity,
         )
 
-    /**
-     * Build a SsmAutomatePersister<TestState, String, IterableEntity, TestEvt> with:
-     * - A scripted v2 start function that returns [scriptedOutcomes] in order.
-     * - All other functions (v1 start, v1 perform, v2 perform, session logs) throw if called.
-     */
+    // Start answers with the scripted outcomes, in order; perform must not be called.
     private fun buildPersister(
         scriptedOutcomes: List<CommandOutcome>,
     ): SsmAutomatePersister<TestState, String, IterableEntity, TestEvt> {
@@ -124,12 +119,16 @@ class SsmAutomatePersisterInitWithOutcomesTest {
             F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
 
         return SsmAutomatePersister(
-            ssmSessionStartFunction = v2Start,
-            ssmSessionPerformActionFunction = noPerform,
-            ssmGetSessionLogsQueryFunction = noSessionsOnChain,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = v2Start,
+                ssmSessionPerformActionFunction = noPerform,
+                ssmGetSessionLogsQueryFunction = noSessionsOnChain,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = IterableEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = ObjectMapper(),
             batch = S2BatchProperties(),
         )
@@ -144,7 +143,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         val persister = buildPersister(listOf(
             CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-123", blockNumber = 42L),
         ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-1", 1, 0))
+        val ctx = makeInitTransitionContext(IterableEntity(id = "entity-1", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
@@ -165,7 +164,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 errorMessage = "endorsement failed",
             ),
         ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-rej", 1, 0))
+        val ctx = makeInitTransitionContext(IterableEntity(id = "entity-rej", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
@@ -185,7 +184,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 errorMessage = "peer down",
             ),
         ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-tr", 1, 0))
+        val ctx = makeInitTransitionContext(IterableEntity(id = "entity-tr", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
@@ -205,7 +204,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 errorMessage = "orderer timeout",
             ),
         ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-ind", 1, 0))
+        val ctx = makeInitTransitionContext(IterableEntity(id = "entity-ind", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
@@ -225,7 +224,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 errorMessage = "conflict",
             ),
         ))
-        val ctx = makeInitTransitionContext(IterableEntity("entity-cf", 1, 0))
+        val ctx = makeInitTransitionContext(IterableEntity(id = "entity-cf", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
@@ -241,8 +240,8 @@ class SsmAutomatePersisterInitWithOutcomesTest {
             CommandOutcome(outcome = "Committed", msgId = "", transactionId = "tx-A", blockNumber = 1L),
             CommandOutcome(outcome = "Rejected",  msgId = "", errorCode = "ERR", errorMessage = "err"),
         ))
-        val ctx1 = makeInitTransitionContext(IterableEntity("entity-A", 1, 0))
-        val ctx2 = makeInitTransitionContext(IterableEntity("entity-B", 1, 0))
+        val ctx1 = makeInitTransitionContext(IterableEntity(id = "entity-A", status = 1, iteration = 0))
+        val ctx2 = makeInitTransitionContext(IterableEntity(id = "entity-B", status = 1, iteration = 0))
 
         val outcomes = persister.persistInitWithOutcomes(flowOf(ctx1, ctx2)).toList()
 
@@ -264,18 +263,23 @@ class SsmAutomatePersisterInitWithOutcomesTest {
                 }.asFlow()
             }
         val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-            ssmSessionStartFunction = capturingStart,
-            ssmSessionPerformActionFunction = F2Function { _ -> error("perform should NOT be called") },
-            ssmGetSessionLogsQueryFunction = F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() },
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = capturingStart,
+                ssmSessionPerformActionFunction = F2Function { _ -> error("perform should NOT be called") },
+                ssmGetSessionLogsQueryFunction = F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() },
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = IterableEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = ObjectMapper(),
             batch = S2BatchProperties(),
             timestampProvider = { msg -> if (msg is TestInitCommand) 1_623_715_200_000L else null },
         )
 
-        persister.persistInitWithOutcomes(flowOf(makeInitTransitionContext(IterableEntity("e-ts", 1, 0)))).toList()
+        val ctx = makeInitTransitionContext(IterableEntity(id = "e-ts", status = 1, iteration = 0))
+        persister.persistInitWithOutcomes(flowOf(ctx)).toList()
 
         assertThat(capturedTimestamps).containsExactly(1_623_715_200_000L)
     }
@@ -291,7 +295,7 @@ class SsmAutomatePersisterInitWithOutcomesTest {
         )
         val persister = buildPersister(scripted)
         val contexts = scripted.mapIndexed { i, _ ->
-            makeInitTransitionContext(IterableEntity("entity-$i", 1, 0))
+            makeInitTransitionContext(IterableEntity(id = "entity-$i", status = 1, iteration = 0))
         }
 
         val outcomes = persister.persistInitWithOutcomes(contexts.asFlow()).toList()

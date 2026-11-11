@@ -16,20 +16,24 @@ class SsmSyncEventBus (
     private val syncSsmCommandFunction: SyncSsmCommandFunction
 ) {
 
-	fun sync(lastEventId: ChangeEventId? = null, delay: Long = 5000, limit: Long = 20): Flow<SyncSsmCommandResult> = flow {
-			var changeEventId = lastEventId
-			while (true) {
-				SyncSsmCommand(
-					lastEventId = changeEventId,
-					chaincodeUri = chaincodeUri,
-					ssmName = ssmName,
-					sessionName = sessionName,
-					limit = limit
-				).invokeWith(syncSsmCommandFunction).let { result ->
-					changeEventId = result.lastEventId
-					emit(result)
-				}
-				delay(delay)
-			}
-	}
+    fun sync(
+        lastEventId: ChangeEventId? = null,
+        delay: Long = 5000,
+        limit: Long = 20,
+    ): Flow<SyncSsmCommandResult> = flow {
+        var changeEventId = lastEventId
+        while (true) {
+            SyncSsmCommand(
+                lastEventId = changeEventId,
+                chaincodeUri = chaincodeUri,
+                ssmName = ssmName,
+                sessionName = sessionName,
+                limit = limit
+            ).invokeWith(syncSsmCommandFunction).let { result ->
+                changeEventId = result.lastEventId
+                emit(result)
+            }
+            delay(delay)
+        }
+    }
 }

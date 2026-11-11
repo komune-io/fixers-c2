@@ -7,41 +7,41 @@ import kotlinx.serialization.Serializable
 @JsExport
 @JsName("SsmSessionDTO")
 interface SsmSessionDTO : WithPrivate {
-	/**
-	 * Identifier of the instantiated [SSM][Ssm]
-	 * @example [Ssm.name]
-	 */
-	val ssm: String?
+    /**
+     * Identifier of the instantiated [SSM][Ssm].
+     * @example [Ssm.name]
+     */
+    val ssm: String?
 
-	/**
-	 * Identifier of the session
-	 * @example "eca7c042-ec37-489b-adb8-42c73ddcfb0b"
-	 */
-	val session: String
+    /**
+     * Identifier of the session.
+     * @example "eca7c042-ec37-489b-adb8-42c73ddcfb0b"
+     */
+    val session: String
 
-	/**
-	 * Associate each role defined in the SSM to an agent
-	 * @example {
-	 * 	"Provider": "JohnDeuf",
-	 * 	"Seller": "BenEfficiere",
-	 * 	"Buyer": "JeanneAlyztou"
-	 * }
-	 */
-	val roles: Map<String, String>?
+    /**
+     * Associate each role defined in the SSM to an agent.
+     * @example {
+     * 	"Provider": "JohnDeuf",
+     * 	"Seller": "BenEfficiere",
+     * 	"Buyer": "JeanneAlyztou"
+     * }
+     */
+    val roles: Map<String, String>?
 
-	/**
-	 * Public data attached to the session
-	 * @example "The seller is a scam"
-	 */
-	val public: Any?
+    /**
+     * Public data attached to the session.
+     * @example "The seller is a scam"
+     */
+    val public: Any?
 
-	/**
-	 * Private data attached to the session
-	 * @example {
-	 * 	"cake": "lie"
-	 * }
-	 */
-	override val private: Map<String, String>?
+    /**
+     * Private data attached to the session.
+     * @example {
+     * 	"cake": "lie"
+     * }
+     */
+    override val private: Map<String, String>?
 }
 
 /**
@@ -56,9 +56,9 @@ interface SsmSessionDTO : WithPrivate {
 @JsExport
 @JsName("SsmSession")
 open class SsmSession(
-	override val ssm: SsmName,
-	override val session: SessionName,
-	override val roles: Map<String, String>,
-	override val public: String,
-	override val private: Map<String, String>? = hashMapOf(),
+    override val ssm: SsmName,
+    override val session: SessionName,
+    override val roles: Map<String, String>,
+    override val public: String,
+    override val private: Map<String, String>? = hashMapOf(),
 ) : SsmSessionDTO

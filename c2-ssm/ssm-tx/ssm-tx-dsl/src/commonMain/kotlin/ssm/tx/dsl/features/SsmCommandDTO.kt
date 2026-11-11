@@ -10,25 +10,25 @@ import kotlin.js.JsName
 @JsExport
 @JsName("SsmCommandDTO")
 interface SsmCommandDTO : Command {
-	/**
-	 * The uri of a chaincode.
-	 */
-	val chaincodeUri: ChaincodeUriDTO
+    /**
+     * The uri of a chaincode.
+     */
+    val chaincodeUri: ChaincodeUriDTO
 }
 
 @JsExport
 @JsName("SsmCommandResultDTO")
 interface SsmCommandResultDTO : Event {
-	/**
-	 * Identifier of the transaction
-	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
-	 */
-	val transactionId: TransactionId
+    /**
+     * Identifier of the transaction.
+     * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
+     */
+    val transactionId: TransactionId
 }
 
 
 /**
- * Response of the API after a command has been executed
+ * Response of the API after a command has been executed.
  * @d2 model
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Model]
  * @title SSM-CHAINCODE/InvokeReturn
@@ -37,8 +37,8 @@ interface SsmCommandResultDTO : Event {
 @JsName("SsmCommandResult")
 data class SsmCommandResult(
     /**
-	 * Identifier of the transaction
-	 * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
-	 */
-	override val transactionId: TransactionId,
+     * Identifier of the transaction.
+     * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
+     */
+    override val transactionId: TransactionId,
 ): SsmCommandResultDTO

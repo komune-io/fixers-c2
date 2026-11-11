@@ -19,4 +19,4 @@ data class CommandOutcome(
 val CommandOutcome.isSuccess: Boolean get() = outcome == "Committed"
 val CommandOutcome.isRetryable: Boolean get() = outcome == "Transient" || outcome == "Conflict"
 val CommandOutcome.isPermanent: Boolean get() = outcome == "Rejected"
-val CommandOutcome.needsStateCheck: Boolean get() = outcome == "Indeterminate"
+val CommandOutcome.isStateCheckNeeded: Boolean get() = outcome == "Indeterminate"

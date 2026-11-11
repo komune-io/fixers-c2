@@ -1,13 +1,12 @@
 package io.komune.c2.chaincode.dsl
 
-
 interface EndorserDTO {
     /**
-     * The peer name
+     * The peer name.
      */
     val peer: String
     /**
-     * The organisation name
+     * The organisation name.
      */
     val organisation: String
 }
@@ -19,7 +18,7 @@ data class Endorser(
 
     companion object {
         /**
-         * Create a list of Endorser from a string list of endorser
+         * Create a list of Endorser from a string list of endorser.
          * peer:organisation,peer:organisation
          */
         fun fromListPair(endorsers: String): List<Endorser> {
@@ -29,13 +28,13 @@ data class Endorser(
         }
 
         /**
-         * Create an Endorser from a string pair of endorser
+         * Create an Endorser from a string pair of endorser.
          * peer:organisation
          */
         fun fromStringPair(pair: String): Endorser {
             val endorser = pair.split(":")
             require(endorser.size == 2) { "Bad endorser argument[${pair}]. Syntax must by peer:organisation" }
-            return Endorser(endorser[0], endorser[1])
+            return Endorser(peer = endorser[0], organisation = endorser[1])
         }
     }
 }

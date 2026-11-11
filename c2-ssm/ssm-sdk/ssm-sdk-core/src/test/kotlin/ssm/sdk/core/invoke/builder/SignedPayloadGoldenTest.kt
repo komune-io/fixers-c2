@@ -1,4 +1,4 @@
-@file:Suppress("MaxLineLength")
+@file:Suppress("MaxLineLength") // golden signed payloads stay whole, one per line, to compare byte for byte
 
 package ssm.sdk.core.invoke.builder
 
@@ -26,108 +26,108 @@ import ssm.sdk.sign.extention.loadFromFile
  */
 class SignedPayloadGoldenTest {
 
-	companion object {
-		private val CHAINCODE_URI = ChaincodeUri("chaincode:sandbox:ssm")
-		private const val AGENT_NAME = "adam"
-	}
+    @Test
+    fun `create payload is stable`() {
+        val ssm = Ssm(
+            name = "dealership",
+            transitions = listOf(
+                SsmTransition(from = 0, to = 1, role = "Seller", action = "Sell"),
+                SsmTransition(from = 1, to = 2, role = "Buyer", action = "Buy")
+            )
+        )
 
-	@Test
-	fun `create payload is stable`() {
-		val ssm = Ssm(
-			name = "dealership",
-			transitions = listOf(
-				SsmTransition(0, 1, "Seller", "Sell"),
-				SsmTransition(1, 2, "Buyer", "Buy")
-			)
-		)
+        val cmd = CreateCmd(ssm).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = CreateCmd(ssm).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        val expectedJson =
+            """{"name":"dealership","transitions":[{"from":0,"to":1,"role":"Seller","action":"Sell"},{"from":1,"to":2,"role":"Buyer","action":"Buy"}]}"""
+        Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.performAction).isNull()
+    }
 
-		val expectedJson =
-			"""{"name":"dealership","transitions":[{"from":0,"to":1,"role":"Seller","action":"Sell"},{"from":1,"to":2,"role":"Buyer","action":"Buy"}]}"""
-		Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.performAction).isNull()
-	}
+    @Test
+    fun `register payload is stable`() {
+        val agent = Agent.loadFromFile(name = "vivi", filename = "command/vivi")
 
-	@Test
-	fun `register payload is stable`() {
-		val agent = Agent.loadFromFile("vivi", "command/vivi")
+        val cmd = RegisterCmd(agent).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = RegisterCmd(agent).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        val expectedJson =
+            """{"name":"vivi","pub":"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs2oFqOlrdpz/fEi5rQfEFWeWTeSXSLaaEwQAYof+EIQTYlvQ+1uk//dBFn+bPcp+BSdzgkra4jd0qsImVMgnrWIDUhs3vl2Wi9TgAQHXT/DtIbvlj+ZdPFTUzd3vb+8NR4i4ha8Yg9bbd5noaf3f40aJ1CY+huRV0/ElOFI5/hM00rZdxiFNcQ9NiA++osUzb4OZ5TqnePmwDpnI7qbE9mTOlbJju9JfmnppZv2HRkWRsdCPjKm+mKv5O9xR+Np5bSMTGqrVH0eyMleHrALEojDdfLt2FTf+ZiCCVKulV5jbMpKf3Qt7891vC5/QyDrtbEz7aPhU4FT1W2ks6rOLcwIDAQAB"}"""
+        Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
+    }
 
-		val expectedJson =
-			"""{"name":"vivi","pub":"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs2oFqOlrdpz/fEi5rQfEFWeWTeSXSLaaEwQAYof+EIQTYlvQ+1uk//dBFn+bPcp+BSdzgkra4jd0qsImVMgnrWIDUhs3vl2Wi9TgAQHXT/DtIbvlj+ZdPFTUzd3vb+8NR4i4ha8Yg9bbd5noaf3f40aJ1CY+huRV0/ElOFI5/hM00rZdxiFNcQ9NiA++osUzb4OZ5TqnePmwDpnI7qbE9mTOlbJju9JfmnppZv2HRkWRsdCPjKm+mKv5O9xR+Np5bSMTGqrVH0eyMleHrALEojDdfLt2FTf+ZiCCVKulV5jbMpKf3Qt7891vC5/QyDrtbEz7aPhU4FT1W2ks6rOLcwIDAQAB"}"""
-		Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
-	}
+    @Test
+    fun `start payload is stable`() {
+        val session = SsmSession(
+            ssm = "Car dealership",
+            session = "deal20181201",
+            roles = mapOf("chuck" to "Buyer", "sarah" to "Seller"),
+            public = "Used car for 100 dollars.",
+            private = null
+        )
 
-	@Test
-	fun `start payload is stable`() {
-		val session = SsmSession(
-			ssm = "Car dealership",
-			session = "deal20181201",
-			roles = mapOf("chuck" to "Buyer", "sarah" to "Seller"),
-			public = "Used car for 100 dollars.",
-			private = null
-		)
+        val cmd = StartCmd(session).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = StartCmd(session).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        val expectedJson =
+            """{"ssm":"Car dealership","session":"deal20181201","roles":{"chuck":"Buyer","sarah":"Seller"},"public":"Used car for 100 dollars."}"""
+        Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
+    }
 
-		val expectedJson =
-			"""{"ssm":"Car dealership","session":"deal20181201","roles":{"chuck":"Buyer","sarah":"Seller"},"public":"Used car for 100 dollars."}"""
-		Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.valueToSign).isEqualTo(expectedJson)
-	}
+    @Test
+    fun `start payload with private data is stable`() {
+        val session = SsmSession(
+            ssm = "Car dealership",
+            session = "deal20181201",
+            roles = mapOf("chuck" to "Buyer", "sarah" to "Seller"),
+            public = "Used car for 100 dollars.",
+            private = mapOf("chuck" to "message")
+        )
 
-	@Test
-	fun `start payload with private data is stable`() {
-		val session = SsmSession(
-			ssm = "Car dealership",
-			session = "deal20181201",
-			roles = mapOf("chuck" to "Buyer", "sarah" to "Seller"),
-			public = "Used car for 100 dollars.",
-			private = mapOf("chuck" to "message")
-		)
+        val cmd = StartCmd(session).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = StartCmd(session).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        Assertions.assertThat(cmd.json).isEqualTo(
+            """{"ssm":"Car dealership","session":"deal20181201","roles":{"chuck":"Buyer","sarah":"Seller"},"public":"Used car for 100 dollars.","private":{"chuck":"message"}}"""
+        )
+    }
 
-		Assertions.assertThat(cmd.json).isEqualTo(
-			"""{"ssm":"Car dealership","session":"deal20181201","roles":{"chuck":"Buyer","sarah":"Seller"},"public":"Used car for 100 dollars.","private":{"chuck":"message"}}"""
-		)
-	}
+    @Test
+    fun `perform payload is stable and prefixed by the action`() {
+        val context = SsmContext(
+            session = "deal20181201",
+            public = "100 dollars 1978 Camaro",
+            iteration = 0,
+            private = null
+        )
 
-	@Test
-	fun `perform payload is stable and prefixed by the action`() {
-		val context = SsmContext(
-			session = "deal20181201",
-			public = "100 dollars 1978 Camaro",
-			iteration = 0,
-			private = null
-		)
+        val cmd = PerformCmd("Sell", context).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = PerformCmd("Sell", context).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        val expectedJson = """{"session":"deal20181201","public":"100 dollars 1978 Camaro","iteration":0}"""
+        Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.performAction).isEqualTo("Sell")
+        Assertions.assertThat(cmd.valueToSign).isEqualTo("Sell$expectedJson")
+    }
 
-		val expectedJson = """{"session":"deal20181201","public":"100 dollars 1978 Camaro","iteration":0}"""
-		Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.performAction).isEqualTo("Sell")
-		Assertions.assertThat(cmd.valueToSign).isEqualTo("Sell$expectedJson")
-	}
+    @Test
+    fun `perform payload with private data is stable`() {
+        val context = SsmContext(
+            session = "deal20181201",
+            public = "100 dollars 1978 Camaro",
+            iteration = 0,
+            private = mapOf("vivi" to "message")
+        )
 
-	@Test
-	fun `perform payload with private data is stable`() {
-		val context = SsmContext(
-			session = "deal20181201",
-			public = "100 dollars 1978 Camaro",
-			iteration = 0,
-			private = mapOf("vivi" to "message")
-		)
+        val cmd = PerformCmd("Sell", context).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
-		val cmd = PerformCmd("Sell", context).commandToSign(CHAINCODE_URI, AGENT_NAME)
+        val expectedJson =
+            """{"session":"deal20181201","public":"100 dollars 1978 Camaro","iteration":0,"private":{"vivi":"message"}}"""
+        Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
+        Assertions.assertThat(cmd.valueToSign).isEqualTo("Sell$expectedJson")
+    }
 
-		val expectedJson =
-			"""{"session":"deal20181201","public":"100 dollars 1978 Camaro","iteration":0,"private":{"vivi":"message"}}"""
-		Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
-		Assertions.assertThat(cmd.valueToSign).isEqualTo("Sell$expectedJson")
-	}
+    companion object {
+        private val CHAINCODE_URI = ChaincodeUri("chaincode:sandbox:ssm")
+        private const val AGENT_NAME = "adam"
+    }
 }

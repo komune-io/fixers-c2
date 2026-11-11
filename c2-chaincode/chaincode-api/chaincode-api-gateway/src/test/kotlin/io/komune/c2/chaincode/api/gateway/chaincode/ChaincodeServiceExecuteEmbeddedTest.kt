@@ -1,16 +1,18 @@
 package io.komune.c2.chaincode.api.gateway.chaincode
 
-import io.komune.c2.chaincode.api.config.C2ChaincodeConfiguration
 import io.komune.c2.chaincode.api.fabric.FabricGatewayClient
 import io.komune.c2.chaincode.api.fabric.TxOutcome
 import io.komune.c2.chaincode.api.gateway.ChaincodeApiGatewayApplication
-import io.komune.c2.chaincode.api.gateway.blockchain.BlockchainServiceI
 import io.komune.c2.chaincode.api.gateway.chaincode.model.OutcomeData
 import io.komune.c2.chaincode.api.gateway.config.CloudEventsProperties
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeEnvelope
 import io.komune.c2.chaincode.dsl.cloudevent.InvokeType
+import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import io.mockk.coEvery
+import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,11 +22,13 @@ import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.util.UriComponentsBuilder
@@ -32,11 +36,10 @@ import org.springframework.web.util.UriComponentsBuilder
 /**
  * Embedded-Spring integration test for `POST /invoke` (CloudEvents 1.0 structured-mode batch).
  *
- * Strategy: a [ScriptedChaincodeService] subclass overrides the protected `runInvoke` hook
- * to return scripted (type, OutcomeData) pairs computed via the production [toWire] mapping.
- * This exercises the real CloudEvents envelope construction (id, source, subject, time)
- * end-to-end over HTTP without needing a live Fabric backend. All 5 [TxOutcome] variants
- * plus the gateway-exception path are covered.
+ * Strategy: the [FabricGatewayClient] bean is replaced by a mock that answers scripted [TxOutcome]s, so the real
+ * [ChaincodeService] maps them through the production [toWire] mapping and builds the CloudEvents envelopes (id,
+ * source, subject, time) end-to-end over HTTP without a live Fabric backend. All 5 [TxOutcome] variants plus the
+ * gateway-failure paths (an exception, an `Error`) are covered.
  */
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(
@@ -46,23 +49,6 @@ import org.springframework.web.util.UriComponentsBuilder
 @AutoConfigureTestRestTemplate
 class ChaincodeServiceExecuteEmbeddedTest {
 
-    class ScriptedChaincodeService(
-        fabricGatewayClient: FabricGatewayClient,
-        blockchainService: BlockchainServiceI,
-        chaincodeConfiguration: C2ChaincodeConfiguration,
-        cloudEventsProperties: CloudEventsProperties,
-        private val scriptedOutcomes: ArrayDeque<TxOutcome>,
-        private val raiseException: () -> Throwable? = { null },
-    ) : ChaincodeService(fabricGatewayClient, blockchainService, chaincodeConfiguration, cloudEventsProperties) {
-
-        override suspend fun runInvoke(envelope: InvokeEnvelope<InvokeRequest>): Pair<String, OutcomeData> {
-            raiseException()?.let { throw it }
-            val next = scriptedOutcomes.removeFirstOrNull()
-                ?: error("no scripted TxOutcome available for envelope id=${envelope.id}")
-            return next.toWire()
-        }
-    }
-
     @TestConfiguration
     class TestConfig {
         val scriptedOutcomes: ArrayDeque<TxOutcome> = ArrayDeque()
@@ -70,18 +56,27 @@ class ChaincodeServiceExecuteEmbeddedTest {
 
         @Bean
         @Primary
-        fun chaincodeService(
-            fabricGatewayClient: FabricGatewayClient,
-            blockchainService: BlockchainServiceI,
-            chaincodeConfiguration: C2ChaincodeConfiguration,
-            cloudEventsProperties: CloudEventsProperties,
-        ): ChaincodeService = ScriptedChaincodeService(
-            fabricGatewayClient, blockchainService, chaincodeConfiguration, cloudEventsProperties,
-            scriptedOutcomes, { raiseException() },
-        )
+        fun scriptedFabricGatewayClient(): FabricGatewayClient = mockk {
+            val commandIds = slot<List<String>>()
+            coEvery {
+                invoke(
+                    channelId = any<String>(),
+                    chaincodeId = any<String>(),
+                    invokeArgsList = any<List<InvokeArgs>>(),
+                    commandIds = capture(commandIds),
+                )
+            } answers {
+                raiseException()?.let { failure -> throw failure }
+                val ids = commandIds.captured
+                listOf(
+                    scriptedOutcomes.removeFirstOrNull()
+                        ?: error("no scripted TxOutcome available for command ids=$ids"),
+                )
+            }
+        }
     }
 
-    @org.springframework.boot.test.web.server.LocalServerPort
+    @LocalServerPort
     var port: Int = 0
 
     @Autowired
@@ -119,7 +114,7 @@ class ChaincodeServiceExecuteEmbeddedTest {
         val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
         val entity = HttpEntity(requests.toList(), headers)
         val typeRef = object : ParameterizedTypeReference<List<InvokeEnvelope<OutcomeData>>>() {}
-        val response = restTemplate.exchange(uri, org.springframework.http.HttpMethod.POST, entity, typeRef)
+        val response = restTemplate.exchange(uri, HttpMethod.POST, entity, typeRef)
         assertThat(response.statusCode.value()).isEqualTo(200)
         return response.body!!
     }
@@ -212,6 +207,17 @@ class ChaincodeServiceExecuteEmbeddedTest {
         assertThat(item.data.errorMessage).isEqualTo("conflict on key session-xyz")
         assertThat(item.data.transactionId).isEqualTo("tx-conflict")
         assertThat(item.data.blockNumber).isEqualTo(7L)
+    }
+
+    @Test
+    fun `an Error of the gateway is still answered Rejected, for that envelope only`() {
+        testConfig.raiseException = { AssertionError("simulated gateway error") }
+
+        val item = post(makeRequest("cmd-err")).single()
+        assertCommonCeAttrs(item, expectedSubject = "cmd-err")
+        assertThat(item.type).isEqualTo(InvokeType.Outcome.REJECTED)
+        assertThat(item.data.errorCode).isEqualTo("GATEWAY_EXCEPTION")
+        assertThat(item.data.errorMessage).isEqualTo("simulated gateway error")
     }
 
     @Test

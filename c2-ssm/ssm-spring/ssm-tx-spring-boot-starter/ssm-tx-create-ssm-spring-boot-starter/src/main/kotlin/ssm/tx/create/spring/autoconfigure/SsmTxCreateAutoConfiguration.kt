@@ -11,12 +11,10 @@ import ssm.tx.dsl.features.ssm.SsmTxCreateFunction
 @Configuration(proxyBeanMethods = false)
 class SsmTxCreateAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(SsmTxCreateFunctionImpl::class)
-	@ConditionalOnBean(SsmTxService::class)
-	fun ssmTxCreateFunction(
-		ssmTxService: SsmTxService,
-	): SsmTxCreateFunction {
-		return SsmTxCreateFunctionImpl(ssmTxService)
-	}
+    @Bean
+    @ConditionalOnMissingBean(SsmTxCreateFunctionImpl::class)
+    @ConditionalOnBean(SsmTxService::class)
+    fun ssmTxCreateFunction(
+        ssmTxService: SsmTxService,
+    ): SsmTxCreateFunction = SsmTxCreateFunctionImpl(ssmTxService)
 }

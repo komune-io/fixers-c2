@@ -45,11 +45,11 @@ class SsmUriTest {
 
     @Test
     fun `rejects a uri with the wrong number of parts or prefix`() {
-        assertThatThrownBy { SsmUri("ssm:ch:cc") }
+        assertThatThrownBy { val _ = SsmUri("ssm:ch:cc") }
             .isInstanceOf(IllegalArgumentException::class.java)
-        assertThatThrownBy { SsmUri("ssm:ch:cc:name:extra") }
+        assertThatThrownBy { val _ = SsmUri("ssm:ch:cc:name:extra") }
             .isInstanceOf(IllegalArgumentException::class.java)
-        assertThatThrownBy { SsmUri("chaincode:ch:cc:name") }
+        assertThatThrownBy { val _ = SsmUri("chaincode:ch:cc:name") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
 }

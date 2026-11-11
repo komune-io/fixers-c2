@@ -1,25 +1,25 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
-	alias(catalogue.plugins.kotlin.spring)
-	alias(catalogue.plugins.spring.boot)
+    alias(catalogue.plugins.fixers.gradle.kotlin.jvm)
+    alias(catalogue.plugins.kotlin.spring)
+    alias(catalogue.plugins.spring.boot)
 }
 
 dependencies {
-	implementation(project(":c2-chaincode:chaincode-api:chaincode-api-config"))
-	implementation(project(":c2-chaincode:chaincode-dsl"))
-	implementation(project(":c2-chaincode:chaincode-api:chaincode-api-fabric"))
+    implementation(project(":c2-chaincode:chaincode-api:chaincode-api-config"))
+    implementation(project(":c2-chaincode:chaincode-dsl"))
+    implementation(project(":c2-chaincode:chaincode-api:chaincode-api-fabric"))
 
-	implementation(libs.bundles.spring.webflux)
-	implementation(libs.f2.spring.starter.auth.tenant)
-	implementation(libs.f2.spring.starter.function.http)
-	implementation(libs.jackson.module.kotlin)
+    implementation(libs.bundles.spring.webflux)
+    implementation(libs.f2.spring.starter.auth.tenant)
+    implementation(libs.f2.spring.starter.function.http)
+    implementation(libs.jackson.module.kotlin)
 
-	testImplementation(libs.bundles.spring.test)
+    testImplementation(libs.bundles.spring.test)
+    testImplementation(libs.mockk)
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("bootBuildImage") {
-	imagePlatform.set((project.findProperty("targetPlatform") as String?) ?: "linux/amd64")
-	environment.set(mapOf(
-		"BPE_APPEND_JAVA_TOOL_OPTIONS" to " -XX:MaxDirectMemorySize=64m"
-	))
+    imagePlatform.set((project.findProperty("targetPlatform") as String?) ?: "linux/amd64")
+    // Added to fixers' entries (the health checker among them), never in their place.
+    environment.put("BPE_APPEND_JAVA_TOOL_OPTIONS", " -XX:MaxDirectMemorySize=64m")
 }

@@ -1,7 +1,5 @@
 package ssm.couchdb.dsl
 
-import kotlin.js.JsExport
-import kotlin.js.JsName
 import ssm.couchdb.dsl.query.CouchdbAdminListQueryFunction
 import ssm.couchdb.dsl.query.CouchdbChaincodeListQueryFunction
 import ssm.couchdb.dsl.query.CouchdbDatabaseGetChangesQueryFunction
@@ -14,6 +12,7 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQueryFunction
 import ssm.couchdb.dsl.query.CouchdbUserListQueryFunction
 
 /**
+ * The query functions of the CouchDB SSM store.
  * - fun couchDbDatabaseGetChangesQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseGetChangesQueryFunction]
  * - fun couchdbDatabaseListQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseListQueryFunction]
  * - fun couchDbDatabaseGetQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseGetQueryFunction]
@@ -24,22 +23,33 @@ import ssm.couchdb.dsl.query.CouchdbUserListQueryFunction
  * @title Query function
  * @parent [CouchdbSsmD2]
  */
-@JsExport
-@JsName("SsmCouchDbQueries")
+// Kotlin only: F2Function is not exported to JS, which reaches these functions through f2's JS facade.
 interface SsmCouchDbQueries {
-	fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction
-	fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction
-	fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction
 
-	fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
 
-	fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
+    fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
 
-	fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction
+    fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction
 
-	fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction
-	fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction
+    fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction
+    fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction
 
-	fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction
-	fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction
+    // The name is the F2 bean the starter publishes, which consumers inject by name.
+    @Suppress("FunctionNameMaxLength")
+    fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction
 }

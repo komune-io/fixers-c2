@@ -11,16 +11,18 @@ import ssm.couchdb.dsl.query.CouchdbAdminListQueryResultDTO
 import ssm.couchdb.f2.commons.chainCodeDbName
 
 class CouchdbAdminListQueryFunctionImpl(
-	private val couchdbClient: CouchdbSsmClient,
+    private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbAdminListQueryFunction {
 
-	override suspend fun invoke(
-		msgs: Flow<CouchdbAdminListQueryDTO>
-	): Flow<CouchdbAdminListQueryResultDTO> = msgs.map { payload ->
-		val dbName = payload.chaincodeUri.chainCodeDbName()
-		couchdbClient.fetchAllByDocType(dbName, DocType.Admin)
-			.let {
-				CouchdbAdminListQueryResult(it)
-			}
-	}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(
+        msgs: Flow<CouchdbAdminListQueryDTO>
+    ): Flow<CouchdbAdminListQueryResultDTO> = msgs.map { payload ->
+        val dbName = payload.chaincodeUri.chainCodeDbName()
+        couchdbClient.fetchAllByDocType(dbName, DocType.Admin)
+            .let {
+                CouchdbAdminListQueryResult(it)
+            }
+    }
 }

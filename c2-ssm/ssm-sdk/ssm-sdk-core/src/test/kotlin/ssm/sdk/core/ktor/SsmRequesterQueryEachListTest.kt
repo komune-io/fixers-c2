@@ -19,97 +19,101 @@ import tools.jackson.core.type.TypeReference
 
 class SsmRequesterQueryEachListTest {
 
-	private data class FakeLog(val txId: String, val iteration: Int)
+    private data class FakeLog(val txId: String, val iteration: Int)
 
-	private fun buildRequester(handler: MockRequestHandler): SsmRequester {
-		val engine = MockEngine(handler)
-		val client = HttpClient(engine) {
-			install(ContentNegotiation) { jackson() }
-		}
-		val repository = ChaincodeApiGatewayClient(
-			baseUrl = "http://localhost:9090",
-			timeout = 5_000L,
-			authCredentials = null,
-			client = client,
-		)
-		return SsmRequester(
-			jsonConverter = JSONConverterObjectMapper(),
-			ssmChaincodeRepository = repository,
-		)
-	}
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
+    private fun buildRequester(handler: MockRequestHandler): SsmRequester {
+        val engine = MockEngine(handler)
+        val client = HttpClient(engine) {
+            install(ContentNegotiation) { jackson() }
+        }
+        val repository = ChaincodeApiGatewayClient(
+            baseUrl = "http://localhost:9090",
+            timeout = 5_000L,
+            authCredentials = null,
+            client = client,
+        )
+        return SsmRequester(
+            jsonConverter = JSONConverterObjectMapper(),
+            ssmChaincodeRepository = repository,
+        )
+    }
 
-	private fun apiQueries(vararg sessions: String): List<SsmApiQuery> = sessions.map { name ->
-		SsmApiQuery(
-			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
-			value = name,
-			query = StubGetQuery(SsmQueryName.LOG),
-		)
-	}
+    private fun apiQueries(vararg sessions: String): List<SsmApiQuery> = sessions.map { name ->
+        SsmApiQuery(
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            value = name,
+            query = StubGetQuery(SsmQueryName.LOG),
+        )
+    }
 
-	private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private fun jsonHeaders() =
+        headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
 
-	@Test
-	suspend fun `queryEachList keeps one inner list per query and preserves order and sizes`() {
-		val requester = buildRequester { request ->
-			val argValue = request.url.parameters["args"]
-			val body = when (argValue) {
-				"session-A" -> """[{"txId":"tx1","iteration":0},{"txId":"tx2","iteration":1},{"txId":"tx3","iteration":2}]"""
-				"session-B" -> """[{"txId":"tx9","iteration":7}]"""
-				else -> error("unexpected args=$argValue")
-			}
-			respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
-		}
+    @Test
+    suspend fun `queryEachList keeps one inner list per query and preserves order and sizes`() {
+        val requester = buildRequester { request ->
+            val argValue = request.url.parameters["args"]
+            val body = when (argValue) {
+                "session-A" ->
+                    """[{"txId":"tx1","iteration":0},{"txId":"tx2","iteration":1},{"txId":"tx3","iteration":2}]"""
+                "session-B" -> """[{"txId":"tx9","iteration":7}]"""
+                else -> error("unexpected args=${argValue ?: "none"}")
+            }
+            respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
+        }
 
-		val results = requester.queryEachList(
-			apiQueries("session-A", "session-B"),
-			object : TypeReference<List<FakeLog>>() {},
-		)
+        val results = requester.queryEachList(
+            apiQueries("session-A", "session-B"),
+            object : TypeReference<List<FakeLog>>() {},
+        )
 
-		assertThat(results).hasSize(2)
-		assertThat(results[0]).hasSize(3)
-		assertThat(results[1]).hasSize(1)
-		assertThat(results[0][0].txId).isEqualTo("tx1")
-		assertThat(results[1][0].txId).isEqualTo("tx9")
-	}
+        assertThat(results).hasSize(2)
+        assertThat(results[0]).hasSize(3)
+        assertThat(results[1]).hasSize(1)
+        assertThat(results[0][0].txId).isEqualTo("tx1")
+        assertThat(results[1][0].txId).isEqualTo("tx9")
+    }
 
-	@Test
-	suspend fun `queryEachList preserves empty list slot without dropping it`() {
-		val requester = buildRequester { request ->
-			val argValue = request.url.parameters["args"]
-			val body = when (argValue) {
-				"session-empty" -> "[]"
-				"session-full" -> """[{"txId":"tx1","iteration":0}]"""
-				else -> error("unexpected args=$argValue")
-			}
-			respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
-		}
+    @Test
+    suspend fun `queryEachList preserves empty list slot without dropping it`() {
+        val requester = buildRequester { request ->
+            val argValue = request.url.parameters["args"]
+            val body = when (argValue) {
+                "session-empty" -> "[]"
+                "session-full" -> """[{"txId":"tx1","iteration":0}]"""
+                else -> error("unexpected args=${argValue ?: "none"}")
+            }
+            respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
+        }
 
-		val results = requester.queryEachList(
-			apiQueries("session-empty", "session-full"),
-			object : TypeReference<List<FakeLog>>() {},
-		)
+        val results = requester.queryEachList(
+            apiQueries("session-empty", "session-full"),
+            object : TypeReference<List<FakeLog>>() {},
+        )
 
-		assertThat(results).hasSize(2)
-		assertThat(results[0]).isEmpty()
-		assertThat(results[1]).hasSize(1)
-	}
+        assertThat(results).hasSize(2)
+        assertThat(results[0]).isEmpty()
+        assertThat(results[1]).hasSize(1)
+    }
 
-	@Test
-	suspend fun `queryEachList does not flatten across queries`() {
-		val requester = buildRequester { _ ->
-			respond(
-				content = """[{"txId":"tx","iteration":0},{"txId":"tx","iteration":1}]""",
-				status = HttpStatusCode.OK,
-				headers = jsonHeaders(),
-			)
-		}
+    @Test
+    suspend fun `queryEachList does not flatten across queries`() {
+        val requester = buildRequester { _ ->
+            respond(
+                content = """[{"txId":"tx","iteration":0},{"txId":"tx","iteration":1}]""",
+                status = HttpStatusCode.OK,
+                headers = jsonHeaders(),
+            )
+        }
 
-		val results = requester.queryEachList(
-			apiQueries("session-1", "session-2"),
-			object : TypeReference<List<FakeLog>>() {},
-		)
+        val results = requester.queryEachList(
+            apiQueries("session-1", "session-2"),
+            object : TypeReference<List<FakeLog>>() {},
+        )
 
-		assertThat(results).hasSize(2)
-		assertThat(results.flatten()).hasSize(4)
-	}
+        assertThat(results).hasSize(2)
+        assertThat(results.flatten()).hasSize(4)
+    }
 }

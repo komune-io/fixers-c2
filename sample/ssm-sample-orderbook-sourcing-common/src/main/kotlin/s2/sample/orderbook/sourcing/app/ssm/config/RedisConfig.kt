@@ -11,21 +11,20 @@ import org.springframework.data.redis.serializer.StringRedisSerializer
 import s2.sample.subautomate.domain.model.OrderBook
 import tools.jackson.module.kotlin.jacksonObjectMapper
 
-
 @Configuration
 class RedisConfig {
 
-	@Bean
-	fun reactiveRedisTemplate(
-		factory: ReactiveRedisConnectionFactory
-	): ReactiveRedisTemplate<String, OrderBook> {
-		val keySerializer = StringRedisSerializer()
+    @Bean
+    fun reactiveRedisTemplate(
+        factory: ReactiveRedisConnectionFactory
+    ): ReactiveRedisTemplate<String, OrderBook> {
+        val keySerializer = StringRedisSerializer()
 
-		val valueSerializer = JacksonJsonRedisSerializer(jacksonObjectMapper(), OrderBook::class.java)
-		val builder: RedisSerializationContextBuilder<String, OrderBook> =
-			RedisSerializationContext.newSerializationContext(keySerializer)
-		val context: RedisSerializationContext<String, OrderBook> = builder.value(valueSerializer).build()
-		return ReactiveRedisTemplate(factory, context)
-	}
+        val valueSerializer = JacksonJsonRedisSerializer(jacksonObjectMapper(), OrderBook::class.java)
+        val builder: RedisSerializationContextBuilder<String, OrderBook> =
+            RedisSerializationContext.newSerializationContext(keySerializer)
+        val context: RedisSerializationContext<String, OrderBook> = builder.value(valueSerializer).build()
+        return ReactiveRedisTemplate(factory, context)
+    }
 
 }

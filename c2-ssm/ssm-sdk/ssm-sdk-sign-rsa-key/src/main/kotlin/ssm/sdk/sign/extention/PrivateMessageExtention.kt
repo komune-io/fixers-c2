@@ -13,40 +13,37 @@ import ssm.sdk.sign.crypto.RSACipher
 import ssm.sdk.sign.model.Signer
 
 @Throws(Exception::class)
-fun SsmContext.addPrivateMessage(value: String, agent: Agent): SsmContext {
-	return addPrivateMessage(value, agent.name, agent.getPubAsKey())
-}
+fun SsmContext.addPrivateMessage(value: String, agent: Agent): SsmContext =
+    addPrivateMessage(value, agent.name, agent.getPubAsKey())
 
 @Throws(Exception::class)
 fun SsmContext.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmContext {
-	val newMap = addPrivate(value, publicKey, name)
-	return this.copy(private = newMap)
+    val newMap = addPrivate(value, publicKey, name)
+    return this.copy(private = newMap)
 }
 
 @Throws(Exception::class)
 fun SsmSession.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmSession {
-	val newPrivate = addPrivate(value, publicKey, name)
-	return SsmSession(ssm, session, roles, public, newPrivate)
+    val newPrivate = addPrivate(value, publicKey, name)
+    return SsmSession(ssm = ssm, session = session, roles = roles, public = public, private = newPrivate)
 }
 
 @Throws(Exception::class)
 fun SsmSessionState.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmSessionState {
-	val newPrivate = addPrivate(value, publicKey, name)
-	return copy(private = newPrivate)
+    val newPrivate = addPrivate(value, publicKey, name)
+    return copy(private = newPrivate)
 }
 
 private fun WithPrivate.addPrivate(value: String, publicKey: PublicKey, name: String): Map<String, String> {
-	val encrypted = RSACipher.encrypt(value.toByteArray(), publicKey)
-	return (private ?: hashMapOf()) + mapOf(name to encrypted)
+    val encrypted = RSACipher.encrypt(value.toByteArray(), publicKey)
+    return (private ?: hashMapOf()) + mapOf(name to encrypted)
 }
 
 @Throws(Exception::class)
-fun WithPrivate.getPrivateMessage(signer: Signer): String? {
-	return getPrivateMessage(signer.name, signer.pair.private)
-}
+fun WithPrivate.getPrivateMessage(signer: Signer): String? = getPrivateMessage(signer.name, signer.pair.private)
 
 @Throws(Exception::class)
 fun WithPrivate.getPrivateMessage(name: String, privateKey: PrivateKey): String? {
-	val value = private?.get(name) ?: return null
-	return RSACipher.decrypt(value, privateKey)
+    val value = private?.get(name) ?: return null
+    return RSACipher.decrypt(value, privateKey)
 }

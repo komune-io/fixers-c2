@@ -9,4 +9,4 @@ import s2.sample.orderbook.storing.app.ssm.OrderBookStoringSsmApp
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(classes = [OrderBookStoringSsmApp::class])
-abstract class SpringTestBase
+interface SpringTestBase

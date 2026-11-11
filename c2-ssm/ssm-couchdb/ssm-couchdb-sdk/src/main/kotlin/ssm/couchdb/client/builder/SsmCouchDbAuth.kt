@@ -1,8 +1,8 @@
 package ssm.couchdb.client.builder
 
-sealed class SsmCouchDbAuth
+sealed interface SsmCouchDbAuth
 
 data class SsmCouchDbBasicAuth(
-	val username: String,
-	val password: String,
-) : SsmCouchDbAuth()
+    val username: String,
+    val password: String,
+) : SsmCouchDbAuth

@@ -12,6 +12,7 @@ import s2.automate.core.context.AutomateContext
 import s2.automate.core.persist.LoadOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -36,7 +37,7 @@ import tools.jackson.module.kotlin.jacksonObjectMapper
  */
 class SsmAutomatePersisterLoadIterationTest {
 
-    interface TestState : s2.dsl.automate.S2State { override val position: Int }
+    interface TestState : S2State { override val position: Int }
 
     data class IterableEntity(val id: String, val status: Int, val iteration: Int) :
         WithS2Id<String>, WithS2State<TestState>, WithS2Iteration {
@@ -47,6 +48,15 @@ class SsmAutomatePersisterLoadIterationTest {
     }
 
     data class TestEvt(val id: String = "") : Event
+
+    /** Stamps its iteration into another type: the loader's cast to the entity type fails. */
+    data class MisstampingEntity(val id: String, val status: Int) :
+        WithS2Id<String>, WithS2State<TestState>, WithS2Iteration {
+        override fun s2Id() = id
+        override fun s2State() = object : TestState { override val position = status }
+        override fun s2Iteration() = 0
+        override fun withS2Iteration(iteration: Int): WithS2Iteration = IterableEntity(id, status, iteration)
+    }
 
     private val om = jacksonObjectMapper()
 
@@ -81,14 +91,23 @@ class SsmAutomatePersisterLoadIterationTest {
             ),
         )
 
-    private fun persister(logs: SsmGetSessionLogsQueryFunction) =
-        SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-            ssmSessionStartFunction = F2Function { _ -> error("start not used") },
-            ssmSessionPerformActionFunction = F2Function { _ -> error("perform not used") },
-            ssmGetSessionLogsQueryFunction = logs,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
-            entityType = IterableEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+    private fun persister(logs: SsmGetSessionLogsQueryFunction) = persister(logs, IterableEntity::class.java)
+
+    private fun <ENTITY> persister(
+        logs: SsmGetSessionLogsQueryFunction,
+        entityType: Class<ENTITY>,
+    ) where ENTITY : WithS2Id<String>, ENTITY : WithS2State<TestState> =
+        SsmAutomatePersister<TestState, String, ENTITY, TestEvt>(
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start not used") },
+                ssmSessionPerformActionFunction = F2Function { _ -> error("perform not used") },
+                ssmGetSessionLogsQueryFunction = logs,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
+            entityType = entityType,
             objectMapper = om,
             batch = S2BatchProperties(),
         )
@@ -111,5 +130,24 @@ class SsmAutomatePersisterLoadIterationTest {
         assertThat(loaded.entity.s2Iteration()).isEqualTo(7)
         assertThat(loaded.entity.id).isEqualTo("s1")
         assertThat(loaded.entity.status).isEqualTo(1)
+    }
+
+    @Test
+    suspend fun `an entity that cannot be cast after its iteration is stamped is rejected for its id only`() {
+        val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
+            q.toList().map { logsAt(it.sessionName, iteration = 3, """{"id":"${it.sessionName}","status":1}""") }
+                .asFlow()
+        }
+
+        val out = persister(logs, MisstampingEntity::class.java)
+            .loadWithOutcomes(AutomateContext(automate = testAutomate, batch = S2BatchProperties()), flowOf("s1", "s2"))
+            .toList()
+
+        assertThat(out.map { it.id }).containsExactly("s1", "s2")
+        out.forEach { outcome ->
+            val rejected = outcome as LoadOutcome.Rejected<*, *>
+            assertThat(rejected.error.type).isEqualTo("DESERIALIZATION_FAILED")
+            assertThat(rejected.error.cause).isInstanceOf(ClassCastException::class.java)
+        }
     }
 }

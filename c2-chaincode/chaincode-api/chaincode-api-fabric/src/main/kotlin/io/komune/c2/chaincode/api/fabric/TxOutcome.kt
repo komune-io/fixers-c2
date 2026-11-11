@@ -125,7 +125,12 @@ object TxValidationCodeMapper {
         blockNumber: Long,
         code: TxValidationCode,
     ): TxOutcome = if (code == TxValidationCode.VALID) {
-        TxOutcome.Committed(msgId, transactionId, blockNumber, payload = "")
+        TxOutcome.Committed(
+            msgId = msgId,
+            transactionId = transactionId,
+            blockNumber = blockNumber,
+            payload = "",
+        )
     } else {
         toOutcome(
             msgId = msgId,

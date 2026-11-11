@@ -12,7 +12,7 @@ import ssm.data.dsl.model.DataSsmSession
 import ssm.data.dsl.model.DataSsmSessionDTO
 
 /**
- * Retrieves a given session
+ * Retrieves a given session.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 10
@@ -23,12 +23,12 @@ typealias DataSsmSessionGetQueryFunction = F2Function<DataSsmSessionGetQueryDTO,
 @JsExport
 @JsName("DataSsmSessionGetQueryDTO")
 interface DataSsmSessionGetQueryDTO : DataQueryDTO {
-	/**
-	 * Identifier of the session to retrieve
-	 * @example [DataSsmSession.sessionName]
-	 */
-	val sessionName: SessionName
-	override val ssmUri: SsmUriDTO
+    /**
+     * Identifier of the session to retrieve.
+     * @example [DataSsmSession.sessionName]
+     */
+    val sessionName: SessionName
+    override val ssmUri: SsmUriDTO
 }
 
 /**
@@ -39,18 +39,20 @@ interface DataSsmSessionGetQueryDTO : DataQueryDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionGetQuery(
-	override val sessionName: SessionName,
-	override val ssmUri: SsmUri,
+    override val sessionName: SessionName,
+    override val ssmUri: SsmUri,
 ) : DataSsmSessionGetQueryDTO
 
 @JsExport
 @JsName("DataSsmSessionGetQueryResultDTO")
 interface DataSsmSessionGetQueryResultDTO: Event {
-	/**
-	 * The retrieved session if it exists
-	 */
-	val item: DataSsmSessionDTO?
+    /**
+     * The retrieved session if it exists.
+     */
+    val item: DataSsmSessionDTO?
 }
 
 /**
@@ -61,6 +63,8 @@ interface DataSsmSessionGetQueryResultDTO: Event {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionGetQueryResult(
-	override val item: DataSsmSession?,
+    override val item: DataSsmSession?,
 ) : DataSsmSessionGetQueryResultDTO

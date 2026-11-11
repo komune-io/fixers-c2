@@ -23,79 +23,82 @@ import tools.jackson.core.type.TypeReference
 
 class SsmRequesterQueryEachTest {
 
-	private data class FakeAgent(val name: String? = null, val pub: String? = null)
+    private data class FakeAgent(val name: String? = null, val pub: String? = null)
 
-	private fun buildRequester(handler: MockRequestHandler): SsmRequester {
-		val engine = MockEngine(handler)
-		val client = HttpClient(engine) {
-			install(ContentNegotiation) { jackson() }
-		}
-		val repository = ChaincodeApiGatewayClient(
-			baseUrl = "http://localhost:9090",
-			timeout = 5_000L,
-			authCredentials = null,
-			client = client,
-		)
-		return SsmRequester(
-			jsonConverter = JSONConverterObjectMapper(),
-			ssmChaincodeRepository = repository,
-		)
-	}
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
+    private fun buildRequester(handler: MockRequestHandler): SsmRequester {
+        val engine = MockEngine(handler)
+        val client = HttpClient(engine) {
+            install(ContentNegotiation) { jackson() }
+        }
+        val repository = ChaincodeApiGatewayClient(
+            baseUrl = "http://localhost:9090",
+            timeout = 5_000L,
+            authCredentials = null,
+            client = client,
+        )
+        return SsmRequester(
+            jsonConverter = JSONConverterObjectMapper(),
+            ssmChaincodeRepository = repository,
+        )
+    }
 
-	private fun apiQueries(vararg names: String): List<SsmApiQuery> = names.map { name ->
-		SsmApiQuery(
-			chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
-			value = name,
-			query = StubGetQuery(SsmQueryName.USER),
-		)
-	}
+    private fun apiQueries(vararg names: String): List<SsmApiQuery> = names.map { name ->
+        SsmApiQuery(
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            value = name,
+            query = StubGetQuery(SsmQueryName.USER),
+        )
+    }
 
-	private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private fun jsonHeaders() =
+        headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
 
-	@Test
-	suspend fun `queryEach preserves input order including nulls`() {
-		val requester = buildRequester { request ->
-			val argValue = request.url.parameters["args"]
-			val body = when (argValue) {
-				"alice" -> """{"name":"alice","pub":"key-a"}"""
-				"bob" -> "null"
-				"carol" -> """{"name":"carol","pub":"key-c"}"""
-				else -> error("unexpected args=$argValue")
-			}
-			respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
-		}
+    @Test
+    suspend fun `queryEach preserves input order including nulls`() {
+        val requester = buildRequester { request ->
+            val argValue = request.url.parameters["args"]
+            val body = when (argValue) {
+                "alice" -> """{"name":"alice","pub":"key-a"}"""
+                "bob" -> "null"
+                "carol" -> """{"name":"carol","pub":"key-c"}"""
+                else -> error("unexpected args=${argValue ?: "none"}")
+            }
+            respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
+        }
 
-		val results = requester.queryEach(
-			apiQueries("alice", "bob", "carol"),
-			object : TypeReference<FakeAgent?>() {},
-		)
+        val results = requester.queryEach(
+            apiQueries("alice", "bob", "carol"),
+            object : TypeReference<FakeAgent?>() {},
+        )
 
-		assertThat(results).hasSize(3)
-		assertThat(results[0]).isEqualTo(FakeAgent(name = "alice", pub = "key-a"))
-		assertThat(results[1]).isNull()
-		assertThat(results[2]).isEqualTo(FakeAgent(name = "carol", pub = "key-c"))
-	}
+        assertThat(results).hasSize(3)
+        assertThat(results[0]).isEqualTo(FakeAgent(name = "alice", pub = "key-a"))
+        assertThat(results[1]).isNull()
+        assertThat(results[2]).isEqualTo(FakeAgent(name = "carol", pub = "key-c"))
+    }
 
-	@Test
-	fun `queryEach propagates HTTP 500 from any single query`() {
-		val requester = buildRequester { request ->
-			if (request.url.parameters["args"] == "bob") {
-				respondError(HttpStatusCode.InternalServerError)
-			} else {
-				respond(content = """{"name":"alice"}""", status = HttpStatusCode.OK, headers = jsonHeaders())
-			}
-		}
+    @Test
+    fun `queryEach propagates HTTP 500 from any single query`() {
+        val requester = buildRequester { request ->
+            if (request.url.parameters["args"] == "bob") {
+                respondError(HttpStatusCode.InternalServerError)
+            } else {
+                respond(content = """{"name":"alice"}""", status = HttpStatusCode.OK, headers = jsonHeaders())
+            }
+        }
 
-		assertThatThrownBy {
-			runBlocking {
-				requester.queryEach(
-					apiQueries("alice", "bob"),
-					object : TypeReference<FakeAgent?>() {},
-				)
-			}
-		}.isInstanceOfAny(
-			RuntimeException::class.java,
-			InvokeException::class.java,
-		)
-	}
+        assertThatThrownBy {
+            runBlocking {
+                val _ = requester.queryEach(
+                    apiQueries("alice", "bob"),
+                    object : TypeReference<FakeAgent?>() {},
+                )
+            }
+        }.isInstanceOfAny(
+            RuntimeException::class.java,
+            InvokeException::class.java,
+        )
+    }
 }

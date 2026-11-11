@@ -27,210 +27,233 @@ import ssm.couchdb.dsl.model.DatabaseName
 import ssm.couchdb.dsl.model.DocType
 import ssm.sdk.json.JSONConverter
 
-
 /**
  * The Cloudant SDK is blocking, so every call is dispatched off the calling thread.
  * [dispatcher] defaults to [Dispatchers.IO] and is injectable so tests can supply a
  * deterministic dispatcher.
  */
 class CouchdbSsmClient(
-	val cloudant: CloudantFixed,
-	private val converter: JSONConverter,
-	private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    val cloudant: CloudantFixed,
+    private val converter: JSONConverter,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-	companion object {
-		const val COUNTING_VIEW = "indexType"
-		const val FABRIC_COUNTING_DOC = "indexTypeDoc"
-		const val SSM_CHANGES_FILTER = "ssm_changes_filter"
-		const val SSM_CHANGES_FILTER_FNC = """
-			function (doc, req) { 
-			  if (doc.docType && doc.docType == 'ssm' && doc.name && doc.name == req.query.ssm) {
-			    return true; 
-			  } else if (doc.docType && doc.docType == 'state' && doc.ssm && doc.ssm == req.query.ssm) {
-			    if(req.query.session) {
-				  return  doc.session == req.query.session
-				} else {
-				  return true;
-				} 
-			  } else {
-			    return false;
-			  }
-			}"""
+    /**
+     * Documents of [docType] in [dbName] matching [filters]. A null [limit] keeps fetching every
+     * matching document; a value has CouchDB apply the page server-side, after skipping [skip] documents.
+     */
+    suspend fun <T : Any> fetchAllByDocType(
+        dbName: String,
+        docType: DocType<T>,
+        filters: Map<String, String> = emptyMap(),
+        limit: Long? = null,
+        skip: Long? = null,
+    ): List<T> = withContext(dispatcher) {
+        val findOptions = buildFindOptions(
+            dbName = dbName,
+            selector = docTypeSelector(docType, filters),
+            limit = limit,
+            skip = skip,
+        )
 
-		const val ID_FIELD = "_id"
+        val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		fun builder(): SsmCouchDbClientBuilder {
-			return SsmCouchDbClientBuilder()
-		}
+        result.result.docs.mapNotNull { document ->
+            converter.toObject(docType.documentClass, document.toString())
+        }
+    }
 
-		internal fun <T : Any> docTypeSelector(
-			docType: DocType<T>,
-			filters: Map<String, String>,
-		): Map<String, Any> = mapOf("docType" to mapOf("\$eq" to docType.name)).plus(filters)
+    /**
+     * Total number of documents matching [docType] and [filters], independently of any page.
+     * Only `_id` is fetched, so this stays much cheaper than materialising the documents.
+     */
+    suspend fun <T : Any> countByDocType(
+        dbName: String,
+        docType: DocType<T>,
+        filters: Map<String, String> = emptyMap(),
+    ): Int = withContext(dispatcher) {
+        val findOptions = buildFindOptions(
+            dbName = dbName,
+            selector = docTypeSelector(docType, filters),
+            fields = listOf(ID_FIELD),
+        )
 
-		/**
-		 * Builds the `_find` options. When [limit] is null every matching document is requested
-		 * (`Long.MAX_VALUE`), which is the historical behaviour; a non-null [limit]/[skip] is pushed
-		 * down so CouchDB applies the page itself instead of the caller slicing in memory.
-		 */
-		internal fun buildFindOptions(
-			dbName: String,
-			selector: Map<String, Any>,
-			limit: Long? = null,
-			skip: Long? = null,
-			fields: List<String>? = null,
-		): PostFindOptions = PostFindOptions.Builder()
-			.db(dbName)
-			.selector(selector)
-			.limit(limit ?: Long.MAX_VALUE)
-			.apply {
-				skip?.let { skip(it) }
-				fields?.let { fields(it) }
-			}
-			.build()
-	}
+        cloudant.postFind(findOptions)
+            .execute()
+            .result
+            .docs
+            .size
+    }
 
-	/**
-	 * @param limit maximum number of documents to return. `null` keeps the previous behaviour of
-	 * fetching every matching document; pass a value to have CouchDB apply the page server-side.
-	 * @param skip number of documents to skip before the page starts.
-	 */
-	suspend fun <T : Any> fetchAllByDocType(
-		dbName: String,
-		docType: DocType<T>,
-		filters: Map<String, String> = emptyMap(),
-		limit: Long? = null,
-		skip: Long? = null,
-	): List<T> = withContext(dispatcher) {
-		val findOptions = buildFindOptions(dbName, docTypeSelector(docType, filters), limit, skip)
+    suspend fun fetchAll(
+        dbName: String,
+        limit: Long? = null,
+        skip: Long? = null,
+    ): List<Document> = withContext(dispatcher) {
+        val findOptions = buildFindOptions(dbName = dbName, selector = emptyMap(), limit = limit, skip = skip)
 
-		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
+        val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		result.result.docs.mapNotNull { document ->
-			converter.toObject(docType.clazz.java, document.toString())
-		}
-	}
+        result.result.docs
+    }
 
-	/**
-	 * Total number of documents matching [docType] and [filters], independently of any page.
-	 * Only `_id` is fetched, so this stays much cheaper than materialising the documents.
-	 */
-	suspend fun <T : Any> countByDocType(
-		dbName: String,
-		docType: DocType<T>,
-		filters: Map<String, String> = emptyMap(),
-	): Int = withContext(dispatcher) {
-		val findOptions = buildFindOptions(
-			dbName = dbName,
-			selector = docTypeSelector(docType, filters),
-			fields = listOf(ID_FIELD),
-		)
+    suspend fun <T : Any> fetchOneByDocTypeAndName(
+        dbName: String,
+        docType: DocType<T>,
+        name: String,
+    ): T? = withContext(dispatcher) {
+        val selector = mapOf(
+            "docType" to mapOf("\$eq" to docType.name),
+            "name" to name
+        )
 
-		cloudant.postFind(findOptions).execute().result.docs.size
-	}
+        val findOptions = buildFindOptions(dbName, selector, limit = 1)
 
-	suspend fun fetchAll(
-		dbName: String,
-		limit: Long? = null,
-		skip: Long? = null,
-	): List<Document> = withContext(dispatcher) {
-		val findOptions = buildFindOptions(dbName, emptyMap(), limit, skip)
+        val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
-		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
+        result.result.docs.firstOrNull()?.let { document ->
+            converter.toObject(docType.documentClass, document.toString())
+        }
+    }
 
-		result.result.docs
-	}
+    suspend fun getDatabases(): List<String> = withContext(dispatcher) {
+        cloudant.allDbs.execute().result
+    }
 
-	suspend fun <T : Any> fetchOneByDocTypeAndName(
-		dbName: String,
-		docType: DocType<T>,
-		name: String,
-	): T? = withContext(dispatcher) {
-		val selector = mapOf(
-			"docType" to mapOf("\$eq" to docType.name),
-			"name" to name
-		)
+    suspend fun getDatabase(dbName: String): DatabaseInformation = withContext(dispatcher) {
+        val query = GetDatabaseInformationOptions.Builder().db(dbName).build()
+        cloudant.getDatabaseInformation(query).execute().result
+    }
 
-		val findOptions = buildFindOptions(dbName, selector, limit = 1)
+    suspend fun getSsmChanges(
+        dbName: DatabaseName,
+        ssmName: SsmName,
+        sessionName: SessionName?,
+        lastEventId: ChangeEventId? = null,
+        limit: Long? = null
+    ): ChangesResult {
+        // The rule reads the discarded `val _` as a Boolean property; an unnamed value has no name to prefix.
+        @Suppress("BooleanPropertyNaming")
+        val _ = installSsmChangesFilter(dbName)
+        val query = PostChangesOptions.Builder()
+            .db(dbName)
+            .lastEventId(lastEventId)
+            .includeDocs(true)
+            .filter("filters/$SSM_CHANGES_FILTER")
 
-		val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
+        if (limit != null) {
+            query.limit(limit)
+        }
 
-		result.result.docs.firstOrNull()?.let { document ->
-			converter.toObject(docType.clazz.java, document.toString())
-		}
-	}
+        return withContext(dispatcher) {
+            cloudant.postChanges(postChangesOptions = query.build(), ssm = ssmName, session = sessionName)
+                .execute()
+                .result
+        }
+    }
 
-	suspend fun getDatabases(): List<String> = withContext(dispatcher) {
-		cloudant.allDbs.execute().result
-	}
+    @Suppress("SwallowedException") // NotFound only says the filter is absent: it is then installed
+    suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(dispatcher) {
+        suspendCoroutine { continuation ->
+            try {
+                cloudant.getDesignDocument(
+                    GetDesignDocumentOptions.Builder()
+                        .db(dbName)
+                        .ddoc("filters")
+                        .build()
+                ).execute().result
+                continuation.resume(false)
+            } catch (e: NotFoundException) {
+                val stateSsmNameFilter = PutDesignDocumentOptions.Builder()
+                    .db(dbName)
+                    .ddoc("filters")
+                    .designDocument(
+                        DesignDocument.Builder().filters(
+                            mapOf(
+                                SSM_CHANGES_FILTER to SSM_CHANGES_FILTER_FNC
+                            )
+                        )
+                            .build()
+                    )
+                    .build()
 
-	suspend fun getDatabase(dbName: String): DatabaseInformation = withContext(dispatcher) {
-		val query = GetDatabaseInformationOptions.Builder().db(dbName).build()
-		cloudant.getDatabaseInformation(query).execute().result
-	}
+                cloudant.putDesignDocument(stateSsmNameFilter).reactiveRequest().doAfterSuccess {
+                    continuation.resume(true)
+                }.subscribe()
+            }
+        }
+    }
 
-	suspend fun getSsmChanges(
-		dbName: DatabaseName,
-		ssmName: SsmName,
-		sessionName: SessionName?,
-		lastEventId: ChangeEventId? = null,
-		limit: Long? = null
-	): ChangesResult {
-		installSsmChangesFilter(dbName)
-		val query = PostChangesOptions.Builder()
-			.db(dbName)
-			.lastEventId(lastEventId)
-			.includeDocs(true)
-			.filter("filters/$SSM_CHANGES_FILTER")
+    suspend fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int = withContext(dispatcher) {
+        val query = PostViewOptions.Builder()
+            .db(dbName)
+            .ddoc(FABRIC_COUNTING_DOC)
+            .view(COUNTING_VIEW)
+            .groupLevel(1)
+            .key(arrayOf(docType.name))
+            .build()
+        val row = cloudant.postView(query)
+            .execute()
+            .result
+            .rows
+            .firstOrNull()
+        countOf(view = COUNTING_VIEW, value = row?.value)
+    }
 
-		limit?.let {
-			query.limit(limit)
-		}
+    companion object {
+        const val COUNTING_VIEW = "indexType"
+        const val FABRIC_COUNTING_DOC = "indexTypeDoc"
+        const val SSM_CHANGES_FILTER = "ssm_changes_filter"
+        const val SSM_CHANGES_FILTER_FNC = """
+            function (doc, req) { 
+              if (doc.docType && doc.docType == 'ssm' && doc.name && doc.name == req.query.ssm) {
+                return true; 
+              } else if (doc.docType && doc.docType == 'state' && doc.ssm && doc.ssm == req.query.ssm) {
+                if(req.query.session) {
+                  return  doc.session == req.query.session
+                } else {
+                  return true;
+                } 
+              } else {
+                return false;
+              }
+            }"""
 
-		return withContext(dispatcher) {
-			cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
-		}
-	}
+        const val ID_FIELD = "_id"
 
-	@Suppress("SwallowedException")
-	suspend fun installSsmChangesFilter(dbName: DatabaseName): Boolean = withContext(dispatcher) {
-		suspendCoroutine { continuation ->
-			try {
-				cloudant.getDesignDocument(
-					GetDesignDocumentOptions.Builder()
-						.db(dbName)
-						.ddoc("filters")
-						.build()
-				).execute().result
-				continuation.resume(false)
-			} catch (e: NotFoundException) {
-				val stateSsmNameFilter = PutDesignDocumentOptions.Builder()
-					.db(dbName)
-					.ddoc("filters")
-					.designDocument(
-						DesignDocument.Builder().filters(
-							mapOf(
-								SSM_CHANGES_FILTER to SSM_CHANGES_FILTER_FNC
-							)
-						).build()
-					).build()
+        fun builder(): SsmCouchDbClientBuilder = SsmCouchDbClientBuilder()
 
-				cloudant.putDesignDocument(stateSsmNameFilter).reactiveRequest().doAfterSuccess {
-					continuation.resume(true)
-				}.subscribe()
-			}
-		}
-	}
+        /** A row's count; no row counts 0, a value that is not a number is an error, never a silent 0. */
+        internal fun countOf(view: String, value: Any?): Int = when (value) {
+            null -> 0
+            is Number -> value.toInt()
+            else -> error("CouchDB view [$view] answered a count that is not a number: ${value.javaClass.name}")
+        }
 
-	suspend fun <T : Any> getCount(dbName: String, docType: DocType<T>): Int = withContext(dispatcher) {
-		val query = PostViewOptions.Builder()
-			.db(dbName)
-			.ddoc(FABRIC_COUNTING_DOC)
-			.view(COUNTING_VIEW)
-			.groupLevel(1)
-			.key(arrayOf(docType.name))
-			.build()
-		(cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
-	}
+        internal fun <T : Any> docTypeSelector(
+            docType: DocType<T>,
+            filters: Map<String, String>,
+        ): Map<String, Any> = mapOf("docType" to mapOf("\$eq" to docType.name)).plus(filters)
+
+        /**
+         * Builds the `_find` options. When [limit] is null every matching document is requested
+         * (`Long.MAX_VALUE`), which is the historical behaviour; a non-null [limit]/[skip] is pushed
+         * down so CouchDB applies the page itself instead of the caller slicing in memory.
+         */
+        internal fun buildFindOptions(
+            dbName: String,
+            selector: Map<String, Any>,
+            limit: Long? = null,
+            skip: Long? = null,
+            fields: List<String>? = null,
+        ): PostFindOptions = PostFindOptions.Builder()
+            .db(dbName)
+            .selector(selector)
+            .limit(limit ?: Long.MAX_VALUE)
+            .apply {
+                if (skip != null) skip(skip)
+                if (fields != null) fields(fields)
+            }
+            .build()
+    }
 }

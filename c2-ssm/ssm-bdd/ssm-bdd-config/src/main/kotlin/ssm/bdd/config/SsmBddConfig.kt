@@ -1,6 +1,7 @@
 package ssm.bdd.config
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
+import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.chaincode.dsl.config.SsmChaincodeProperties
 import ssm.couchdb.dsl.config.SsmCouchdbConfig
@@ -8,137 +9,106 @@ import ssm.data.dsl.config.DataSsmConfig
 
 object SsmBddConfig {
 
-	private const val SEPARATOR_SLASH = "//////////////////////////////////////////////"
-	private const val SEPARATOR_STAR = "**********************************************"
+    private val logger = LoggerFactory.getLogger(SsmBddConfig::class.java)
 
-	private const val DEFAULT_LOCAL_COUCHDB_CREDENTIAL = "couchdb"
+    private const val DEFAULT_LOCAL_COUCHDB_CREDENTIAL = "couchdb"
 
-	object Commune {
-		object Chaincode {
-			const val url = "http://peer0.pr-commune.Komune.io"
-			const val chaincodeUri = "chaincode:sandbox:ssm"
-		}
-		object Couchdb {
-			const val url = "http://peer0.pr-commune.Komune.io:5984"
-			const val username = "COMMUNE_COUCHDB_USERNAME"
-			const val password = "COMMUNE_COUCHDB_PASSWORD"
-		}
-		const val ssmAgent = "COMMUNE_SSM_AGENT"
-		const val ssmAgentKey = "COMMUNE_SSM_AGENT_KEY"
-	}
+    object Commune {
+        object Chaincode {
+            const val url = "http://peer0.pr-commune.Komune.io"
+            const val chaincodeUri = "chaincode:sandbox:ssm"
+        }
+        object Couchdb {
+            const val url = "http://peer0.pr-commune.Komune.io:5984"
+            const val username = "COMMUNE_COUCHDB_USERNAME"
+            const val password = "COMMUNE_COUCHDB_PASSWORD"
+        }
+        const val ssmAgent = "COMMUNE_SSM_AGENT"
+        const val ssmAgentKey = "COMMUNE_SSM_AGENT_KEY"
+    }
 
-	object Local {
-		object Chaincode {
-			const val url = "http://localhost:9090"
-			const val chaincodeUri = "chaincode:sandbox:ssm"
-		}
-		object Couchdb {
-			const val url = "http://localhost:5984"
-			val username = System.getenv("BCLAN_COUCH_USER") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
-			val password = System.getenv("BCLAN_COUCH_PASS") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
-		}
+    object Local {
+        object Chaincode {
+            const val url = "http://localhost:9090"
+            const val chaincodeUri = "chaincode:sandbox:ssm"
+        }
+        object Couchdb {
+            const val url = "http://localhost:5984"
+            val username = System.getenv("BCLAN_COUCH_USER") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
+            val password = System.getenv("BCLAN_COUCH_PASS") ?: DEFAULT_LOCAL_COUCHDB_CREDENTIAL
+        }
 
-	}
+    }
 
-	fun String.orIfGitlab(value: String): String {
-		return if (System.getenv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-			println(SEPARATOR_SLASH)
-			println(SEPARATOR_SLASH)
-			println(SEPARATOR_SLASH)
-			value
-		} else {
-			println(SEPARATOR_STAR)
-			println(SEPARATOR_STAR)
-			println(SEPARATOR_STAR)
-			this
-		}
-	}
+    fun String.orIfGitlab(value: String): String =
+        if (System.getenv("SPRING_PROFILES_ACTIVE") == "gitlab") value else this
 
-	fun String.orIfGitlabEnv(value: String): String {
-		return if (getEnv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-			println(SEPARATOR_SLASH)
-			println(SEPARATOR_SLASH)
-			println(SEPARATOR_SLASH)
-			getEnv(value)
-		} else {
-			this
-		}
-	}
+    fun String.orIfGitlabEnv(value: String): String =
+        if (getEnv("SPRING_PROFILES_ACTIVE") == "gitlab") getEnv(value) else this
 
-	object Chaincode {
-		val url: String
-			get() {
-				return Local.Chaincode.url
-					.orIfGitlab(Commune.Chaincode.url)
-			}
-		val chaincodeUri: ChaincodeUri
-			get() {
-				return ChaincodeUri(
-					Local.Chaincode.chaincodeUri
-						.orIfGitlab(Commune.Chaincode.chaincodeUri)
-				)
-			}
-		val config: SsmChaincodeProperties
-			get() {
-				return SsmChaincodeProperties(url = url)
-			}
-	}
+    object Chaincode {
+        val url: String
+            get() {
+                return Local.Chaincode.url
+                    .orIfGitlab(Commune.Chaincode.url)
+            }
+        val chaincodeUri: ChaincodeUri
+            get() {
+                return ChaincodeUri(
+                    Local.Chaincode.chaincodeUri
+                        .orIfGitlab(Commune.Chaincode.chaincodeUri)
+                )
+            }
+        val config: SsmChaincodeProperties
+            get() = SsmChaincodeProperties(url = url)
+    }
 
-	object Data {
-		val config = DataSsmConfig(
-			couchdb = Couchdb.config,
-			chaincode = Chaincode.config,
-			batch = SsmBatchProperties()
-		)
-	}
+    object Data {
+        val config = DataSsmConfig(
+            couchdb = Couchdb.config,
+            chaincode = Chaincode.config,
+            batch = SsmBatchProperties()
+        )
+    }
 
-	object Couchdb {
-		val url: String
-			get() {
-				return Local.Couchdb.url
-					.orIfGitlab(Commune.Couchdb.url)
-			}
-		val username: String
-			get() {
-				return Local.Couchdb.username.orIfGitlab(
-					getEnv(Commune.Couchdb.username)
-				)
-			}
-		val password: String
-			get() {
-				return Local.Couchdb.password
-					.orIfGitlabEnv(Commune.Couchdb.password)
-			}
+    object Couchdb {
+        val url: String
+            get() {
+                return Local.Couchdb.url
+                    .orIfGitlab(Commune.Couchdb.url)
+            }
+        val username: String
+            get() {
+                return Local.Couchdb.username.orIfGitlab(
+                    getEnv(Commune.Couchdb.username)
+                )
+            }
+        val password: String
+            get() {
+                return Local.Couchdb.password
+                    .orIfGitlabEnv(Commune.Couchdb.password)
+            }
 
-		val config: SsmCouchdbConfig
-			get() {
-				return SsmCouchdbConfig(
-					url = url,
-					username = username,
-					password = password,
-					serviceName = "ssm-couchdb-test"
-				)
-			}
-	}
+        val config: SsmCouchdbConfig
+            get() {
+                return SsmCouchdbConfig(
+                    url = url,
+                    username = username,
+                    password = password,
+                    serviceName = "ssm-couchdb-test"
+                )
+            }
+    }
 
-	private fun getEnv(value: String): String {
-		val envValue = System.getenv(value)
-		return if (envValue != null) {
-			envValue
-		} else {
-			println("Env parameter[$value] is null")
-			""
-		}
-	}
+    private fun getEnv(value: String): String =
+        System.getenv(value) ?: "".also { logger.warn("Env parameter[{}] is null", value) }
 
-	object Key {
-		val admin: Pair<String, String>
-			get() {
-				return "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
-			}
-		val user: Pair<String, String>
-			get() {
-				return "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
-			}
-	}
+    object Key {
+        val admin: Pair<String, String>
+            get() = "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to
+                "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
+        val user: Pair<String, String>
+            get() = "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to
+                "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
+    }
 }

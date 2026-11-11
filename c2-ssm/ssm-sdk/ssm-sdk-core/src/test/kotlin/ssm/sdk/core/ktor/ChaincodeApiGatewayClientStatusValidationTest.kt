@@ -3,7 +3,6 @@ package ssm.sdk.core.ktor
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.engine.mock.respondError
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
@@ -13,9 +12,13 @@ import io.ktor.http.headersOf
 import io.ktor.serialization.jackson.jackson
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
+import java.net.ConnectException
+import java.nio.channels.UnresolvedAddressException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import ssm.sdk.dsl.CommandOutcome
 
 /**
@@ -50,12 +53,14 @@ class ChaincodeApiGatewayClientStatusValidationTest {
         ),
     )
 
+    // The returned repository holds the client for the whole test: no scope here to close it in.
+    @Suppress("MissingUseCall")
     private fun buildRepository(statusCode: HttpStatusCode, body: String): ChaincodeApiGatewayClient {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = body,
                 status = statusCode,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString()),
             )
         }
         val client = HttpClient(mockEngine) {
@@ -69,9 +74,11 @@ class ChaincodeApiGatewayClientStatusValidationTest {
         )
     }
 
+    // The returned repository holds the client for the whole test: no scope here to close it in.
+    @Suppress("MissingUseCall")
     private fun buildNetworkErrorRepository(): ChaincodeApiGatewayClient {
         val mockEngine = MockEngine { _ ->
-            throw java.net.ConnectException("Connection refused: localhost/127.0.0.1:9090")
+            throw ConnectException("Connection refused: localhost/127.0.0.1:9090")
         }
         val client = HttpClient(mockEngine) {
             install(ContentNegotiation) { jackson() }
@@ -227,43 +234,62 @@ class ChaincodeApiGatewayClientStatusValidationTest {
     }
 
     @Test
+    suspend fun `a failure that is neither IO nor JSON still yields N×Indeterminate, never an exception`() {
+        val outcomes = MockEngine { _ -> throw UnresolvedAddressException() }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repo = ChaincodeApiGatewayClient(
+                    baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+                )
+                repo.invoke(sampleInvokeArgs, commandIds)
+            }
+        }
+        assertThat(outcomes.map { it.msgId }).containsExactlyElementsOf(commandIds)
+        assertThat(outcomes.map { it.outcome }).containsOnly("Indeterminate")
+        assertThat(outcomes.map { it.errorCode }).containsOnly("TRANSPORT_ERROR")
+    }
+
+    @Test
     suspend fun `connect refused yields Indeterminate with CONNECT_REFUSED code and NETWORK class`() {
         // Use a hermetic MockEngine instead of 127.0.0.1:1 to avoid environment-dependent
         // behaviour (sandboxed Docker / hardened macOS may give TIMEOUT or PermissionException
         // rather than ECONNREFUSED, making the test flaky in CI).
-        val mockEngine = MockEngine { _ -> throw java.net.ConnectException("Connection refused") }
-        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repo = ChaincodeApiGatewayClient(
-            baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
-        )
-        val outcomes = repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+        val outcomes = MockEngine { _ -> throw ConnectException("Connection refused") }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repo = ChaincodeApiGatewayClient(
+                    baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+                )
+                repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+            }
+        }
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("CONNECT_REFUSED")
     }
 
     @Test
     suspend fun `request timeout yields Indeterminate with TIMEOUT code and NETWORK class`() {
-        val mockEngine = MockEngine { _ ->
+        val outcomes = MockEngine { _ ->
             delay(10_000)
             respond(content = "never reaches", status = HttpStatusCode.OK)
-        }
-        val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) { jackson() }
-            install(HttpTimeout) {
-                requestTimeoutMillis = 100L
-                connectTimeoutMillis = 100L
+        }.use { mockEngine ->
+            HttpClient(mockEngine) {
+                install(ContentNegotiation) { jackson() }
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 100L
+                    connectTimeoutMillis = 100L
+                }
+            }.use { client ->
+                val repo = ChaincodeApiGatewayClient(
+                    baseUrl = "http://test",
+                    timeout = 100L,
+                    authCredentials = null,
+                    client = client,
+                )
+                repo.invoke(
+                    invokeArgs = listOf(sampleInvokeArgs.first()),
+                    msgIds = listOf("cmd-1"),
+                )
             }
         }
-        val repo = ChaincodeApiGatewayClient(
-            baseUrl = "http://test",
-            timeout = 100L,
-            authCredentials = null,
-            client = client,
-        )
-        val outcomes = repo.invoke(
-            invokeArgs = listOf(sampleInvokeArgs.first()),
-            msgIds = listOf("cmd-1"),
-        )
         assertThat(outcomes.single().outcome).isEqualTo("Indeterminate")
         assertThat(outcomes.single().errorCode).isEqualTo("TIMEOUT")
     }
@@ -291,13 +317,13 @@ class ChaincodeApiGatewayClientStatusValidationTest {
     @Test
     suspend fun `invoke 4xx outcomes commandId order matches input commandIds`() {
         val ids = listOf("alpha", "beta", "gamma")
-        val args = List(3) {
+        val args = List(3) { index ->
             InvokeRequest(
                 cmd = InvokeRequestType.invoke,
                 channelid = "sandbox",
                 chaincodeid = "ssm",
                 fcn = "register",
-                args = arrayOf("arg$it"),
+                args = arrayOf("arg$index"),
             )
         }
         val repo = buildRepository(HttpStatusCode.BadRequest, "bad")
@@ -311,14 +337,16 @@ class ChaincodeApiGatewayClientStatusValidationTest {
     // --------------------------------------------------------------------------
 
     @Test
-    suspend fun `runCatching rethrows CancellationException instead of synthesising`() {
-        val mockEngine = MockEngine { _ -> throw kotlinx.coroutines.CancellationException("cancel") }
-        val client = HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }
-        val repo = ChaincodeApiGatewayClient(
-            baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
-        )
-        org.junit.jupiter.api.assertThrows<kotlinx.coroutines.CancellationException> {
-            repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+    suspend fun `invoke rethrows CancellationException instead of synthesising`() {
+        MockEngine { _ -> throw CancellationException("cancel") }.use { mockEngine ->
+            HttpClient(mockEngine) { install(ContentNegotiation) { jackson() } }.use { client ->
+                val repo = ChaincodeApiGatewayClient(
+                    baseUrl = "http://test", timeout = 500L, authCredentials = null, client = client,
+                )
+                val _ = assertThrows<CancellationException> {
+                    val _ = repo.invoke(listOf(sampleInvokeArgs.first()), listOf("cmd-1"))
+                }
+            }
         }
     }
 }

@@ -1,12 +1,12 @@
 plugins {
-	alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
-	alias(catalogue.plugins.fixers.gradle.publish)
-	alias(catalogue.plugins.kotlin.serialization)
+    alias(catalogue.plugins.fixers.gradle.kotlin.mpp)
+    alias(catalogue.plugins.fixers.gradle.publish)
+    alias(catalogue.plugins.kotlin.serialization)
 }
 
 dependencies {
-	commonMainApi(project(":c2-chaincode:chaincode-dsl"))
-	commonMainApi(libs.bundles.f2.dsl)
+    commonMainApi(project(":c2-chaincode:chaincode-dsl"))
+    commonMainApi(libs.bundles.f2.dsl)
 
-	jvmTestImplementation(libs.bundles.test)
+    jvmTestImplementation(libs.bundles.test)
 }

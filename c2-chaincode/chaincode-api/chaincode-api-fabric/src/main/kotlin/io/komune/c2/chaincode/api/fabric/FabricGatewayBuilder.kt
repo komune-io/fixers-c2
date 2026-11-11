@@ -27,42 +27,34 @@ import org.slf4j.LoggerFactory
 open class FabricGatewayBuilder(
     private val fabricConfigLoader: FabricConfigLoader?,
 ) {
+    private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
+
+    private val logger: Logger = LoggerFactory.getLogger(FabricGatewayBuilder::class.java)
+
     /**
      * No-arg constructor for subclassing in tests
      * (fabricConfigLoader is never used when contracts() is overridden).
      */
     protected constructor() : this(null)
 
-    private val gateways = ConcurrentHashMap<ChannelId, List<Gateway>>()
-
-    private val logger: Logger = LoggerFactory.getLogger(FabricGatewayClient::class.java)
-
     fun contract(
         channelId: ChannelId,
         chaincodeId: ChaincodeId
-    ): Contract {
-        return contracts(channelId, chaincodeId).shuffled().first()
-    }
+    ): Contract = contracts(channelId, chaincodeId).shuffled().first()
 
+    // Whatever fails to open the channel is logged with the channel it concerns, then goes on unchanged.
+    @Suppress("TooGenericExceptionCaught")
     open fun contracts(
         channelId: ChannelId,
         chaincodeId: ChaincodeId
-    ): List<Contract> {
-         try {
-             return gateways(channelId).map { gateway ->
-                val network = gateway.getNetwork(channelId)
-                val contract = network.getContract(chaincodeId)
-                contract
-            }
-        } catch (e: Throwable) {
-            logger.error("Error while querying of channel [$channelId]", e)
-            throw e
-        }
+    ): List<Contract> = try {
+        gateways(channelId).map { gateway -> gateway.getNetwork(channelId).getContract(chaincodeId) }
+    } catch (e: Throwable) {
+        logger.error("Could not open the contracts of channel [{}]", channelId, e)
+        throw e
     }
 
-    open fun gateway(channelId: ChannelId): Gateway {
-        return gateways(channelId).shuffled().first()
-    }
+    open fun gateway(channelId: ChannelId): Gateway = gateways(channelId).shuffled().first()
 
     fun gateways(channelId: ChannelId): List<Gateway> {
         return gateways.getOrPut(channelId) {
@@ -70,7 +62,7 @@ open class FabricGatewayBuilder(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod") // one gateway per endorser, read from three configuration levels in order
     private fun createGateways(channelId: ChannelId): List<Gateway> {
         val loader = requireNotNull(fabricConfigLoader) { "fabricConfigLoader must not be null" }
         val channelConfig = loader.getChannelConfig(channelId)
@@ -78,14 +70,16 @@ open class FabricGatewayBuilder(
         val organizationName = channelConfig.user.org
 
         val fabricConfig = loader.getFabricConfig(channelId)
-        val organizationConfig = fabricConfig.network.organisations[organizationName]!!
+        val organizationConfig = fabricConfig.network.organisations[organizationName]
+            ?: error("Organisation [$organizationName] not found in the fabric config of channel [$channelId]")
         val trustManager = organizationConfig.ca.getTlsCacertsAsUrl(cryptoConfigBase)
         val credentials = TlsChannelCredentials.newBuilder()
             .trustManager(trustManager.openStream())
             .build()
         return channelConfig.endorsers.map { endorser ->
             val peerConfig = organizationConfig.peers[endorser.peer]
-            val requests = peerConfig!!.requests.removePrefix("grpcs://")
+                ?: error("Peer [${endorser.peer}] not found in organisation [$organizationName]")
+            val requests = peerConfig.requests.removePrefix("grpcs://")
             val channel = Grpc.newChannelBuilder(requests, credentials).build()
 
             Gateway.newInstance()
@@ -96,7 +90,6 @@ open class FabricGatewayBuilder(
                 .connect()
         }
     }
-
 
     @Throws(IOException::class, CertificateException::class)
     private fun ChannelConfig.newIdentity(orgConfig: OrganisationProperties, config: PeerProperties): Identity {

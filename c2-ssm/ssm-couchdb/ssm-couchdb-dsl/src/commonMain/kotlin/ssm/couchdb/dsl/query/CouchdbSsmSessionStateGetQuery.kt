@@ -13,30 +13,30 @@ import ssm.chaincode.dsl.model.SsmName
 import ssm.chaincode.dsl.model.SsmSessionStateDTO
 
 /**
- * Retrieve the list of all known sessions of a given SSM
+ * Retrieve the list of all known sessions of a given SSM.
  * @d2 function
  * @parent [ssm.couchdb.dsl.CouchdbSsmD2Query]
  * @order 40
  * @title List Sessions
  */
 typealias CouchdbSsmSessionStateGetQueryFunction
-		= F2Function<CouchdbSsmSessionStateGetQueryDTO, CouchdbSsmSessionStateGetQueryResultDTO>
+        = F2Function<CouchdbSsmSessionStateGetQueryDTO, CouchdbSsmSessionStateGetQueryResultDTO>
 
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryDTO")
 interface CouchdbSsmSessionStateGetQueryDTO : Query {
-	val chaincodeUri: ChaincodeUriDTO
-	val ssmName: SsmName?
-	val sessionName: SessionName
+    val chaincodeUri: ChaincodeUriDTO
+    val ssmName: SsmName?
+    val sessionName: SessionName
 }
 
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryResultDTO")
 interface CouchdbSsmSessionStateGetQueryResultDTO : Event {
-	/**
-	 * Retrieved sessions
-	 */
-	val item: SsmSessionStateDTO
+    /**
+     * Retrieved sessions.
+     */
+    val item: SsmSessionStateDTO
 }
 
 /**
@@ -47,6 +47,8 @@ interface CouchdbSsmSessionStateGetQueryResultDTO : Event {
 @Serializable
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmSessionStateGetQuery(
     override val chaincodeUri: ChaincodeUri,
     override val ssmName: SsmName?,
@@ -61,6 +63,8 @@ class CouchdbSsmSessionStateGetQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbSsmSessionStateGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmSessionStateGetQueryResult(
-	override val item: SsmSessionStateDTO
+    override val item: SsmSessionStateDTO
 ) : CouchdbSsmSessionStateGetQueryResultDTO

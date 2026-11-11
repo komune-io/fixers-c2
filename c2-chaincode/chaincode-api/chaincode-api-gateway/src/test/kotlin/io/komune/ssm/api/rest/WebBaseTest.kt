@@ -10,7 +10,6 @@ import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.util.UriComponentsBuilder
 
-
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -25,7 +24,5 @@ class WebBaseTest {
     @Autowired
     internal lateinit var restTemplate: TestRestTemplate
 
-    internal fun baseUrl(): UriComponentsBuilder {
-        return UriComponentsBuilder.fromUriString("http://localhost:$port")
-    }
+    internal fun baseUrl(): UriComponentsBuilder = UriComponentsBuilder.fromUriString("http://localhost:$port")
 }

@@ -16,11 +16,11 @@ class C2ChaincodeConfigurationTest {
     ) = C2ChaincodeConfiguration(
         defaultCcid = defaultCcid,
         ccid = ccid,
-        user = C2ChaincodeConfiguration.UserConfig().apply {
-            name = "Admin"
-            password = ""
-            org = "bclan"
-        },
+        user = C2ChaincodeConfiguration.UserConfig(
+            name = "Admin",
+            password = "",
+            org = "bclan",
+        ),
         config = null,
         endorsers = "peer0:bclan,peer1:org2",
         batch = batch,
@@ -34,32 +34,34 @@ class C2ChaincodeConfigurationTest {
     @Test
     fun `getEndorsers parses the endorser pairs`() {
         assertThat(configuration().getEndorsers()).containsExactly(
-            Endorser("peer0", "bclan"),
-            Endorser("peer1", "org2"),
+            Endorser(peer = "peer0", organisation = "bclan"),
+            Endorser(peer = "peer1", organisation = "org2"),
         )
     }
 
     @Test
     fun `getChannelChaincodePair falls back to the default ccid when nothing is given`() {
-        assertThat(configuration().getChannelChaincodePair(null, null))
-            .isEqualTo(ChannelChaincodePair("sandbox", "ssm"))
+        assertThat(configuration().getChannelChaincodePair(channelId = null, chainCodeId = null))
+            .isEqualTo(ChannelChaincodePair(channelId = "sandbox", chainCodeId = "ssm"))
     }
 
     @Test
     fun `getChannelChaincodePair accepts an explicit pair declared in ccid`() {
-        assertThat(configuration().getChannelChaincodePair("sandbox", "ssm2"))
-            .isEqualTo(ChannelChaincodePair("sandbox", "ssm2"))
+        assertThat(configuration().getChannelChaincodePair(channelId = "sandbox", chainCodeId = "ssm2"))
+            .isEqualTo(ChannelChaincodePair(channelId = "sandbox", chainCodeId = "ssm2"))
     }
 
     @Test
     fun `getChannelChaincodePair completes a partial pair from the default`() {
-        assertThat(configuration().getChannelChaincodePair(null, "ssm2"))
-            .isEqualTo(ChannelChaincodePair("sandbox", "ssm2"))
+        assertThat(configuration().getChannelChaincodePair(channelId = null, chainCodeId = "ssm2"))
+            .isEqualTo(ChannelChaincodePair(channelId = "sandbox", chainCodeId = "ssm2"))
     }
 
     @Test
     fun `getChannelChaincodePair rejects a pair not declared in ccid`() {
-        assertThatThrownBy { configuration().getChannelChaincodePair("other", "ssm") }
+        assertThatThrownBy {
+            val _ = configuration().getChannelChaincodePair(channelId = "other", chainCodeId = "ssm")
+        }
             .isInstanceOf(InvokeException::class.java)
             .hasMessageContaining("Invalid other/ssm")
     }

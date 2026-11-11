@@ -15,28 +15,29 @@ import ssm.data.dsl.features.query.DataSsmSessionLogGetQueryResultDTO
 import ssm.data.dsl.model.DataSsmSessionState
 
 class DataSsmSessionLogGetQueryFunctionImpl(
-	private val ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
-	private val ssmGetTransactionQueryFunction: SsmGetTransactionQueryFunction
+    private val ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction,
+    private val ssmGetTransactionQueryFunction: SsmGetTransactionQueryFunction
 ) : DataSsmSessionLogGetQueryFunction {
 
-	override suspend fun invoke(msgs: Flow<DataSsmSessionLogGetQueryDTO>): Flow<DataSsmSessionLogGetQueryResultDTO> =
-		msgs.map { payload ->
-			val logs = payload.sessionName.getSessionLogs(
-				payload.ssmUri.burst(),
-				ssmGetSessionLogsQueryFunction
-			)
-			val transaction = payload.txId.getTransaction(
-				ssmGetTransactionQueryFunction,
-				chaincodeUri = payload.ssmUri.asChaincodeUri(),
-			)
-			logs.firstOrNull { log -> log.txId == payload.txId }
-				?.let { sessionState ->
-					DataSsmSessionState(
-						details = sessionState.state,
-						transaction = transaction
-					)
-				}.let {
-					DataSsmSessionLogGetQueryResult(it)
-				}
-		}
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType", "kotlin:S6309")
+    override suspend fun invoke(msgs: Flow<DataSsmSessionLogGetQueryDTO>): Flow<DataSsmSessionLogGetQueryResultDTO> =
+        msgs.map { payload ->
+            val logs = payload.sessionName.getSessionLogs(
+                payload.ssmUri.burst(),
+                ssmGetSessionLogsQueryFunction
+            )
+            val transaction = payload.txId.getTransaction(
+                ssmGetTransactionQueryFunction,
+                chaincodeUri = payload.ssmUri.asChaincodeUri(),
+            )
+            logs.firstOrNull { log -> log.txId == payload.txId }
+                ?.let { sessionState ->
+                    DataSsmSessionState(
+                        details = sessionState.state,
+                        transaction = transaction
+                    )
+                }
+                .run(::DataSsmSessionLogGetQueryResult)
+        }
 }

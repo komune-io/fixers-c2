@@ -10,29 +10,29 @@ typealias SsmRole = String
 @JsExport
 @JsName("SsmTransitionDTO")
 interface SsmTransitionDTO {
-	/**
-	 * Origin of the transition
-	 * @example 1
-	 */
-	val from: Int
+    /**
+     * Origin of the transition.
+     * @example 1
+     */
+    val from: Int
 
-	/**
-	 * Destination of the transition
-	 * @example 2
-	 */
-	val to: Int
+    /**
+     * Destination of the transition.
+     * @example 2
+     */
+    val to: Int
 
-	/**
-	 * Role of the [agent][Agent] allowed to trigger the transition
-	 * @example "Seller"
-	 */
-	val role: SsmRole
+    /**
+     * Role of the [agent][Agent] allowed to trigger the transition.
+     * @example "Seller"
+     */
+    val role: SsmRole
 
-	/**
-	 * Trigger of the transition
-	 * @example "Sell"
-	 */
-	val action: SsmAction
+    /**
+     * Trigger of the transition.
+     * @example "Sell"
+     */
+    val action: SsmAction
 }
 
 /**
@@ -43,8 +43,8 @@ interface SsmTransitionDTO {
 @JsExport
 @JsName("SsmTransition")
 data class SsmTransition(
-	override val from: Int,
-	override val to: Int,
-	override val role: SsmRole,
-	override val action: SsmAction,
+    override val from: Int,
+    override val to: Int,
+    override val role: SsmRole,
+    override val action: SsmAction,
 ) : SsmTransitionDTO

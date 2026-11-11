@@ -27,11 +27,7 @@ class FabricGatewayInvokeClientTest {
     // Helpers
     // ---------------------------------------------------------------------------
 
-    /**
-     * A Contract stub whose newProposal() always throws StatusRuntimeException.
-     * This exercises the catch branch in commitTransaction that returns Transient.
-     */
-    private val throwingContract: Contract = object : Contract {
+    private val unavailableOnProposalContract: Contract = object : Contract {
         override fun getChaincodeName(): String = "stub"
         override fun getContractName(): Optional<String> = Optional.empty()
 
@@ -48,12 +44,7 @@ class FabricGatewayInvokeClientTest {
         override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
     }
 
-    /**
-     * FabricGatewayBuilder whose contracts() returns a single stubbed Contract.
-     * Uses the protected no-arg constructor so FabricConfigLoader is never instantiated.
-     * The createGateways() path is dead code here because contracts() is fully overridden.
-     */
-    private fun stubBuilder(contract: Contract = throwingContract): FabricGatewayBuilder =
+    private fun builderReturning(contract: Contract = unavailableOnProposalContract): FabricGatewayBuilder =
         object : FabricGatewayBuilder() {
             override fun contracts(channelId: ChannelId, chaincodeId: ChaincodeId): List<Contract> =
                 listOf(contract)
@@ -65,7 +56,7 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     suspend fun `invoke returns list with same size as input, no exception escapes`() {
-        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
+        val client = FabricGatewayClient(builderReturning(), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -88,7 +79,7 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     suspend fun `invoke preserves per-item commandId in outcomes`() {
-        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
+        val client = FabricGatewayClient(builderReturning(), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -107,19 +98,22 @@ class FabricGatewayInvokeClientTest {
 
     @Test
     suspend fun `commandIds size mismatch throws IllegalArgumentException before any Fabric call`() {
-        val client = FabricGatewayClient(stubBuilder(), parallelism = 1)
+        val client = FabricGatewayClient(builderReturning(), parallelism = 1)
 
-        val thrown = runCatching {
-            client.invoke(
+        val thrown = try {
+            val _ = client.invoke(
                 channelId = "ch",
                 chaincodeId = "cc",
                 invokeArgsList = listOf(InvokeArgs("fn", "a")),
                 commandIds = listOf("c1", "c2"),  // wrong size
             )
-        }.exceptionOrNull()
+            null
+        } catch (e: IllegalArgumentException) {
+            e
+        }
 
         assertThat(thrown).isInstanceOf(IllegalArgumentException::class.java)
-        assertThat(thrown!!.message).contains("commandIds.size=2")
+        assertThat(thrown?.message).contains("commandIds.size=2")
     }
 
     @Test
@@ -128,9 +122,7 @@ class FabricGatewayInvokeClientTest {
             override fun getChaincodeName(): String = "stub"
             override fun getContractName(): Optional<String> = Optional.empty()
 
-            override fun newProposal(transactionName: String): Proposal.Builder {
-                throw IllegalStateException("boom")
-            }
+            override fun newProposal(transactionName: String): Proposal.Builder = error("boom")
 
             override fun submitTransaction(name: String): ByteArray = ByteArray(0)
             override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
@@ -139,7 +131,7 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
-        val client = FabricGatewayClient(stubBuilder(unexpectedContract), parallelism = 1)
+        val client = FabricGatewayClient(builderReturning(unexpectedContract), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -160,9 +152,8 @@ class FabricGatewayInvokeClientTest {
             override fun getChaincodeName(): String = "stub"
             override fun getContractName(): Optional<String> = Optional.empty()
 
-            override fun newProposal(transactionName: String): Proposal.Builder {
-                throw IllegalStateException()
-            }
+            override fun newProposal(transactionName: String): Proposal.Builder =
+                throw UnsupportedOperationException()
 
             override fun submitTransaction(name: String): ByteArray = ByteArray(0)
             override fun submitTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
@@ -171,7 +162,7 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: String): ByteArray = ByteArray(0)
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
-        val client = FabricGatewayClient(stubBuilder(messagelessContract), parallelism = 1)
+        val client = FabricGatewayClient(builderReturning(messagelessContract), parallelism = 1)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -181,7 +172,7 @@ class FabricGatewayInvokeClientTest {
 
         val transient = outcomes.single() as TxOutcome.Transient
         assertThat(transient.errorCode).isEqualTo("UNEXPECTED")
-        assertThat(transient.errorMessage).isEqualTo("IllegalStateException")
+        assertThat(transient.errorMessage).isEqualTo("UnsupportedOperationException")
     }
 
     @Test
@@ -206,7 +197,7 @@ class FabricGatewayInvokeClientTest {
 
         // parallelism = 3: keep the three items concurrently scheduled so the test actually
         // exercises sibling behavior under the supervisor scope, not sequential execution.
-        val client = FabricGatewayClient(stubBuilder(countingContract), parallelism = 3)
+        val client = FabricGatewayClient(builderReturning(countingContract), parallelism = 3)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -235,7 +226,7 @@ class FabricGatewayInvokeClientTest {
             override fun newProposal(transactionName: String): Proposal.Builder {
                 calls.incrementAndGet()
                 val now = inFlight.incrementAndGet()
-                maxInFlight.updateAndGet { seen -> maxOf(seen, now) }
+                maxInFlight.updateAndGet { seen -> maxOf(a = seen, b = now) }
                 try {
                     // Hold the slot long enough for the other items to pile up on the dispatcher.
                     Thread.sleep(50)
@@ -253,7 +244,7 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
 
-        val client = FabricGatewayClient(stubBuilder(gaugingContract), parallelism = 2)
+        val client = FabricGatewayClient(builderReturning(gaugingContract), parallelism = 2)
 
         val outcomes = client.invoke(
             channelId = "ch",
@@ -286,7 +277,7 @@ class FabricGatewayInvokeClientTest {
             override fun evaluateTransaction(name: String, vararg args: ByteArray): ByteArray = ByteArray(0)
         }
 
-        val client = FabricGatewayClient(stubBuilder(evaluatingContract), parallelism = 2)
+        val client = FabricGatewayClient(builderReturning(evaluatingContract), parallelism = 2)
 
         val results = client.query(
             channelId = "ch",
