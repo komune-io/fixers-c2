@@ -1,4 +1,15 @@
+ARG VERSION_ALPINE=3.24.3
 ARG VERSION_FABRIC=2.5.16
+
+# gosu comes from its release, checked against its published SHA-256, rather than from apt: on GitHub's ubuntu-26.04
+# runners the build network does not resolve *.ubuntu.com, while other hosts (GitHub, Alpine, Go proxy) resolve.
+FROM alpine:${VERSION_ALPINE} AS gosu
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+ARG GOSU_VERSION=1.17
+ARG GOSU_SHA256=bbc4136d03ab138b1ad66fa4fc051bafc6cc7ffae632b069a53657279a450de3
+RUN wget -q -O /gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" \
+    && echo "${GOSU_SHA256}  /gosu" | sha256sum -c - \
+    && chmod 0755 /gosu
 
 FROM hyperledger/fabric-peer:${VERSION_FABRIC}
 
@@ -6,14 +17,7 @@ RUN useradd -u 1000 -U -M -s /usr/sbin/nologin fabric
 
 # gosu drops root privileges after entrypoint.sh matches this user's supplementary
 # group to the mounted host docker.sock's GID, which varies per host/CI runner.
-# single-request: on GitHub's ubuntu-26.04 runners, glibc's paired A and AAAA lookups over one socket get no answer
-# from the build network's resolver ("Temporary failure resolving archive.ubuntu.com"); one query at a time resolves,
-# as musl images already do. ForceIPv4 asks only for the address apt connects to.
-# hadolint ignore=DL3008
-RUN export RES_OPTIONS=single-request \
-    && apt-get -o Acquire::ForceIPv4=true update \
-    && apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends gosu \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=gosu /gosu /usr/local/bin/gosu
 
 ARG COOP_PEER
 ARG COOP_PEER_DOMAIN
