@@ -2,6 +2,7 @@ package ssm.couchdb.f2.query
 
 import com.ibm.cloud.cloudant.v1.model.ChangesResult
 import com.ibm.cloud.cloudant.v1.model.ChangesResultItem
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.slf4j.LoggerFactory
@@ -20,11 +21,14 @@ class CouchDbDatabaseGetChangesQueryFunctionImpl(
 
     private val logger = LoggerFactory.getLogger(CouchDbDatabaseGetChangesQueryFunctionImpl::class.java)
 
-    @Suppress("TooGenericExceptionCaught")
+    // F2Function declares invoke suspend: an override cannot drop it; any failure answers an empty result.
+    @Suppress("SuspendFunWithFlowReturnType", "TooGenericExceptionCaught")
     override suspend fun invoke(msgs: Flow<CouchdbDatabaseGetChangesQueryDTO>)
     : Flow<CouchdbDatabaseGetChangesQueryResultDTO> = msgs.map { payload ->
         try {
             getChanges(couchdbClient, payload)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logger.error(e.message, e)
             CouchdbDatabaseGetChangesQueryResult(
@@ -38,8 +42,14 @@ class CouchDbDatabaseGetChangesQueryFunctionImpl(
         couchdbClient: CouchdbSsmClient,
         payload: CouchdbDatabaseGetChangesQueryDTO
     ): CouchdbDatabaseGetChangesQueryResultDTO {
-        logger.info("GetChanges for ${payload.channelId}:${payload.chaincodeId}:${payload.ssmName}:${payload.sessionName}")
-        val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+        logger.info(
+            "GetChanges for {}:{}:{}:{}",
+            payload.channelId,
+            payload.chaincodeId,
+            payload.ssmName,
+            payload.sessionName.orEmpty(),
+        )
+        val dbName = chainCodeDbName(channelId = payload.channelId, chaincodeId = payload.chaincodeId)
         return couchdbClient.getSsmChanges(
             dbName = dbName,
             lastEventId = payload.lastEventId,
@@ -58,15 +68,13 @@ class CouchDbDatabaseGetChangesQueryFunctionImpl(
                 docType = changesItem.getDocType(),
                 changeEventId = changesItem.seq
             )
-        }.let {
+        }.let { items ->
             CouchdbDatabaseGetChangesQueryResult(
-                items = it,
+                items = items,
                 lastEventId = lastSeq
             )
         }
     }
 
-    private fun ChangesResultItem.parseId(): String {
-        return id.substringAfter("_")
-    }
+    private fun ChangesResultItem.parseId(): String = id.substringAfter("_")
 }

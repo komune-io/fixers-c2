@@ -25,6 +25,8 @@ class SsmRequesterQueryEachTest {
 
     private data class FakeAgent(val name: String? = null, val pub: String? = null)
 
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
     private fun buildRequester(handler: MockRequestHandler): SsmRequester {
         val engine = MockEngine(handler)
         val client = HttpClient(engine) {
@@ -50,7 +52,8 @@ class SsmRequesterQueryEachTest {
         )
     }
 
-    private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private fun jsonHeaders() =
+        headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
 
     @Test
     suspend fun `queryEach preserves input order including nulls`() {
@@ -60,7 +63,7 @@ class SsmRequesterQueryEachTest {
                 "alice" -> """{"name":"alice","pub":"key-a"}"""
                 "bob" -> "null"
                 "carol" -> """{"name":"carol","pub":"key-c"}"""
-                else -> error("unexpected args=$argValue")
+                else -> error("unexpected args=${argValue ?: "none"}")
             }
             respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
         }
@@ -88,7 +91,7 @@ class SsmRequesterQueryEachTest {
 
         assertThatThrownBy {
             runBlocking {
-                requester.queryEach(
+                val _ = requester.queryEach(
                     apiQueries("alice", "bob"),
                     object : TypeReference<FakeAgent?>() {},
                 )

@@ -22,7 +22,6 @@ import ssm.data.dsl.features.query.DataSsmSessionLogListQueryFunction
 import ssm.sync.sdk.SsmSyncF2Builder
 import ssm.sync.sdk.SyncSsmCommandFunction
 
-
 @EnableConfigurationProperties(SsmDataProperties::class)
 @Configuration(proxyBeanMethods = false)
 class DataSsmAutoConfiguration {

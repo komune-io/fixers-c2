@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.SsmName
 
 /**
- * Retrieves a list of the existing SSMs
+ * Retrieves a list of the existing SSMs.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title List SSMs
@@ -40,7 +40,7 @@ class SsmListSsmQuery(
 @JsName("SsmListSsmResult")
 class SsmListSsmResult(
     /**
-     * Names of all known SSMs
+     * Names of all known SSMs.
      * @example [["ProductLogistic", "Delivery", "Mobility"]]
      */
     override val items: Array<SsmName>,

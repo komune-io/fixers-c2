@@ -23,8 +23,10 @@ fun Array<out S2Transition>.toSsmTransitions(
 }
 
 fun S2Transition.toSsmTransition(from: Int? = null, to: Int? = null, withResultAsAction: Boolean) = SsmTransition(
-    from = from ?: requireNotNull(this.from) { "S2Transition.from cannot be null when no override is provided" }.position,
+    from = from ?: requireNotNull(this.from) {
+        "S2Transition.from cannot be null when no override is provided"
+    }.position,
     to = to ?: this.to.position,
     role = this.role.name,
-    action = this.result?.name?.takeIf { withResultAsAction } ?: this.action.name
+    action = this.result?.run { name.takeIf { withResultAsAction } } ?: this.action.name
 )

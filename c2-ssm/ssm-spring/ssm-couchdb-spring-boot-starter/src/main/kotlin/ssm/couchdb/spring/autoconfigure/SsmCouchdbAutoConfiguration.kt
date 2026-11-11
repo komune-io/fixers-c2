@@ -1,6 +1,5 @@
 package ssm.couchdb.spring.autoconfigure
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -37,60 +36,47 @@ class SsmCouchdbAutoConfiguration {
 
 }
 
+// Bean names are the F2 function names consumers resolve: shortened methods keep them explicitly.
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnBean(SsmCouchDbQueries::class)
-class SsmCouchdbF2AutoConfiguration {
+class SsmCouchdbF2AutoConfiguration(
+    private val ssmCouchDbQueries: SsmCouchDbQueries,
+) {
 
-    @Autowired
-    private lateinit var ssmCouchDbQueries: SsmCouchDbQueries
+    @Bean("couchdbDatabaseGetChangesQueryFunction")
+    fun databaseChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction =
+        ssmCouchDbQueries.couchdbDatabaseGetChangesQueryFunction()
 
-    @Bean
-    fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction {
-        return ssmCouchDbQueries.couchdbDatabaseGetChangesQueryFunction()
-    }
+    @Bean("couchdbDatabaseListQueryFunction")
+    fun databaseListQueryFunction(): CouchdbDatabaseListQueryFunction =
+        ssmCouchDbQueries.couchdbDatabaseListQueryFunction()
 
-    @Bean
-    fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction {
-        return ssmCouchDbQueries.couchdbDatabaseListQueryFunction()
-    }
+    @Bean("couchdbDatabaseGetQueryFunction")
+    fun databaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction =
+        ssmCouchDbQueries.couchdbDatabaseGetQueryFunction()
 
-    @Bean
-    fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction {
-        return ssmCouchDbQueries.couchdbDatabaseGetQueryFunction()
-    }
-
-    @Bean
-    fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction {
-        return ssmCouchDbQueries.couchdbChaincodeListQueryFunction()
-    }
+    @Bean("couchdbChaincodeListQueryFunction")
+    fun chaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction =
+        ssmCouchDbQueries.couchdbChaincodeListQueryFunction()
 
     @Bean
-    fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction {
-        return ssmCouchDbQueries.couchdbAdminListQueryFunction()
-    }
+    fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction =
+        ssmCouchDbQueries.couchdbAdminListQueryFunction()
 
     @Bean
-    fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction {
-        return ssmCouchDbQueries.couchdbUserListQueryFunction()
-    }
+    fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction = ssmCouchDbQueries.couchdbUserListQueryFunction()
 
     @Bean
-    fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction {
-        return ssmCouchDbQueries.couchdbSsmGetQueryFunction()
-    }
+    fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction = ssmCouchDbQueries.couchdbSsmGetQueryFunction()
 
     @Bean
-    fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction {
-        return ssmCouchDbQueries.couchdbSsmListQueryFunction()
-    }
+    fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction = ssmCouchDbQueries.couchdbSsmListQueryFunction()
 
-    @Bean
-    fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction {
-        return ssmCouchDbQueries.couchdbSsmSessionStateListQueryFunction()
-    }
+    @Bean("couchdbSsmSessionStateListQueryFunction")
+    fun sessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction =
+        ssmCouchDbQueries.couchdbSsmSessionStateListQueryFunction()
 
-    @Bean
-    fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction {
-        return ssmCouchDbQueries.couchdbSsmSessionStateGetQueryFunction()
-    }
+    @Bean("couchdbSsmSessionStateGetQueryFunction")
+    fun sessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction =
+        ssmCouchDbQueries.couchdbSsmSessionStateGetQueryFunction()
 }

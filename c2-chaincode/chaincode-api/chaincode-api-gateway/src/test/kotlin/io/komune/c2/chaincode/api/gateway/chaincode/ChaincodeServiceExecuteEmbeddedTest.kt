@@ -20,11 +20,13 @@ import org.springframework.boot.resttestclient.TestRestTemplate
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.util.UriComponentsBuilder
@@ -76,12 +78,16 @@ class ChaincodeServiceExecuteEmbeddedTest {
             chaincodeConfiguration: C2ChaincodeConfiguration,
             cloudEventsProperties: CloudEventsProperties,
         ): ChaincodeService = ScriptedChaincodeService(
-            fabricGatewayClient, blockchainService, chaincodeConfiguration, cloudEventsProperties,
-            scriptedOutcomes, { raiseException() },
+            fabricGatewayClient = fabricGatewayClient,
+            blockchainService = blockchainService,
+            chaincodeConfiguration = chaincodeConfiguration,
+            cloudEventsProperties = cloudEventsProperties,
+            scriptedOutcomes = scriptedOutcomes,
+            raiseException = { raiseException() },
         )
     }
 
-    @org.springframework.boot.test.web.server.LocalServerPort
+    @LocalServerPort
     var port: Int = 0
 
     @Autowired
@@ -119,7 +125,7 @@ class ChaincodeServiceExecuteEmbeddedTest {
         val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
         val entity = HttpEntity(requests.toList(), headers)
         val typeRef = object : ParameterizedTypeReference<List<InvokeEnvelope<OutcomeData>>>() {}
-        val response = restTemplate.exchange(uri, org.springframework.http.HttpMethod.POST, entity, typeRef)
+        val response = restTemplate.exchange(uri, HttpMethod.POST, entity, typeRef)
         assertThat(response.statusCode.value()).isEqualTo(200)
         return response.body!!
     }

@@ -4,7 +4,6 @@ import io.cucumber.datatable.DataTable
 import io.cucumber.java8.En
 import io.cucumber.java8.Scenario
 import kotlinx.coroutines.runBlocking
-import ssm.chaincode.dsl.config.SsmChaincodeProperties
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentName
 import ssm.chaincode.dsl.model.SessionName
@@ -21,18 +20,15 @@ import ssm.sdk.sign.model.SignerUser
 
 abstract class SsmCommandStep {
 
-    companion object {
-        private const val DEFAULT_ADMIN_NAME = "ssm-admin"
-        private const val DEFAULT_ADMIN_KEY = "local/admin/ssm-admin"
-    }
+    private var currentBag: SsmCucumberBag? = null
 
-    lateinit var bag: SsmCucumberBag
-    lateinit var config: SsmChaincodeProperties
+    val bag: SsmCucumberBag
+        get() = checkNotNull(currentBag) { "No cucumber scenario has started" }
 
     @Suppress("LongMethod")
     fun En.prepareSteps() {
         Before { scenario: Scenario ->
-            bag = SsmCucumberBag.init(scenario)
+            currentBag = SsmCucumberBag.init(scenario)
         }
 
         Given("An admin") {
@@ -56,7 +52,7 @@ abstract class SsmCommandStep {
 
         Given("The user {string} with key {string}") { userName: AgentName, key: String ->
             runBlocking {
-                bag.userSigners[userName] = loadSigner(userName, key)
+                bag.userSigners[userName] = loadSigner(agentName = userName, filename = key)
             }
         }
 
@@ -70,7 +66,7 @@ abstract class SsmCommandStep {
 
         Given("A ssm {string} with configuration file {string}") { ssmName: SsmName, ssmConfigFile: String ->
             val contextSsm = ssmName.contextualize(bag)
-            bag.ssms[contextSsm] = SsmJsonReader().readSsm(ssmConfigFile, contextSsm)
+            bag.ssms[contextSsm] = SsmJsonReader().readSsm(fileName = ssmConfigFile, ssmName = contextSsm)
             runBlocking {
                 createSsm(bag.ssms.getValue(contextSsm))
             }
@@ -112,7 +108,7 @@ abstract class SsmCommandStep {
         }
         When("I create a ssm {string} with configuration file {string}") { ssmName: SsmName, ssmConfigFile: String ->
             val contextSsm = ssmName.contextualize(bag)
-            bag.ssms[contextSsm] = SsmJsonReader().readSsm(ssmConfigFile, contextSsm)
+            bag.ssms[contextSsm] = SsmJsonReader().readSsm(fileName = ssmConfigFile, ssmName = contextSsm)
             runBlocking {
 
                 createSsm(bag.ssms.getValue(contextSsm))
@@ -128,7 +124,8 @@ abstract class SsmCommandStep {
                 createSsm(bag.ssms.getValue(contextSsm))
             }
         }
-        When("I start a session {string} for {string}") { sessionName: SessionName, ssmName: SsmName, table: DataTable ->
+        When("I start a session {string} for {string}") {
+            sessionName: SessionName, ssmName: SsmName, table: DataTable ->
             runBlocking {
                 val contextSsm = ssmName.contextualize(bag)
                 val session = SsmSession(
@@ -153,7 +150,12 @@ abstract class SsmCommandStep {
                         iteration = perform.iteration,
                         private = emptyMap()
                     )
-                    bag.clientTx(signer).sendPerform(bag.chaincodeUri, perform.action, context, signer.name)
+                    val _ = bag.clientTx(signer).sendPerform(
+                        chaincodeUri = bag.chaincodeUri,
+                        action = perform.action,
+                        context = context,
+                        signerName = signer.name,
+                    )
                 }
             }
         }
@@ -200,9 +202,7 @@ abstract class SsmCommandStep {
     }
 
 
-    protected fun createUser(agentName: AgentName): SignerUser {
-        return SignerUser.generate(agentName)
-    }
+    protected fun createUser(agentName: AgentName): SignerUser = SignerUser.generate(agentName)
 
     protected abstract suspend fun startSession(session: SsmSession)
 
@@ -217,4 +217,9 @@ abstract class SsmCommandStep {
     }
 
     protected abstract suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser
+
+    companion object {
+        private const val DEFAULT_ADMIN_NAME = "ssm-admin"
+        private const val DEFAULT_ADMIN_KEY = "local/admin/ssm-admin"
+    }
 }

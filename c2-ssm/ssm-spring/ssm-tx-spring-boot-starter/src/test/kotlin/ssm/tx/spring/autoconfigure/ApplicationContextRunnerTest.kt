@@ -8,33 +8,33 @@ import ssm.bdd.spring.autoconfigure.ApplicationContextBuilder
 import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 import ssm.tx.create.spring.autoconfigure.SsmTxCreateAutoConfiguration
-import ssm.tx.session.spring.autoconfigure.SsmTxSessionPerformActionAutoConfiguration
 import ssm.tx.session.start.spring.autoconfigure.SsmSessionStartAutoConfiguration
-
 
 class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context runner must must start`() {
         ApplicationContextRunnerBuilder()
-            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmTxProperties::class.java)
                 assertThat(context).hasBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)
                 assertThat(context).hasBean(SsmTxCreateAutoConfiguration::ssmTxCreateFunction.name)
-                assertThat(context).hasBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
+                assertThat(context).hasBean("ssmTxSessionPerformActionFunction")
             }
     }
 
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = SsmChaincodeConfigTest.localDockerComposeParams
-        )
-        assertThat(context.getBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)).isNotNull
-        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        ).use { context ->
+            assertThat(context.getBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)).isNotNull
+            assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        }
     }
 
     object SsmChaincodeConfigTest {

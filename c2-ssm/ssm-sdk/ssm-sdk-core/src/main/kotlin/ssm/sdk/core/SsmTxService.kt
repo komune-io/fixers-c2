@@ -65,8 +65,13 @@ class SsmTxService(
 
     suspend fun sendPerform(commands: List<SsmPerformCommand>): List<CommandOutcome> {
         logger.info("Perform ${commands.size} action(s)")
-        val cmds = commands.map {
-            perform(it.action, it.context, it.chaincodeUri, it.signerName).copy(timestamp = it.timestamp)
+        val cmds = commands.map { command ->
+            perform(
+                action = command.action,
+                context = command.context,
+                chaincodeUri = command.chaincodeUri,
+                agentName = command.signerName,
+            ).copy(timestamp = command.timestamp)
         }
         val ids = commands.map { it.msgId }
         return ssmService.invokeAll(cmds, ids)

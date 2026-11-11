@@ -17,6 +17,8 @@ class SsmGetSessionLogsQueryFunctionImpl(
     private val queryService: SsmQueryService,
 ): SsmGetSessionLogsQueryFunction  {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(
         msgs: Flow<SsmGetSessionLogsQuery>
     ): Flow<SsmGetSessionLogsQueryResult> = msgs.map { payload ->
@@ -30,10 +32,10 @@ class SsmGetSessionLogsQueryFunctionImpl(
     }.batch(batch.toBatch()) { queries ->
         val logsResult = queryService.getLogs(queries.map { it.getLogQuery })
         val logBySessionName = logsResult.associateBy { log ->
-            log.firstOrNull()?.state?.session
+            log.firstOrNull()?.run { state.session }
         }
         queries.map { query ->
-            val logs = logBySessionName[query.getLogQuery.sessionName] ?: emptyList()
+            val logs = logBySessionName[query.getLogQuery.sessionName].orEmpty()
             SsmGetSessionLogsQueryResult(
                 ssmName = query.ssmName,
                 sessionName = query.getLogQuery.sessionName,
@@ -43,7 +45,7 @@ class SsmGetSessionLogsQueryFunctionImpl(
     }
 }
 
-class GetLogQueryWithSsmName(
+data class GetLogQueryWithSsmName(
     val ssmName: SsmName,
     val getLogQuery: GetLogQuery,
 )

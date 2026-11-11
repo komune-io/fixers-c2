@@ -11,6 +11,8 @@ typealias SsmTxSessionStartFunction = F2Function<SsmStartCommand, CommandOutcome
 class SsmTxSessionStartFunctionImpl(
     private val ssmTxService: SsmTxService,
 ) : SsmTxSessionStartFunction {
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmStartCommand>): Flow<CommandOutcome> =
         ssmTxService.sendStart(msgs)
 }

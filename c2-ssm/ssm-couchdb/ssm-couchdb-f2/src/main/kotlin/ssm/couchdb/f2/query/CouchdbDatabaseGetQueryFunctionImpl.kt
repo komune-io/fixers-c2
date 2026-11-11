@@ -20,11 +20,12 @@ class CouchdbDatabaseGetQueryFunctionImpl(
 
     private fun DatabaseInformation.asDatabase() = Database(this.dbName)
 
-    @Suppress("TooGenericExceptionCaught")
+    // F2Function declares invoke suspend: an override cannot drop it; any failure answers an empty result.
+    @Suppress("SuspendFunWithFlowReturnType", "TooGenericExceptionCaught")
     override suspend fun invoke(
         msgs: Flow<CouchdbDatabaseGetQueryDTO>
     ): Flow<CouchdbDatabaseGetQueryResultDTO> = msgs.map { payload ->
-        val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+        val dbName = chainCodeDbName(channelId = payload.channelId, chaincodeId = payload.chaincodeId)
         try {
             CouchdbDatabaseGetQueryResult(
                 item = couchdbClient.getDatabase(dbName).asDatabase()

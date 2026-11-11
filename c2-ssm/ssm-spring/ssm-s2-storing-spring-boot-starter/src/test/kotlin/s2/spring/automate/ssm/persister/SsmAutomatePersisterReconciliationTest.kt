@@ -16,6 +16,7 @@ import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2InitCommand
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -45,7 +46,7 @@ import tools.jackson.databind.ObjectMapper
  */
 class SsmAutomatePersisterReconciliationTest {
 
-    interface TestState : s2.dsl.automate.S2State { override val position: Int }
+    interface TestState : S2State { override val position: Int }
 
     data class IterableEntity(val id: String, val status: Int, val iteration: Int) :
         WithS2Id<String>, WithS2State<TestState>, WithS2Iteration {
@@ -75,6 +76,9 @@ class SsmAutomatePersisterReconciliationTest {
         ),
     )
 
+    private val logsQueryMustNotBeCalled: SsmGetSessionLogsQueryFunction =
+        F2Function { _ -> error("logs query must not be called when nothing is reconcilable") }
+
     private fun initCtx(entity: IterableEntity) =
         InitTransitionAppliedContext<TestState, String, IterableEntity, TestEvt, S2Automate>(
             automateContext = AutomateContext(automate = testAutomate, batch = S2BatchProperties()),
@@ -98,7 +102,6 @@ class SsmAutomatePersisterReconciliationTest {
         )
     }
 
-    /** A logs result for [session] with one log at [iteration] carrying [publicJson]. */
     private fun logsAt(session: String, iteration: Int, publicJson: String, txId: String) =
         SsmGetSessionLogsQueryResult(
             ssmName = "test-ssm",
@@ -121,12 +124,16 @@ class SsmAutomatePersisterReconciliationTest {
         perform: SsmTxSessionPerformActionFunction,
         logs: SsmGetSessionLogsQueryFunction,
     ) = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-        ssmSessionStartFunction = start,
-        ssmSessionPerformActionFunction = perform,
-        ssmGetSessionLogsQueryFunction = logs,
-        chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+        functions = SsmSessionFunctions(
+            ssmSessionStartFunction = start,
+            ssmSessionPerformActionFunction = perform,
+            ssmGetSessionLogsQueryFunction = logs,
+        ),
+        target = SsmSigningTarget(
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+        ),
         entityType = IterableEntity::class.java,
-        agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
         objectMapper = om,
         batch = S2BatchProperties(),
     )
@@ -146,9 +153,6 @@ class SsmAutomatePersisterReconciliationTest {
         outcome = "Transient", msgId = msgId, errorCode = "GRPC_UNAVAILABLE", errorMessage = "peer down",
     )
 
-    private val logsQueryMustNotBeCalled: SsmGetSessionLogsQueryFunction =
-        F2Function { _ -> error("logs query must not be called when nothing is reconcilable") }
-
     // ── START ───────────────────────────────────────────────────────────────────
 
     @Test
@@ -157,7 +161,14 @@ class SsmAutomatePersisterReconciliationTest {
         val onChainPublic = om.writeValueAsString(entity)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
             q.toList()
-                .map { logsAt(it.sessionName, iteration = 0, onChainPublic, txId = "tx-start-recovered") }
+                .map { query ->
+                    logsAt(
+                        session = query.sessionName,
+                        iteration = 0,
+                        publicJson = onChainPublic,
+                        txId = "tx-start-recovered",
+                    )
+                }
                 .asFlow()
         }
         val p = persister(
@@ -178,7 +189,7 @@ class SsmAutomatePersisterReconciliationTest {
         val entity = IterableEntity("id-2", status = 1, iteration = 0)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
             q.toList()
-                .map { logsAt(it.sessionName, iteration = 0, publicJson = "{\"other\":true}", txId = "tx-x") }
+                .map { logsAt(session = it.sessionName, iteration = 0, publicJson = "{\"other\":true}", txId = "tx-x") }
                 .asFlow()
         }
         val p = persister(
@@ -197,7 +208,7 @@ class SsmAutomatePersisterReconciliationTest {
     suspend fun `START Committed never triggers a reconciliation query`() {
         val entity = IterableEntity("id-ok", status = 1, iteration = 0)
         val p = persister(
-            start = F2Function { c -> c.toList().map { committed(it.msgId, "tx-committed") }.asFlow() },
+            start = F2Function { c -> c.toList().map { committed(msgId = it.msgId, txId = "tx-committed") }.asFlow() },
             perform = F2Function { _ -> error("perform not used") },
             logs = logsQueryMustNotBeCalled,
         )
@@ -215,7 +226,14 @@ class SsmAutomatePersisterReconciliationTest {
         val onChainPublic = om.writeValueAsString(entity)
         val logs: SsmGetSessionLogsQueryFunction = F2Function { q ->
             q.toList()
-                .map { logsAt(it.sessionName, iteration = 1, onChainPublic, txId = "tx-perform-recovered") }
+                .map { query ->
+                    logsAt(
+                        session = query.sessionName,
+                        iteration = 1,
+                        publicJson = onChainPublic,
+                        txId = "tx-perform-recovered",
+                    )
+                }
                 .asFlow()
         }
         val p = persister(

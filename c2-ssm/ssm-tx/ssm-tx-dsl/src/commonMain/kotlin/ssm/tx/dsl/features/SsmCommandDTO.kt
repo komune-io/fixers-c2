@@ -20,7 +20,7 @@ interface SsmCommandDTO : Command {
 @JsName("SsmCommandResultDTO")
 interface SsmCommandResultDTO : Event {
     /**
-     * Identifier of the transaction
+     * Identifier of the transaction.
      * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
      */
     val transactionId: TransactionId
@@ -28,7 +28,7 @@ interface SsmCommandResultDTO : Event {
 
 
 /**
- * Response of the API after a command has been executed
+ * Response of the API after a command has been executed.
  * @d2 model
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Model]
  * @title SSM-CHAINCODE/InvokeReturn
@@ -37,7 +37,7 @@ interface SsmCommandResultDTO : Event {
 @JsName("SsmCommandResult")
 data class SsmCommandResult(
     /**
-     * Identifier of the transaction
+     * Identifier of the transaction.
      * @example [ssm.chaincode.dsl.blockchain.Transaction.transactionId]
      */
     override val transactionId: TransactionId,

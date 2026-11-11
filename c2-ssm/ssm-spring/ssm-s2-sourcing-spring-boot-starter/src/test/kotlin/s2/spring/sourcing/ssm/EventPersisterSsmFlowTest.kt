@@ -25,13 +25,10 @@ import ssm.chaincode.dsl.model.SsmTransition
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.model.uri.toSsmUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQuery
-import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryResult
 import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction
 import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
-import ssm.data.dsl.features.query.DataSsmSessionGetQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionGetQueryResult
-import ssm.data.dsl.features.query.DataSsmSessionListQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionListQueryResult
 import ssm.data.dsl.model.DataChannel
 import ssm.data.dsl.model.DataSsmSession
@@ -46,6 +43,15 @@ import ssm.sdk.dsl.CommandOutcome
  * no Spring context and no Fabric.
  */
 class EventPersisterSsmFlowTest {
+
+    private val noFunctions = SsmSourcingFunctions(
+        ssmSessionStartFunction = F2Function { error("start not expected") },
+        ssmSessionPerformActionFunction = F2Function { error("perform not expected") },
+        dataSsmSessionGetQueryFunction = F2Function { error("get session not expected") },
+        ssmGetSessionLogsQueryFunction = F2Function { error("get logs not expected") },
+        dataSsmSessionListQueryFunction = F2Function { error("list sessions not expected") },
+    )
+
 
     @Serializable
     data class TestEvent(
@@ -64,11 +70,11 @@ class EventPersisterSsmFlowTest {
         version = "1.0",
         transitions = arrayOf(
             S2Transition(
-                S2StateValue("Init", 0),
-                S2StateValue("Active", 1),
-                S2RoleValue("Admin"),
-                S2TransitionValue("Create"),
-                null,
+                from = S2StateValue(name = "Init", position = 0),
+                to = S2StateValue(name = "Active", position = 1),
+                role = S2RoleValue(name = "Admin"),
+                action = S2TransitionValue(name = "Create"),
+                result = null,
             )
         )
     )
@@ -117,25 +123,15 @@ class EventPersisterSsmFlowTest {
     )
 
     private fun createPersister(
-        startFunction: SsmTxSessionStartFunction = F2Function { error("start not expected") },
-        performFunction: SsmTxSessionPerformActionFunction = F2Function { error("perform not expected") },
-        getSessionFunction: DataSsmSessionGetQueryFunction = F2Function { error("get session not expected") },
-        getLogsFunction: SsmGetSessionLogsQueryFunction = F2Function { error("get logs not expected") },
-        listSessionsFunction: DataSsmSessionListQueryFunction = F2Function { error("list sessions not expected") },
-        versioning: Boolean = false,
+        functions: SsmSourcingFunctions = noFunctions,
+        isVersioning: Boolean = false,
     ) = EventPersisterSsm<TestEvent, String>(
         s2Automate = automate,
-        eventType = TestEvent::class,
         batchParams = S2BatchProperties(),
-        ssmSessionStartFunction = startFunction,
-        ssmSessionPerformActionFunction = performFunction,
-        dataSsmSessionGetQueryFunction = getSessionFunction,
-        ssmGetSessionLogsQueryFunction = getLogsFunction,
-        dataSsmSessionListQueryFunction = listSessionsFunction,
-        chaincodeUri = chaincodeUri,
-        agentSigner = agent,
-        json = json,
-        versioning = versioning,
+        functions = functions,
+        target = SsmSourcingTarget(chaincodeUri = chaincodeUri, agentSigner = agent),
+        format = SsmEventFormat(eventType = TestEvent::class, json = json),
+        isVersioning = isVersioning,
     )
 
     private fun capturingStart(captured: MutableList<SsmStartCommand>): SsmTxSessionStartFunction =
@@ -162,10 +158,14 @@ class EventPersisterSsmFlowTest {
     suspend fun `persist single event starts a session when the chain has no iteration`() {
         val started = mutableListOf<SsmStartCommand>()
         val persister = createPersister(
-            startFunction = capturingStart(started),
-            getSessionFunction = F2Function { queries -> queries.map { DataSsmSessionGetQueryResult(null) } },
+            functions = noFunctions.copy(
+                ssmSessionStartFunction = capturingStart(started),
+                dataSsmSessionGetQueryFunction = F2Function { queries ->
+                    queries.map { DataSsmSessionGetQueryResult(null) }
+                },
+            ),
         )
-        val event = TestEvent("id-1", "hello")
+        val event = TestEvent(eventId = "id-1", data = "hello")
 
         val returned = persister.persist(event)
 
@@ -186,14 +186,16 @@ class EventPersisterSsmFlowTest {
     suspend fun `persist single event performs an action at the chain iteration when the session exists`() {
         val performed = mutableListOf<SsmPerformCommand>()
         val persister = createPersister(
-            performFunction = capturingPerform(performed),
-            getSessionFunction = F2Function { queries ->
-                queries.map { DataSsmSessionGetQueryResult(dataSession("id-1", iteration = 3)) }
-            },
+            functions = noFunctions.copy(
+                ssmSessionPerformActionFunction = capturingPerform(performed),
+                dataSsmSessionGetQueryFunction = F2Function { queries ->
+                    queries.map { DataSsmSessionGetQueryResult(dataSession("id-1", iteration = 3)) }
+                },
+            ),
         )
-        val event = TestEvent("id-1", "updated")
+        val event = TestEvent(eventId = "id-1", data = "updated")
 
-        persister.persist(event)
+        val _ = persister.persist(event)
 
         assertThat(performed).hasSize(1)
         val command = performed.single()
@@ -208,12 +210,16 @@ class EventPersisterSsmFlowTest {
     suspend fun `persist single event with versioning prefixes the session name with the automate name`() {
         val started = mutableListOf<SsmStartCommand>()
         val persister = createPersister(
-            startFunction = capturingStart(started),
-            getSessionFunction = F2Function { queries -> queries.map { DataSsmSessionGetQueryResult(null) } },
-            versioning = true,
+            functions = noFunctions.copy(
+                ssmSessionStartFunction = capturingStart(started),
+                dataSsmSessionGetQueryFunction = F2Function { queries ->
+                    queries.map { DataSsmSessionGetQueryResult(null) }
+                },
+            ),
+            isVersioning = true,
         )
 
-        persister.persist(TestEvent("id-1", "hello"))
+        val _ = persister.persist(TestEvent(eventId = "id-1", data = "hello"))
 
         assertThat(started.single().session.session).isEqualTo("TestAutomate-id-1")
     }
@@ -226,23 +232,26 @@ class EventPersisterSsmFlowTest {
     suspend fun `persist flow starts sessions without logs and performs actions on sessions with logs`() {
         val started = mutableListOf<SsmStartCommand>()
         val performed = mutableListOf<SsmPerformCommand>()
-        val newEvent = TestEvent("new-1", "created")
-        val existingEvent = TestEvent("old-1", "updated")
+        val newEvent = TestEvent(eventId = "new-1", data = "created")
+        val existingEvent = TestEvent(eventId = "old-1", data = "updated")
 
         val persister = createPersister(
-            startFunction = capturingStart(started),
-            performFunction = capturingPerform(performed),
-            getLogsFunction = F2Function { queries ->
-                queries.map { query ->
-                    when (query.sessionName) {
-                        "new-1" -> logsResult("new-1", emptyList())
-                        else -> logsResult("old-1", listOf(
-                            ssmLog("old-1", 0, encode(existingEvent)),
-                            ssmLog("old-1", 2, encode(existingEvent)),
-                        ))
+            functions = noFunctions.copy(
+                ssmSessionStartFunction = capturingStart(started),
+                ssmSessionPerformActionFunction = capturingPerform(performed),
+                ssmGetSessionLogsQueryFunction = F2Function { queries ->
+                    queries.map { query ->
+                        if (query.sessionName == "new-1") {
+                            logsResult("new-1", emptyList())
+                        } else {
+                            logsResult("old-1", listOf(
+                                ssmLog("old-1", 0, encode(existingEvent)),
+                                ssmLog("old-1", 2, encode(existingEvent)),
+                            ))
+                        }
                     }
-                }
-            },
+                },
+            ),
         )
 
         val returned = persister.persist(flowOf(newEvent, existingEvent)).toList()
@@ -259,17 +268,19 @@ class EventPersisterSsmFlowTest {
     @Test
     suspend fun `persist flow ignores chain results for unknown session names`() {
         val started = mutableListOf<SsmStartCommand>()
-        val event = TestEvent("new-1", "created")
+        val event = TestEvent(eventId = "new-1", data = "created")
 
         val persister = createPersister(
-            startFunction = capturingStart(started),
-            getLogsFunction = F2Function { queries ->
-                queries.toList()
-                flowOf(
-                    logsResult("new-1", emptyList()),
-                    logsResult("ghost", emptyList()),
-                )
-            },
+            functions = noFunctions.copy(
+                ssmSessionStartFunction = capturingStart(started),
+                ssmGetSessionLogsQueryFunction = F2Function { queries ->
+                    queries.toList()
+                    flowOf(
+                        logsResult("new-1", emptyList()),
+                        logsResult("ghost", emptyList()),
+                    )
+                },
+            ),
         )
 
         val returned = persister.persist(flowOf(event)).toList()
@@ -282,9 +293,13 @@ class EventPersisterSsmFlowTest {
     @Test
     fun `persist flow rejects duplicated event ids due to SSM limitations`() {
         val persister = createPersister(
-            getLogsFunction = F2Function { queries -> queries.map { logsResult(it.sessionName, emptyList()) } },
+            functions = noFunctions.copy(
+                ssmGetSessionLogsQueryFunction = F2Function { queries ->
+                    queries.map { logsResult(it.sessionName, emptyList()) }
+                },
+            ),
         )
-        val events = flowOf(TestEvent("dup-1", "a"), TestEvent("dup-1", "b"))
+        val events = flowOf(TestEvent(eventId = "dup-1", data = "a"), TestEvent(eventId = "dup-1", data = "b"))
 
         assertThatThrownBy { runBlocking { persister.persist(events).toList() } }
             .hasMessageContaining("Duplicate events detected")
@@ -298,18 +313,20 @@ class EventPersisterSsmFlowTest {
     @Test
     suspend fun `load fetches the session logs and replays events sorted by iteration`() {
         val seenQueries = mutableListOf<SsmGetSessionLogsQuery>()
-        val first = TestEvent("id-1", "first")
-        val second = TestEvent("id-1", "second")
+        val first = TestEvent(eventId = "id-1", data = "first")
+        val second = TestEvent(eventId = "id-1", data = "second")
         val persister = createPersister(
-            getLogsFunction = F2Function { queries ->
-                queries.map { query ->
-                    seenQueries += query
-                    logsResult(query.sessionName, listOf(
-                        ssmLog(query.sessionName, 1, encode(second)),
-                        ssmLog(query.sessionName, 0, encode(first)),
-                    ))
-                }
-            },
+            functions = noFunctions.copy(
+                ssmGetSessionLogsQueryFunction = F2Function { queries ->
+                    queries.map { query ->
+                        seenQueries += query
+                        logsResult(query.sessionName, listOf(
+                            ssmLog(query.sessionName, 1, encode(second)),
+                            ssmLog(query.sessionName, 0, encode(first)),
+                        ))
+                    }
+                },
+            ),
         )
 
         val events = persister.load("id-1").toList()
@@ -323,26 +340,29 @@ class EventPersisterSsmFlowTest {
 
     @Test
     suspend fun `loadAll lists the sessions and replays every event sorted by iteration`() {
-        val eventA0 = TestEvent("a", "a0")
-        val eventB0 = TestEvent("b", "b0")
-        val eventB1 = TestEvent("b", "b1")
+        val eventA0 = TestEvent(eventId = "a", data = "a0")
+        val eventB0 = TestEvent(eventId = "b", data = "b0")
+        val eventB1 = TestEvent(eventId = "b", data = "b1")
         val persister = createPersister(
-            listSessionsFunction = F2Function { queries ->
-                queries.map {
-                    DataSsmSessionListQueryResult(listOf(dataSession("a", 0), dataSession("b", 1)))
-                }
-            },
-            getLogsFunction = F2Function { queries ->
-                queries.map { query ->
-                    when (query.sessionName) {
-                        "a" -> logsResult("a", listOf(ssmLog("a", 0, encode(eventA0))))
-                        else -> logsResult("b", listOf(
-                            ssmLog("b", 1, encode(eventB1)),
-                            ssmLog("b", 0, encode(eventB0)),
-                        ))
+            functions = noFunctions.copy(
+                dataSsmSessionListQueryFunction = F2Function { queries ->
+                    queries.map {
+                        DataSsmSessionListQueryResult(listOf(dataSession("a", 0), dataSession("b", 1)))
                     }
-                }
-            },
+                },
+                ssmGetSessionLogsQueryFunction = F2Function { queries ->
+                    queries.map { query ->
+                        if (query.sessionName == "a") {
+                            logsResult("a", listOf(ssmLog("a", 0, encode(eventA0))))
+                        } else {
+                            logsResult("b", listOf(
+                                ssmLog("b", 1, encode(eventB1)),
+                                ssmLog("b", 0, encode(eventB0)),
+                            ))
+                        }
+                    }
+                },
+            ),
         )
 
         val events = persister.loadAll().toList()
@@ -362,7 +382,8 @@ class EventPersisterSsmFlowTest {
 
     @Test
     fun `ExecutableAction classifies a missing iteration as CREATE and a present one as UPDATE`() {
-        assertThat(ExecutableAction(TestEvent("id", "x"), iteration = null).action).isEqualTo(Action.CREATE)
-        assertThat(ExecutableAction(TestEvent("id", "x"), iteration = 0).action).isEqualTo(Action.UPDATE)
+        val event = TestEvent(eventId = "id", data = "x")
+        assertThat(ExecutableAction(event = event, iteration = null).action).isEqualTo(Action.CREATE)
+        assertThat(ExecutableAction(event = event, iteration = 0).action).isEqualTo(Action.UPDATE)
     }
 }

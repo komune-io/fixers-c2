@@ -43,14 +43,14 @@ class DataSsmQueryFunctionImpl(
 
     override fun dataSsmSessionListQueryFunction(): DataSsmSessionListQueryFunction =
         DataSsmSessionListQueryFunctionImpl(
-            dataSsmSessionConvertFunctionImpl = dataSsmSessionConvertFunctionImpl(),
+            dataSsmSessionConvertFunctionImpl = sessionConvertFunction(),
             couchdbSsmSessionStateListQueryFunction = couchDbSsmQueries.couchdbSsmSessionStateListQueryFunction()
         )
 
     override fun dataSsmSessionGetQueryFunction(): DataSsmSessionGetQueryFunction =
         DataSsmSessionGetQueryFunctionImpl(
             ssmGetSessionQueryFunction = ssmChaincodeQueries.ssmGetSessionQueryFunction(),
-            dataSsmSessionConvertFunction = dataSsmSessionConvertFunctionImpl(),
+            dataSsmSessionConvertFunction = sessionConvertFunction(),
         )
 
     override fun dataSsmSessionLogListQueryFunction(): DataSsmSessionLogListQueryFunction =
@@ -65,7 +65,7 @@ class DataSsmQueryFunctionImpl(
             ssmGetTransactionQueryFunction = ssmChaincodeQueries.ssmGetTransactionQueryFunction()
         )
 
-    private fun dataSsmSessionConvertFunctionImpl(): DataSsmSessionConvertFunctionImpl =
+    private fun sessionConvertFunction(): DataSsmSessionConvertFunctionImpl =
         DataSsmSessionConvertFunctionImpl(
             ssmGetSessionLogsQueryFunction = ssmChaincodeQueries.ssmGetSessionLogsQueryFunction(),
             ssmGetTransactionQueryFunction = ssmChaincodeQueries.ssmGetTransactionQueryFunction()

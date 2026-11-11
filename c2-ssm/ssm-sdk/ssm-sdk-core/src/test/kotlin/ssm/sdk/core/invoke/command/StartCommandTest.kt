@@ -14,30 +14,22 @@ class StartCommandTest {
     @Throws(Exception::class)
     fun test_execute() {
         val  chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
-        //    "ssm":"Car dealership",
-        //    "session":"deal20181201",
-        //    "public":"Used car for 100 dollars.",
-        //    "roles":{
-        //      "chuck":"Buyer",
-        //       "sarah":"Seller"
-        //    }
         val roles: Map<String, String> = mapOf("chuck" to "Buyer", "sarah" to "Seller")
-        val signerUser = SignerUser.loadFromFile("adam", "command/adam")
+        val signerUser = SignerUser.loadFromFile(name = "adam", filename = "command/adam")
         val signer = SsmCmdSignerSha256RSASigner(
             signerUser
         )
 
         val session = SsmSession(
-            "Car dealership",
-            "deal20181201",
-            roles,
-            "Used car for 100 dollars.",
-            null
+            ssm = "Car dealership",
+            session = "deal20181201",
+            roles = roles,
+            public = "Used car for 100 dollars.",
+            private = null,
         )
         val (fcn, args) = StartCmd(session).invoke(chaincodeUri, signerUser.name, signer).buildArgs()
-        args.forEach { s: String? -> println(s) }
-        val expectedJson = "{\"ssm\":\"Car dealership\",\"session\":\"deal20181201\",\"roles\":" +
-                    "{\"chuck\":\"Buyer\",\"sarah\":\"Seller\"},\"public\":\"Used car for 100 dollars.\"}"
+        val expectedJson = """{"ssm":"Car dealership","session":"deal20181201","roles":""" +
+            """{"chuck":"Buyer","sarah":"Seller"},"public":"Used car for 100 dollars."}"""
         Assertions.assertThat(fcn.value).isEqualTo("start")
         Assertions.assertThat(args)
             .isNotEmpty

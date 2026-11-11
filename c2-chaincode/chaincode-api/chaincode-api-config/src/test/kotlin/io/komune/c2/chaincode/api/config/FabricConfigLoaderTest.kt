@@ -9,15 +9,11 @@ class FabricConfigLoaderTest {
     private val configuration = C2ChaincodeConfiguration(
         defaultCcid = "sandbox/ex02",
         ccid = "sandbox/ex02,sandbox/ssm",
-        user = C2ChaincodeConfiguration.UserConfig().apply {
-            name = "user"
-            password = "password"
-            org = "bclan"
-        },
-        config = C2ChaincodeConfiguration.FileConfig().apply {
-            file = "file:./config/fabric/config.json"
-            crypto = "file:./config/fabric/"
-        },
+        user = C2ChaincodeConfiguration.UserConfig(name = "user", password = "password", org = "bclan"),
+        config = C2ChaincodeConfiguration.FileConfig(
+            file = "file:./config/fabric/config.json",
+            crypto = "file:./config/fabric/",
+        ),
         endorsers = "peer0:bclan"
     )
 
@@ -32,7 +28,7 @@ class FabricConfigLoaderTest {
 
     @Test
     fun `getChannelConfig should fail on unknown channel`() {
-        assertThatThrownBy { loader.getChannelConfig("unknown") }
+        assertThatThrownBy { val _ = loader.getChannelConfig("unknown") }
             .isInstanceOf(ChannelConfigNotFoundException::class.java)
             .hasMessage("unknown")
     }

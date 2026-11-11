@@ -16,8 +16,9 @@ object DataTest {
         .withName("Ssm Sdk Unit Test")
         .withAuth(
             SsmCouchDbBasicAuth(
-            username = username,
-            password = password,
+                username = username,
+                password = password,
+            )
         )
-        ).build()
+        .build()
 }

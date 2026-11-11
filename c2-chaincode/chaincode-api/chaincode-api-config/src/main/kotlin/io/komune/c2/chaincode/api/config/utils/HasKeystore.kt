@@ -7,7 +7,6 @@ interface HasKeystore {
     val keystore: String
 
     @Throws(MalformedURLException::class)
-    fun getKeystoreAsUrl(cryptoBase: String): URL {
-        return FileUtils.getUrl(cryptoBase, keystore)
-    }
+    fun getKeystoreAsUrl(cryptoBase: String): URL =
+        FileUtils.getUrl(path = cryptoBase, resource = keystore)
 }

@@ -8,10 +8,6 @@ import ssm.sdk.sign.FileUtils
 
 internal class KeyPairReaderTest {
 
-    companion object {
-        private const val KEY_NAME = "command/vivi"
-    }
-
     @Test
     fun loadKeyPairFromFilename() {
         val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
@@ -55,14 +51,18 @@ internal class KeyPairReaderTest {
     @Test
     fun loadPrivateKeyShouldFailOnInvalidContent() {
         Assertions.assertThatThrownBy {
-            KeyPairReader.loadPrivateKey(StringReader("not a pem content"))
+            val _ = StringReader("not a pem content").use { KeyPairReader.loadPrivateKey(it) }
         }.isInstanceOf(Exception::class.java)
     }
 
     @Test
     fun loadPublicKeyShouldFailOnMissingFile() {
         Assertions.assertThatThrownBy {
-            KeyPairReader.loadPublicKey("command/unknown-agent")
+            val _ = KeyPairReader.loadPublicKey("command/unknown-agent")
         }.isInstanceOf(Exception::class.java)
+    }
+
+    companion object {
+        private const val KEY_NAME = "command/vivi"
     }
 }

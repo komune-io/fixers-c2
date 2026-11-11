@@ -24,11 +24,11 @@ typealias SsmTxUserRegisterFunction = F2Function<SsmUserRegisterCommand, SsmUser
 class SsmUserRegisterCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     /**
-     * The name of the signer
+     * The name of the signer.
      */
     val signerName: AgentName,
     /**
-     * Initial user of the SSM
+     * Initial user of the SSM.
      */
     val agent: Agent,
 ) : SsmCommandDTO

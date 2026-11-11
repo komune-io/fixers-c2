@@ -17,8 +17,8 @@ data class SignerUser(
         }
 
         @Throws(Exception::class)
-        fun loadFromFile(name: AgentName, filename: String?): SignerUser {
-            val keypair = KeyPairReader.loadKeyPair(filename!!)
+        fun loadFromFile(name: AgentName, filename: String): SignerUser {
+            val keypair = KeyPairReader.loadKeyPair(filename)
             return SignerUser(name, keypair)
         }
 

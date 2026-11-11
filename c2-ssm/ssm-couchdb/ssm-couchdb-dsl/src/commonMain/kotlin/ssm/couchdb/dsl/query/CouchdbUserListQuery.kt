@@ -51,6 +51,8 @@ interface CouchdbUserListQueryResultDTO : Event {
 @Serializable
 @JsExport
 @JsName("CouchdbUserListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbUserListQuery(
     override val chaincodeUri: ChaincodeUri
 ) : CouchdbUserListQueryDTO
@@ -58,6 +60,8 @@ class CouchdbUserListQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbUserListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbUserListQueryResult(
     override val items: List<Agent>,
 ) : CouchdbUserListQueryResultDTO

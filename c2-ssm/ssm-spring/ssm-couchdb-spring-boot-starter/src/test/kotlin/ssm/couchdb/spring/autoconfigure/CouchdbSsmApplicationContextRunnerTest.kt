@@ -7,7 +7,6 @@ import ssm.bdd.spring.autoconfigure.ApplicationContextBuilder
 import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 import ssm.couchdb.dsl.config.SsmCouchdbConfig
 
-
 class CouchdbSsmApplicationContextRunnerTest {
 
     @Test
@@ -16,25 +15,27 @@ class CouchdbSsmApplicationContextRunnerTest {
         ApplicationContextRunnerBuilder()
             .buildContext(
                 SsmChaincodeConfigTest.localDockerComposeParams
-            ).run { context ->
+            )
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmCouchdbProperties::class.java)
-                assertThat(context).hasBean(SsmCouchdbF2AutoConfiguration::couchdbDatabaseListQueryFunction.name)
-                assertThat(context).hasBean(SsmCouchdbF2AutoConfiguration::couchdbDatabaseGetQueryFunction.name)
+                assertThat(context).hasBean("couchdbDatabaseListQueryFunction")
+                assertThat(context).hasBean("couchdbDatabaseGetQueryFunction")
                 assertThat(context).hasBean(SsmCouchdbF2AutoConfiguration::couchdbSsmListQueryFunction.name)
-                assertThat(context).hasBean(SsmCouchdbF2AutoConfiguration::couchdbSsmSessionStateListQueryFunction.name)
+                assertThat(context).hasBean("couchdbSsmSessionStateListQueryFunction")
             }
     }
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = SsmChaincodeConfigTest.localDockerComposeParams
-        )
-        assertThat(context.getBean(SsmCouchdbF2AutoConfiguration::couchdbDatabaseListQueryFunction.name)).isNotNull
-        val catalog = context.getBean(FunctionCatalog::class.java)
-        assertThat(catalog).isNotNull
+        ).use { context ->
+            assertThat(context.getBean("couchdbDatabaseListQueryFunction")).isNotNull
+            val catalog = context.getBean(FunctionCatalog::class.java)
+            assertThat(catalog).isNotNull
+        }
     }
 
 

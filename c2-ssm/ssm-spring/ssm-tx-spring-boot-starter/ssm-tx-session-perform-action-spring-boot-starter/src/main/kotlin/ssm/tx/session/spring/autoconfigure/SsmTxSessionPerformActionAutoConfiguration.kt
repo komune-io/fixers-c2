@@ -11,12 +11,11 @@ import ssm.sdk.core.SsmTxService
 @Configuration(proxyBeanMethods = false)
 class SsmTxSessionPerformActionAutoConfiguration {
 
-    @Bean
+    // The bean name is the F2 function name consumers resolve: the shortened method keeps it explicitly.
+    @Bean("ssmTxSessionPerformActionFunction")
     @ConditionalOnMissingBean(SsmTxSessionPerformActionFunctionImpl::class)
     @ConditionalOnBean(SsmTxService::class)
-    fun ssmTxSessionPerformActionFunction(
+    fun sessionPerformActionFunction(
         ssmTxService: SsmTxService,
-    ): SsmTxSessionPerformActionFunction {
-        return SsmTxSessionPerformActionFunctionImpl(ssmTxService)
-    }
+    ): SsmTxSessionPerformActionFunction = SsmTxSessionPerformActionFunctionImpl(ssmTxService)
 }

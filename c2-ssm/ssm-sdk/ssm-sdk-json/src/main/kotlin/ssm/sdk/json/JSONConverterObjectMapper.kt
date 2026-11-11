@@ -10,9 +10,7 @@ class JSONConverterObjectMapper : JSONConverter {
         return JsonUtils.toObjects(value, clazz)
     }
 
-    override fun <T> toCompletableObject(clazz: Class<T>, value: String): T? {
-        return toObject(clazz, value)
-    }
+    override fun <T> toCompletableObject(clazz: Class<T>, value: String): T? = toObject(clazz, value)
 
     override fun <T> toObject(clazz: Class<T>, value: String): T?  {
         return if (value.isBlank()) {

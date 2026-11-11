@@ -13,12 +13,6 @@ import ssm.sdk.sign.model.SignerUser
 
 internal class PrivateMessageExtentionTest {
 
-    companion object {
-        private const val KEY_NAME = "command/vivi"
-        private const val AGENT_NAME = "vivi"
-        private const val MESSAGE = "very private message"
-    }
-
     private val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
 
     private fun context() = SsmContext(
@@ -30,7 +24,7 @@ internal class PrivateMessageExtentionTest {
 
     @Test
     fun ssmContextPrivateMessageRoundTrip() {
-        val context = context().addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
+        val context = context().addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
         Assertions.assertThat(context.private).containsKey(AGENT_NAME)
         val decrypted = context.getPrivateMessage(AGENT_NAME, keyPair.private)
         Assertions.assertThat(decrypted).isEqualTo(MESSAGE)
@@ -38,8 +32,8 @@ internal class PrivateMessageExtentionTest {
 
     @Test
     fun ssmContextPrivateMessageWithAgentRoundTrip() {
-        val agent = Agent.loadFromFile(AGENT_NAME, KEY_NAME)
-        val context = context().addPrivateMessage(MESSAGE, agent)
+        val agent = Agent.loadFromFile(name = AGENT_NAME, filename = KEY_NAME)
+        val context = context().addPrivateMessage(value = MESSAGE, agent = agent)
         val decrypted = context.getPrivateMessage(AGENT_NAME, keyPair.private)
         Assertions.assertThat(decrypted).isEqualTo(MESSAGE)
     }
@@ -47,7 +41,7 @@ internal class PrivateMessageExtentionTest {
     @Test
     fun ssmContextPrivateMessageWithSignerRoundTrip() {
         val signer = SignerUser(AGENT_NAME, keyPair)
-        val context = context().addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
+        val context = context().addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
         Assertions.assertThat(context.getPrivateMessage(signer)).isEqualTo(MESSAGE)
     }
 
@@ -64,7 +58,7 @@ internal class PrivateMessageExtentionTest {
 
     @Test
     fun getPrivateMessageShouldReturnNullWhenAgentIsUnknown() {
-        val context = context().addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
+        val context = context().addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
         Assertions.assertThat(context.getPrivateMessage("unknown", keyPair.private)).isNull()
     }
 
@@ -77,8 +71,8 @@ internal class PrivateMessageExtentionTest {
     fun addPrivateMessageShouldPreserveExistingEntries() {
         val otherKeyPair = KeyPairReader.generateRSAKey()
         val context = context()
-            .addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
-            .addPrivateMessage("other message", "other", otherKeyPair.public)
+            .addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
+            .addPrivateMessage(value = "other message", name = "other", publicKey = otherKeyPair.public)
         Assertions.assertThat(context.private).containsOnlyKeys(AGENT_NAME, "other")
         Assertions.assertThat(context.getPrivateMessage(AGENT_NAME, keyPair.private)).isEqualTo(MESSAGE)
         Assertions.assertThat(context.getPrivateMessage("other", otherKeyPair.private)).isEqualTo("other message")
@@ -92,7 +86,7 @@ internal class PrivateMessageExtentionTest {
             roles = emptyMap(),
             public = "public",
             private = null
-        ).addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
+        ).addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
         Assertions.assertThat(session.private).containsKey(AGENT_NAME)
         Assertions.assertThat(session.getPrivateMessage(AGENT_NAME, keyPair.private)).isEqualTo(MESSAGE)
     }
@@ -108,8 +102,14 @@ internal class PrivateMessageExtentionTest {
             origin = null,
             current = 0,
             iteration = 0
-    ).addPrivateMessage(MESSAGE, AGENT_NAME, keyPair.public)
+        ).addPrivateMessage(value = MESSAGE, name = AGENT_NAME, publicKey = keyPair.public)
         Assertions.assertThat(state.private).containsKey(AGENT_NAME)
         Assertions.assertThat(state.getPrivateMessage(AGENT_NAME, keyPair.private)).isEqualTo(MESSAGE)
+    }
+
+    companion object {
+        private const val KEY_NAME = "command/vivi"
+        private const val AGENT_NAME = "vivi"
+        private const val MESSAGE = "very private message"
     }
 }

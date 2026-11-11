@@ -48,11 +48,11 @@ interface CouchdbDatabaseGetChangesQueryDTO : Query {
      */
     val sessionName: SessionName?
     /**
-     * Filter to start the results from the the ID of the last events received by the server on a previous connection
+     * Filter to start the results from the the ID of the last events received by the server on a previous connection.
      */
     val lastEventId: ChangeEventId?
     /**
-     * Filter to start the results from the the ID of the last events received by the server on a previous connection
+     * Filter to start the results from the the ID of the last events received by the server on a previous connection.
      */
     val limit: Long?
 }
@@ -75,6 +75,8 @@ interface CouchdbDatabaseGetChangesQueryResultDTO : Event {
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseGetChangesQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbDatabaseGetChangesQuery(
     override val channelId: ChannelId,
     override val chaincodeId: ChaincodeId,
@@ -86,6 +88,8 @@ class CouchdbDatabaseGetChangesQuery(
 
 @JsExport
 @JsName("CouchdbDatabaseGetChangesQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbDatabaseGetChangesQueryResult(
     override val items: List<DatabaseChanges>,
     override val lastEventId: ChangeEventId?,

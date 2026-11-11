@@ -16,17 +16,18 @@ import ssm.chaincode.dsl.query.SsmListUserQuery
 import ssm.chaincode.f2.ChaincodeSsmQueriesImpl
 
 class SsmChaincodeBddSteps : SsmQueryStep(), En {
-    companion object {
-        const val GLUE = "ssm.chaincode.bdd"
-    }
+    private var currentQueryFunctions: ChaincodeSsmQueriesImpl? = null
+
+    private val ssmChaincodeQueryFunctions: ChaincodeSsmQueriesImpl
+        get() = checkNotNull(currentQueryFunctions) { "No cucumber scenario has started" }
+
     init {
         prepareSteps()
         Before { _: Scenario ->
-            ssmChaincodeQueryFunctions = ChaincodeSsmQueriesImpl(batch, config)
+            currentQueryFunctions = ChaincodeSsmQueriesImpl(batch, config)
         }
 
     }
-    lateinit var ssmChaincodeQueryFunctions: ChaincodeSsmQueriesImpl
 
     override suspend fun getSession(ssmUri: SsmUri, sessionName: String): SsmSessionState? {
         return ssmChaincodeQueryFunctions.ssmGetSessionQueryFunction()
@@ -47,22 +48,30 @@ class SsmChaincodeBddSteps : SsmQueryStep(), En {
     override suspend fun listSessions(ssmUri: SsmUri): List<String> {
         return ssmChaincodeQueryFunctions.ssmListSessionQueryFunction()
             .invoke(SsmListSessionQuery(bag.chaincodeUri))
-            .items.toList()
+            .items
+            .toList()
     }
 
     override suspend fun listSsm(): List<String> {
         return ssmChaincodeQueryFunctions.ssmListSsmQueryFunction()
             .invoke(SsmListSsmQuery(bag.chaincodeUri))
-            .items.toList()
+            .items
+            .toList()
     }
 
     override suspend fun listUsers(): List<String> =
         ssmChaincodeQueryFunctions.ssmListUserQueryFunction()
             .invoke(SsmListUserQuery(bag.chaincodeUri))
-            .items.toList()
+            .items
+            .toList()
 
     override suspend fun listAdmins(): List<String> =
         ssmChaincodeQueryFunctions.ssmListAdminQueryFunction()
             .invoke(SsmListAdminQuery(bag.chaincodeUri))
-            .items.toList()
+            .items
+            .toList()
+
+    companion object {
+        const val GLUE = "ssm.chaincode.bdd"
+    }
 }

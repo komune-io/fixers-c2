@@ -8,13 +8,13 @@ import kotlinx.serialization.Serializable
 @JsName("IdentitiesInfoDTO")
 interface IdentitiesInfoDTO {
     /**
-     * Identifier of the identity
+     * Identifier of the identity.
      * @example "2e3900b7-76f4-4828-9742-31bd39015de6"
      */
     val id: String
 
     /**
-     * Membership service provider identifier
+     * Membership service provider identifier.
      * @example "PeerKomune2"
      */
     val mspid: String
@@ -24,6 +24,8 @@ interface IdentitiesInfoDTO {
  * @d2 model
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Model]
  */
+// A data class would add copy and componentN to the exported JS surface.
+@Suppress("UseDataClass")
 @Serializable
 @JsExport
 @JsName("IdentitiesInfo")

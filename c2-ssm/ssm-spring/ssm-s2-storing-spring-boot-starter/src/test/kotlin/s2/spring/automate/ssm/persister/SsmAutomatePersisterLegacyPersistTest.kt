@@ -22,6 +22,7 @@ import s2.dsl.automate.S2ErrorBase
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2InitCommand
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -45,7 +46,7 @@ import tools.jackson.databind.ObjectMapper
  */
 class SsmAutomatePersisterLegacyPersistTest {
 
-    interface TestState : s2.dsl.automate.S2State {
+    interface TestState : S2State {
         override val position: Int
     }
 
@@ -87,6 +88,9 @@ class SsmAutomatePersisterLegacyPersistTest {
             )
         ),
     )
+
+    private val noSessionsOnChain: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
+        F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
 
     private fun <ENTITY> makeContext(
         entity: ENTITY,
@@ -164,9 +168,6 @@ class SsmAutomatePersisterLegacyPersistTest {
         }
     }
 
-    private val noSessionsOnChain: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
-        F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
-
     private fun <ENTITY> persister(
         entityType: Class<ENTITY>,
         perform: ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunction = performFunction(),
@@ -176,12 +177,16 @@ class SsmAutomatePersisterLegacyPersistTest {
     ENTITY : WithS2Id<String>,
     ENTITY : WithS2State<TestState> {
         return SsmAutomatePersister(
-            ssmSessionStartFunction = start,
-            ssmSessionPerformActionFunction = perform,
-            ssmGetSessionLogsQueryFunction = logsQuery,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = start,
+                ssmSessionPerformActionFunction = perform,
+                ssmGetSessionLogsQueryFunction = logsQuery,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = entityType,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = ObjectMapper(),
             batch = S2BatchProperties(),
         )

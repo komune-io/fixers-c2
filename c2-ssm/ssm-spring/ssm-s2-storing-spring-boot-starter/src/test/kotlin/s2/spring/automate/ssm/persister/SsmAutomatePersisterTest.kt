@@ -3,7 +3,6 @@ package s2.spring.automate.ssm.persister
 import f2.dsl.cqrs.Event
 import f2.dsl.fnc.F2Function
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -17,6 +16,7 @@ import s2.automate.core.persist.PersistOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -34,7 +34,7 @@ import tools.jackson.databind.ObjectMapper
 
 class SsmAutomatePersisterTest {
 
-    interface TestState : s2.dsl.automate.S2State {
+    interface TestState : S2State {
         override val position: Int
     }
 
@@ -61,28 +61,43 @@ class SsmAutomatePersisterTest {
         override fun withS2Iteration(iteration: Int) = copy(iteration = iteration)
     }
 
+    // result = null, so withResultAsAction is false: the persister names the action after the msg class.
+    private val testAutomate: S2Automate = S2Automate(
+        name = "test-ssm",
+        version = null,
+        transitions = arrayOf(
+            S2Transition(
+                from = S2StateValue(name = "StateOne", position = 1),
+                to = S2StateValue(name = "StateTwo", position = 2),
+                role = S2RoleValue(name = "TestRole"),
+                action = S2TransitionValue(name = "TestCommand"),
+                result = null,
+            )
+        ),
+    )
+
     @Test
     fun `isAssignableFrom correctly identifies entity implementing WithS2Iteration`() {
-        val result = WithS2Iteration::class.java.isAssignableFrom(IterableEntity::class.java)
-        assertThat(result).isTrue()
+        val isIterable = WithS2Iteration::class.java.isAssignableFrom(IterableEntity::class.java)
+        assertThat(isIterable).isTrue()
     }
 
     @Test
     fun `isAssignableFrom correctly rejects entity not implementing WithS2Iteration`() {
-        val result = WithS2Iteration::class.java.isAssignableFrom(SimpleEntity::class.java)
-        assertThat(result).isFalse()
+        val isIterable = WithS2Iteration::class.java.isAssignableFrom(SimpleEntity::class.java)
+        assertThat(isIterable).isFalse()
     }
 
     @Test
     fun `inverted isAssignableFrom gives wrong result - this is what the bug was`() {
-        val invertedResult = SimpleEntity::class.java.isAssignableFrom(WithS2Iteration::class.java)
-        assertThat(invertedResult).isFalse()
+        val isSimpleInverted = SimpleEntity::class.java.isAssignableFrom(WithS2Iteration::class.java)
+        assertThat(isSimpleInverted).isFalse()
 
-        val invertedResult2 = IterableEntity::class.java.isAssignableFrom(WithS2Iteration::class.java)
-        assertThat(invertedResult2).isFalse()
+        val isIterableInverted = IterableEntity::class.java.isAssignableFrom(WithS2Iteration::class.java)
+        assertThat(isIterableInverted).isFalse()
 
-        val correctResult = WithS2Iteration::class.java.isAssignableFrom(IterableEntity::class.java)
-        assertThat(correctResult).isTrue()
+        val isIterable = WithS2Iteration::class.java.isAssignableFrom(IterableEntity::class.java)
+        assertThat(isIterable).isTrue()
     }
 
     @Test
@@ -116,9 +131,9 @@ class SsmAutomatePersisterTest {
         data class Entry(val sessionId: String, val value: String)
 
         val entries = listOf(
-            Entry("session-1", "first"),
-            Entry("session-1", "second"),
-            Entry("session-2", "third"),
+            Entry(sessionId = "session-1", value = "first"),
+            Entry(sessionId = "session-1", value = "second"),
+            Entry(sessionId = "session-2", value = "third"),
         )
         val bySession = entries.associateBy { it.sessionId }
         // associateBy keeps only the LAST entry for duplicates
@@ -135,8 +150,8 @@ class SsmAutomatePersisterTest {
         assertThat(bySession[missingKey]).isNull()
 
         val exception = assertThrows<IllegalStateException> {
-            bySession[missingKey]
-                ?: throw IllegalStateException("No context found for session $missingKey")
+            val _ = bySession[missingKey]
+                ?: error("No context found for session $missingKey")
         }
         assertThat(exception.message).contains("session-unknown")
     }
@@ -148,24 +163,6 @@ class SsmAutomatePersisterTest {
 
     /** Command type used as the `msg` in TransitionAppliedContext. */
     data class TestCommand(override val id: String) : S2Command<String>
-
-    /**
-     * Minimal S2Automate with one transition (result = null so withResultAsAction = false,
-     * meaning the persister uses msg::class.simpleName as the action name).
-     */
-    private val testAutomate: S2Automate = S2Automate(
-        name = "test-ssm",
-        version = null,
-        transitions = arrayOf(
-            S2Transition(
-                from = S2StateValue(name = "StateOne", position = 1),
-                to = S2StateValue(name = "StateTwo", position = 2),
-                role = S2RoleValue(name = "TestRole"),
-                action = S2TransitionValue(name = "TestCommand"),
-                result = null,
-            )
-        ),
-    )
 
     private fun makeTransitionContext(
         entity: IterableEntity,
@@ -227,12 +224,16 @@ class SsmAutomatePersisterTest {
             F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() }
 
         val persister = SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-            ssmSessionStartFunction = v2Start,
-            ssmSessionPerformActionFunction = v2Perform,
-            ssmGetSessionLogsQueryFunction = noSessionsOnChain,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = v2Start,
+                ssmSessionPerformActionFunction = v2Perform,
+                ssmGetSessionLogsQueryFunction = noSessionsOnChain,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = IterableEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = ObjectMapper(),
             batch = S2BatchProperties(),
         )
@@ -287,12 +288,16 @@ class SsmAutomatePersisterTest {
             F2Function { _ -> error("start should not be called") }
 
         val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
-            ssmSessionStartFunction = v2Start,
-            ssmSessionPerformActionFunction = v2Perform,
-            ssmGetSessionLogsQueryFunction = logsQuery,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = v2Start,
+                ssmSessionPerformActionFunction = v2Perform,
+                ssmGetSessionLogsQueryFunction = logsQuery,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = SimpleEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = ObjectMapper(),
             batch = S2BatchProperties(),
         )

@@ -7,9 +7,10 @@ import org.springframework.boot.context.properties.bind.Binder
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource
 
 /**
- * Unit tests for FabricClientProperties — default value, setter validation, and real
- * Spring Binder binding of `coop.fabric.parallelism` (the same mechanism
- * @EnableConfigurationProperties uses at boot, without a full application context).
+ * Unit tests for FabricClientProperties: default value, setter validation, and real Spring Binder binding.
+ *
+ * Binds `coop.fabric.parallelism` the way @EnableConfigurationProperties does at boot,
+ * without a full application context.
  */
 class FabricClientPropertiesTest {
 
@@ -39,7 +40,7 @@ class FabricClientPropertiesTest {
     @Test
     fun `a rejected value leaves the previous value in place`() {
         val properties = FabricClientProperties()
-        runCatching { properties.parallelism = 0 }
+        val _ = runCatching { properties.parallelism = 0 }
         assertThat(properties.parallelism).isEqualTo(256)
     }
 

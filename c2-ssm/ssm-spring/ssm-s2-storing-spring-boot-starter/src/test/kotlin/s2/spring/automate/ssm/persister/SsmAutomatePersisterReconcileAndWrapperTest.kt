@@ -19,6 +19,7 @@ import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2InitCommand
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -49,7 +50,7 @@ import tools.jackson.databind.ObjectMapper
  */
 class SsmAutomatePersisterReconcileAndWrapperTest {
 
-    interface TestState : s2.dsl.automate.S2State {
+    interface TestState : S2State {
         override val position: Int
     }
 
@@ -92,7 +93,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
         ),
     )
 
-    /** Every transition carries a result — S2Automate.withResultAsAction resolves to true. */
+    // Every transition carries a result, so S2Automate.withResultAsAction resolves to true.
     private val resultAsActionAutomate: S2Automate = S2Automate(
         name = "test-ssm",
         version = null,
@@ -156,12 +157,16 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
         start: SsmTxSessionStartFunction = F2Function { _ -> error("start not expected") },
         logs: SsmGetSessionLogsQueryFunction = F2Function { _ -> flowOf<SsmGetSessionLogsQueryResult>() },
     ): SsmAutomatePersister<TestState, String, IterableEntity, TestEvt> = SsmAutomatePersister(
-        ssmSessionStartFunction = start,
-        ssmSessionPerformActionFunction = perform,
-        ssmGetSessionLogsQueryFunction = logs,
-        chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+        functions = SsmSessionFunctions(
+            ssmSessionStartFunction = start,
+            ssmSessionPerformActionFunction = perform,
+            ssmGetSessionLogsQueryFunction = logs,
+        ),
+        target = SsmSigningTarget(
+            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+        ),
         entityType = IterableEntity::class.java,
-        agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
         objectMapper = objectMapper,
         batch = S2BatchProperties(),
     )
@@ -208,8 +213,8 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             }
         }
         val persister = buildPersister(start = start)
-        val ok = makeInitTransitionContext(IterableEntity("ok", 1, 0))
-        val down = makeInitTransitionContext(IterableEntity("down", 1, 0))
+        val ok = makeInitTransitionContext(IterableEntity(id = "ok", status = 1, iteration = 0))
+        val down = makeInitTransitionContext(IterableEntity(id = "down", status = 1, iteration = 0))
 
         val events = mutableListOf<TestEvt>()
         val exception = assertThrows<AutomateException> {
@@ -230,8 +235,8 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             }
         }
         val persister = buildPersister(perform = perform)
-        val ok = makeTransitionContext(IterableEntity("ok", 1, 0))
-        val down = makeTransitionContext(IterableEntity("down", 1, 0))
+        val ok = makeTransitionContext(IterableEntity(id = "ok", status = 1, iteration = 0))
+        val down = makeTransitionContext(IterableEntity(id = "down", status = 1, iteration = 0))
 
         val events = mutableListOf<TestEvt>()
         val exception = assertThrows<AutomateException> {
@@ -254,12 +259,18 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             }
         }
         val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
-            ssmSessionStartFunction = F2Function { _ -> error("start not expected") },
-            ssmSessionPerformActionFunction = F2Function { commands -> commands.map { error("perform not expected") } },
-            ssmGetSessionLogsQueryFunction = logs,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start not expected") },
+                ssmSessionPerformActionFunction = F2Function { commands ->
+                    commands.map { error("perform not expected") }
+                },
+                ssmGetSessionLogsQueryFunction = logs,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = SimpleEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = objectMapper,
             batch = S2BatchProperties(),
         )
@@ -285,7 +296,11 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
     suspend fun `persistWithOutcomes emits one msgId-correlated outcome per context, lookup failures first`() {
         val logs: SsmGetSessionLogsQueryFunction = F2Function { queries ->
             queries.map { query ->
-                val sessionLogs = if (query.sessionName == "ok") listOf(ssmLog("tx-prev", iteration = 1)) else emptyList()
+                val sessionLogs = if (query.sessionName == "ok") {
+                    listOf(ssmLog("tx-prev", iteration = 1))
+                } else {
+                    emptyList()
+                }
                 SsmGetSessionLogsQueryResult(ssmName = "test-ssm", sessionName = query.sessionName, logs = sessionLogs)
             }
         }
@@ -295,12 +310,16 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             }
         }
         val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
-            ssmSessionStartFunction = F2Function { _ -> error("start not expected") },
-            ssmSessionPerformActionFunction = perform,
-            ssmGetSessionLogsQueryFunction = logs,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start not expected") },
+                ssmSessionPerformActionFunction = perform,
+                ssmGetSessionLogsQueryFunction = logs,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = SimpleEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = objectMapper,
             batch = S2BatchProperties(),
         )
@@ -325,7 +344,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
     @Test
     suspend fun `a command with no returned outcome maps to Indeterminate MISSING_OUTCOME`() {
         val persister = buildPersister(perform = scriptedPerform { null })
-        val ctx = makeTransitionContext(IterableEntity("lost", 1, 0))
+        val ctx = makeTransitionContext(IterableEntity(id = "lost", status = 1, iteration = 0))
 
         val outcomes = persister.persistWithOutcomes(flowOf(ctx)).toList()
 
@@ -339,7 +358,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
         val persister = buildPersister(
             perform = scriptedPerform { msgId -> CommandOutcome(outcome = "Weird", msgId = msgId) },
         )
-        val ctx = makeTransitionContext(IterableEntity("odd", 1, 0))
+        val ctx = makeTransitionContext(IterableEntity(id = "odd", status = 1, iteration = 0))
 
         val outcomes = persister.persistWithOutcomes(flowOf(ctx)).toList()
 
@@ -354,7 +373,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 
     @Test
     suspend fun `reconciliation promotes a rejected command whose state is already on chain`() {
-        val entity = IterableEntity("e-r", 1, 0)
+        val entity = IterableEntity(id = "e-r", status = 1, iteration = 0)
         val intendedPublic = objectMapper.writeValueAsString(entity)
         val perform = scriptedPerform { msgId ->
             CommandOutcome(outcome = "Rejected", msgId = msgId, errorCode = "DUPLICATE_TX", errorMessage = "dup")
@@ -383,7 +402,7 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
 
     @Test
     suspend fun `reconciliation promotes when the chain holds the intended state as a string in another key order`() {
-        val entity = IterableEntity("e-s", 2, 0)
+        val entity = IterableEntity(id = "e-s", status = 2, iteration = 0)
         val perform = scriptedPerform { msgId ->
             CommandOutcome(outcome = "Rejected", msgId = msgId, errorCode = "DUPLICATE_TX", errorMessage = "dup")
         }
@@ -421,7 +440,9 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
         }
         val persister = buildPersister(perform = perform, logs = logs)
 
-        val outcomes = persister.persistWithOutcomes(flowOf(makeTransitionContext(IterableEntity("e-d", 1, 0)))).toList()
+        val ctx = makeTransitionContext(IterableEntity(id = "e-d", status = 1, iteration = 0))
+
+        val outcomes = persister.persistWithOutcomes(flowOf(ctx)).toList()
 
         val rejected = outcomes.single() as PersistOutcome.Rejected<TestEvt>
         assertThat(rejected.error.type).isEqualTo("BUSINESS_RULE")
@@ -436,7 +457,9 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             F2Function { _ -> throw IllegalStateException("chain unreachable") }
         val persister = buildPersister(perform = perform, logs = failingLogs)
 
-        val outcomes = persister.persistWithOutcomes(flowOf(makeTransitionContext(IterableEntity("e-f", 1, 0)))).toList()
+        val ctx = makeTransitionContext(IterableEntity(id = "e-f", status = 1, iteration = 0))
+
+        val outcomes = persister.persistWithOutcomes(flowOf(ctx)).toList()
 
         val rejected = outcomes.single() as PersistOutcome.Rejected<TestEvt>
         assertThat(rejected.error.type).isEqualTo("DUPLICATE_TX")
@@ -451,7 +474,9 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             F2Function { _ -> error("reconciliation must not query the chain for Transient outcomes") }
         val persister = buildPersister(perform = perform, logs = mustNotQuery)
 
-        val outcomes = persister.persistWithOutcomes(flowOf(makeTransitionContext(IterableEntity("e-t", 1, 0)))).toList()
+        val ctx = makeTransitionContext(IterableEntity(id = "e-t", status = 1, iteration = 0))
+
+        val outcomes = persister.persistWithOutcomes(flowOf(ctx)).toList()
 
         val transient = outcomes.single() as PersistOutcome.Transient<TestEvt>
         assertThat(transient.error.type).isEqualTo("GRPC_UNAVAILABLE")
@@ -471,7 +496,10 @@ class SsmAutomatePersisterReconcileAndWrapperTest {
             }
         }
         val persister = buildPersister(perform = perform)
-        val ctx = makeTransitionContext(IterableEntity("e-a", 1, 0), automate = resultAsActionAutomate)
+        val ctx = makeTransitionContext(
+            IterableEntity(id = "e-a", status = 1, iteration = 0),
+            automate = resultAsActionAutomate,
+        )
 
         persister.persistWithOutcomes(flowOf(ctx)).toList()
 

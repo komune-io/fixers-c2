@@ -8,22 +8,6 @@ import org.junit.jupiter.api.Test
 
 internal class RSACipherTest {
 
-    companion object {
-        private const val KEY_NAME = "command/vivi"
-
-        /**
-         * Ciphertext of "legacy message" produced with the previous raw RSA/PKCS#1 v1.5 scheme
-         * for the `command/vivi` key. Stands in for the ciphertexts already persisted on-chain,
-         * which cannot be re-encrypted.
-         */
-        private const val LEGACY_CIPHERTEXT =
-            "RMe0ik7UdZXK0uRaH6WElPno91+g0BJ0QMU6Wy2JnQmYtjAc5eh/BIp1hj3ydLdp/tj9faCZujusrkld0T5J0Hxcgu" +
-                "vJa5AwV4IXvPMsmxD0cGfRB66f2QYiE9+dfx2XSCZjwcCFxvO//MqzJNb1ksTKaUqDpA/Vu8Cj/ypXw5O7ImBY" +
-                "lXYbzAg7CEXHlJkysl/ObYOP65af3yWEnqSy0wqDWhrglmGLh5wM7dS5Hx+oAHVajhs+oBl8sZVcSr3RGH2qEs" +
-                "bqfFUff6ji8S+cV8CqwI01z1e1Zelwcb8u49WuDAXc71gE/lJAH1HnXQErMKVSVtvzOpKKtMO05ZhIMA=="
-        private const val LEGACY_MESSAGE = "legacy message"
-    }
-
     private val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
 
     @Test
@@ -81,7 +65,7 @@ internal class RSACipherTest {
         envelope[envelope.size - 1] = (envelope[envelope.size - 1].toInt() xor 0x01).toByte()
         val tampered = RSACipher.VERSION_PREFIX + Base64.getEncoder().encodeToString(envelope)
 
-        Assertions.assertThatThrownBy { RSACipher.decrypt(tampered, keyPair.private) }
+        Assertions.assertThatThrownBy { val _ = RSACipher.decrypt(tampered, keyPair.private) }
             .isInstanceOf(CryptoException::class.java)
     }
 
@@ -92,7 +76,7 @@ internal class RSACipherTest {
         envelope[envelope.size / 2] = (envelope[envelope.size / 2].toInt() xor 0x01).toByte()
         val tampered = RSACipher.VERSION_PREFIX + Base64.getEncoder().encodeToString(envelope)
 
-        Assertions.assertThatThrownBy { RSACipher.decrypt(tampered, keyPair.private) }
+        Assertions.assertThatThrownBy { val _ = RSACipher.decrypt(tampered, keyPair.private) }
             .isInstanceOf(CryptoException::class.java)
     }
 
@@ -101,13 +85,27 @@ internal class RSACipherTest {
         val encrypted = RSACipher.encrypt("msg to encrypt".toByteArray(), keyPair.public)
         val otherKeyPair = KeyPairReader.generateRSAKey()
 
-        Assertions.assertThatThrownBy { RSACipher.decrypt(encrypted, otherKeyPair.private) }
+        Assertions.assertThatThrownBy { val _ = RSACipher.decrypt(encrypted, otherKeyPair.private) }
             .isInstanceOf(CryptoException::class.java)
     }
 
     @Test
     fun decryptShouldFailOnMalformedCiphertext() {
-        Assertions.assertThatThrownBy { RSACipher.decrypt("${RSACipher.VERSION_PREFIX}not-base64!", keyPair.private) }
+        Assertions.assertThatThrownBy {
+            val _ = RSACipher.decrypt("${RSACipher.VERSION_PREFIX}not-base64!", keyPair.private)
+        }
             .isInstanceOf(CryptoException::class.java)
+    }
+
+    companion object {
+        private const val KEY_NAME = "command/vivi"
+
+        // Raw RSA/PKCS#1 v1.5 ciphertext of LEGACY_MESSAGE for command/vivi, as persisted on-chain before OAEP.
+        private const val LEGACY_CIPHERTEXT =
+            "RMe0ik7UdZXK0uRaH6WElPno91+g0BJ0QMU6Wy2JnQmYtjAc5eh/BIp1hj3ydLdp/tj9faCZujusrkld0T5J0Hxcgu" +
+                "vJa5AwV4IXvPMsmxD0cGfRB66f2QYiE9+dfx2XSCZjwcCFxvO//MqzJNb1ksTKaUqDpA/Vu8Cj/ypXw5O7ImBY" +
+                "lXYbzAg7CEXHlJkysl/ObYOP65af3yWEnqSy0wqDWhrglmGLh5wM7dS5Hx+oAHVajhs+oBl8sZVcSr3RGH2qEs" +
+                "bqfFUff6ji8S+cV8CqwI01z1e1Zelwcb8u49WuDAXc71gE/lJAH1HnXQErMKVSVtvzOpKKtMO05ZhIMA=="
+        private const val LEGACY_MESSAGE = "legacy message"
     }
 }

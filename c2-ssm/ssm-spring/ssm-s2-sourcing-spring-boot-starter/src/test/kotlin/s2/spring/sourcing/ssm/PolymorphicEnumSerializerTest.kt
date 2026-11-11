@@ -26,9 +26,7 @@ class PolymorphicEnumSerializerTest {
             encoder.encodeString(value.name)
         }
 
-        override fun deserialize(decoder: Decoder): TestState {
-            return TestState.valueOf(decoder.decodeString())
-        }
+        override fun deserialize(decoder: Decoder): TestState = TestState.valueOf(decoder.decodeString())
     }
 
     private val serializer = PolymorphicEnumSerializer(TestStateSerializer)

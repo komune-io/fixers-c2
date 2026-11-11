@@ -17,31 +17,27 @@ class SsmChaincodeAutoConfigurationBeanFactoryInitializationAotProcessor : BeanF
             // The @Bean method's parameter is SsmChaincodeConfiguration (not SsmChaincodeProperties,
             // which is its return type) — findMethod matches on parameter types.
             registerConfigMethodHints(
-                ctx.runtimeHints,
-                SsmChaincodeAutoConfiguration::class.java,
-                SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name,
-                SsmChaincodeConfiguration::class.java,
-                SsmChaincodeProperties::class.java,
+                hints = ctx.runtimeHints,
+                configClass = SsmChaincodeAutoConfiguration::class.java,
+                methodName = SsmChaincodeAutoConfiguration::ssmChaincodeProperties.name,
+                propsClass = SsmChaincodeConfiguration::class.java,
+                extraTypes = listOf(SsmChaincodeProperties::class.java),
             )
         }
     }
 }
 
-/**
- * Registers the reflection hints needed to invoke a config `@Bean` method ahead of time:
- * the method itself ([ExecutableMode.INVOKE]) plus its properties class and any extra types.
- *
- * Deliberately duplicated in each ssm-spring starter: the starters share no Spring-aware
- * module in this repo, and a dedicated module for one helper would add a dependency edge.
- */
+// Duplicated in each ssm-spring starter: they share no Spring-aware module, and one helper is no reason to add one.
 private fun registerConfigMethodHints(
     hints: RuntimeHints,
     configClass: Class<*>,
     methodName: String,
     propsClass: Class<*>,
-    vararg extraTypes: Class<*>,
+    extraTypes: List<Class<*>> = emptyList(),
 ) {
-    val method = ReflectionUtils.findMethod(configClass, methodName, propsClass)!!
+    val method = checkNotNull(ReflectionUtils.findMethod(configClass, methodName, propsClass)) {
+        "No @Bean method $methodName(${propsClass.simpleName}) on ${configClass.name}"
+    }
     hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
     hints.reflection().registerType(propsClass)
     extraTypes.forEach { hints.reflection().registerType(it) }

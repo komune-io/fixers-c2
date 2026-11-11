@@ -9,15 +9,12 @@ import tools.jackson.databind.node.NullNode
 import tools.jackson.module.kotlin.KotlinModule
 import tools.jackson.module.kotlin.readValue
 
-
 object JsonUtils {
     val mapper: ObjectMapper = JsonMapper.builder()
         .addModule(KotlinModule.Builder().build())
         .build()
 
-    fun toJson(obj: Any?): String {
-        return mapper.writeValueAsString(obj)
-    }
+    fun toJson(obj: Any?): String = mapper.writeValueAsString(obj)
 
     fun toNode(value: String): JsonNode {
         if (value.isBlank()) return NullNode.instance
@@ -27,11 +24,8 @@ object JsonUtils {
     fun valueToTree(value: Any): JsonNode = mapper.valueToTree(value)
 
     @Throws(IOException::class)
-    fun <T> toObject(value: URL?, clazz: Class<T>?): T {
-        return mapper.readValue(value!!.openStream(), clazz)
-    }
+    fun <T> toObject(value: URL, clazz: Class<T>): T = mapper.readValue(value.openStream(), clazz)
+
     @Throws(IOException::class)
-    inline fun <reified T> toObject(value: URL): T {
-        return mapper.readValue(value.openStream())
-    }
+    inline fun <reified T> toObject(value: URL): T = mapper.readValue(value.openStream())
 }

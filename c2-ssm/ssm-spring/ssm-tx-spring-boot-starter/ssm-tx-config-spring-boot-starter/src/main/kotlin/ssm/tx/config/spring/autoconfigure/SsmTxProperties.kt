@@ -11,16 +11,14 @@ data class SsmTxProperties(
     val signer: SignerFileConfig?,
     val batch: SsmBatchProperties = SsmBatchProperties()
 ) {
-    class SignerFileConfig(
+    data class SignerFileConfig(
         val admin: SignerAgentFileConfig?,
         val user: SignerAgentFileConfig?,
     )
-    class SignerAgentFileConfig(
+    data class SignerAgentFileConfig(
         val name: String,
         val key: String,
     )
 }
 
-fun SsmTxProperties.SignerAgentFileConfig.signer(): SignerAdmin {
-    return SignerAdmin.loadFromFile(name, key)
-}
+fun SsmTxProperties.SignerAgentFileConfig.signer(): SignerAdmin = SignerAdmin.loadFromFile(name, key)

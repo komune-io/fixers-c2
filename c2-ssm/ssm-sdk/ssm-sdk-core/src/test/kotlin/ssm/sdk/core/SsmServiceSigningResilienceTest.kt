@@ -36,7 +36,6 @@ class SsmServiceSigningResilienceTest {
 
     private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 
-    /** Stub signer that succeeds for all commands. */
     private val alwaysSucceedSigner: SsmCmdSigner = SsmCmdSigner { cmd ->
         SsmCmdSigned(
             cmd = cmd,
@@ -46,14 +45,8 @@ class SsmServiceSigningResilienceTest {
         )
     }
 
-    /**
-     * Partial-failure signer: throws for commandIds containing "bad",
-     * succeeds for everything else.
-     */
     private fun partialFailSigner(failAgentName: String): SsmCmdSigner = SsmCmdSigner { cmd ->
-        if (cmd.agentName == failAgentName) {
-            throw IllegalStateException("Key not found for agent: ${cmd.agentName}")
-        }
+        check(cmd.agentName != failAgentName) { "Key not found for agent: ${cmd.agentName}" }
         SsmCmdSigned(
             cmd = cmd,
             signature = "fake-sig",
@@ -71,12 +64,14 @@ class SsmServiceSigningResilienceTest {
         valueToSign = """{"name":"test"}""",
     )
 
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
     private fun buildRequester(responseBody: String): SsmRequester {
         val mockEngine = MockEngine { _ ->
             respond(
                 content = responseBody,
                 status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                headers = headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString()),
             )
         }
         val client = HttpClient(mockEngine) {

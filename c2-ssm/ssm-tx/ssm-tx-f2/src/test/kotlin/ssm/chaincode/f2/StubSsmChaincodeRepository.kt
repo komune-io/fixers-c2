@@ -44,8 +44,8 @@ internal class StubSsmChaincodeRepository(
         channelId: ChannelId,
         chaincodeId: ChaincodeId,
     ): String {
-        queries += QueryCall(fcn.value, args, channelId, chaincodeId)
-        return scripted[key(fcn.value, args.firstOrNull())]?.removeFirstOrNull() ?: NOT_FOUND
+        queries += QueryCall(fcn = fcn.value, args = args, channelId = channelId, chaincodeId = chaincodeId)
+        return scripted[key(fcn = fcn.value, value = args.firstOrNull())]?.removeFirstOrNull() ?: NOT_FOUND
     }
 
     override suspend fun invoke(invokeArgs: List<InvokeRequest>, msgIds: List<String>): List<CommandOutcome> {
@@ -58,6 +58,6 @@ internal class StubSsmChaincodeRepository(
         /** The gateway returns an empty body for a missing entry. */
         const val NOT_FOUND = ""
 
-        fun key(fcn: String, value: String?) = "$fcn:$value"
+        fun key(fcn: String, value: String?) = "$fcn:${value.orEmpty()}"
     }
 }

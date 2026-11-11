@@ -15,9 +15,7 @@ class SsmServiceFactory(
     private val batch: SsmBatchProperties,
 ) {
 
-    fun buildQueryService(): SsmQueryService {
-        return SsmQueryService(SsmRequester(jsonConverter, ssmChaincodeRepository))
-    }
+    fun buildQueryService(): SsmQueryService = SsmQueryService(SsmRequester(jsonConverter, ssmChaincodeRepository))
 
     fun buildTxService(ssmCmdSigner: SsmCmdSigner): SsmTxService {
         val ssmService = SsmService(SsmRequester(jsonConverter, ssmChaincodeRepository),

@@ -11,31 +11,32 @@ import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 import ssm.chaincode.f2.features.command.SsmTxSessionPerformActionFunctionImpl
 import ssm.sdk.core.SsmTxService
 import ssm.tx.config.spring.autoconfigure.SsmTxProperties
-import ssm.tx.session.spring.autoconfigure.SsmTxSessionPerformActionAutoConfiguration
 
 class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context runner must must start`() {
         ApplicationContextRunnerBuilder()
-            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmTxProperties::class.java)
-                assertThat(context).hasBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
+                assertThat(context).hasBean("ssmTxSessionPerformActionFunction")
             }
     }
 
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = SsmChaincodeConfigTest.localDockerComposeParams
-        )
-        assertThat(
-            context.getBean(SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name)
-        ).isNotNull
-        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        ).use { context ->
+            assertThat(
+                context.getBean("ssmTxSessionPerformActionFunction")
+            ).isNotNull
+            assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        }
     }
 
     @Test
@@ -46,16 +47,16 @@ class ApplicationContextRunnerTest {
             .run { context ->
                 assertThat(context).hasBean("customPerformActionFunction")
                 assertThat(context).doesNotHaveBean(
-                    SsmTxSessionPerformActionAutoConfiguration::ssmTxSessionPerformActionFunction.name
+                    "ssmTxSessionPerformActionFunction"
                 )
                 assertThat(context).hasSingleBean(SsmTxSessionPerformActionFunctionImpl::class.java)
             }
     }
 
     @Configuration
-    open class CustomPerformConfig {
+    class CustomPerformConfig {
         @Bean
-        open fun customPerformActionFunction(ssmTxService: SsmTxService): SsmTxSessionPerformActionFunctionImpl =
+        fun customPerformActionFunction(ssmTxService: SsmTxService): SsmTxSessionPerformActionFunctionImpl =
             SsmTxSessionPerformActionFunctionImpl(ssmTxService)
     }
 }

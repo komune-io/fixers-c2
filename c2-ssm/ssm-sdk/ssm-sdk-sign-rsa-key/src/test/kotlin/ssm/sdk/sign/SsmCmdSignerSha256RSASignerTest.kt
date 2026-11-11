@@ -15,11 +15,6 @@ import ssm.sdk.sign.model.SignerUser
 
 internal class SsmCmdSignerSha256RSASignerTest {
 
-    companion object {
-        private const val KEY_NAME = "command/vivi"
-        private const val AGENT_NAME = "vivi"
-    }
-
     private val keyPair = KeyPairReader.loadKeyPair(KEY_NAME)
     private val signerUser = SignerUser(AGENT_NAME, keyPair)
 
@@ -43,21 +38,21 @@ internal class SsmCmdSignerSha256RSASignerTest {
         val verifier = Signature.getInstance("SHA256withRSA")
         verifier.initVerify(keyPair.public)
         verifier.update("value-to-sign".toByteArray(Charsets.UTF_8))
-        val valid = verifier.verify(Base64.getDecoder().decode(signed.signature))
-        Assertions.assertThat(valid).isTrue()
+        val isValid = verifier.verify(Base64.getDecoder().decode(signed.signature))
+        Assertions.assertThat(isValid).isTrue()
     }
 
     @Test
     fun signShouldFailForUnknownAgent() {
         val signer = SsmCmdSignerSha256RSASigner(signerUser)
-        Assertions.assertThatThrownBy { signer.sign(cmd(agentName = "unknown")) }
+        Assertions.assertThatThrownBy { val _ = signer.sign(cmd(agentName = "unknown")) }
             .isInstanceOf(SsmSignException::class.java)
     }
 
     @Test
     fun signShouldReportOnlyTheAgentNameOnFailure() {
         val signer = SsmCmdSignerSha256RSASigner(signerUser)
-        Assertions.assertThatThrownBy { signer.sign(cmd(agentName = "unknown")) }
+        Assertions.assertThatThrownBy { val _ = signer.sign(cmd(agentName = "unknown")) }
             .isInstanceOf(SsmSignException::class.java)
             .hasMessage("Invalid agent name: unknown")
     }
@@ -74,5 +69,10 @@ internal class SsmCmdSignerSha256RSASignerTest {
         val agent = signerUser.asAgent()
         Assertions.assertThat(agent.name).isEqualTo(AGENT_NAME)
         Assertions.assertThat(agent.pub).isEqualTo(keyPair.public.encoded)
+    }
+
+    companion object {
+        private const val KEY_NAME = "command/vivi"
+        private const val AGENT_NAME = "vivi"
     }
 }

@@ -9,11 +9,6 @@ import org.junit.jupiter.api.Test
 
 internal class FileUtilsTest {
 
-    companion object {
-        private const val SAMPLE_RESOURCE = "files/sample.txt"
-        private const val SAMPLE_CONTENT = "sample content\n"
-    }
-
     @Test
     fun getUrlShouldResolveClasspathResource() {
         val url = FileUtils.getUrl(SAMPLE_RESOURCE)
@@ -35,7 +30,7 @@ internal class FileUtilsTest {
 
     @Test
     fun getUrlShouldFailOnInvalidFileUri() {
-        Assertions.assertThatThrownBy { FileUtils.getUrl("file:^invalid uri") }
+        Assertions.assertThatThrownBy { val _ = FileUtils.getUrl("file:^invalid uri") }
             .isInstanceOf(Exception::class.java)
     }
 
@@ -55,8 +50,8 @@ internal class FileUtilsTest {
 
     @Test
     fun sameContentShouldReturnTrueForIdenticalFiles() {
-        val file1 = createTempFile("same-content", ".txt").apply { writeText("identical") }
-        val file2 = createTempFile("same-content", ".txt").apply { writeText("identical") }
+        val file1 = createTempFile(prefix = "same-content", suffix = ".txt").apply { writeText("identical") }
+        val file2 = createTempFile(prefix = "same-content", suffix = ".txt").apply { writeText("identical") }
         try {
             Assertions.assertThat(FileUtils.sameContent(file1, file2)).isTrue()
         } finally {
@@ -67,13 +62,18 @@ internal class FileUtilsTest {
 
     @Test
     fun sameContentShouldReturnFalseForDifferentFiles() {
-        val file1 = createTempFile("same-content", ".txt").apply { writeText("content a") }
-        val file2 = createTempFile("same-content", ".txt").apply { writeText("content b") }
+        val file1 = createTempFile(prefix = "same-content", suffix = ".txt").apply { writeText("content a") }
+        val file2 = createTempFile(prefix = "same-content", suffix = ".txt").apply { writeText("content b") }
         try {
             Assertions.assertThat(FileUtils.sameContent(file1, file2)).isFalse()
         } finally {
             file1.toFile().delete()
             file2.toFile().delete()
         }
+    }
+
+    companion object {
+        private const val SAMPLE_RESOURCE = "files/sample.txt"
+        private const val SAMPLE_CONTENT = "sample content\n"
     }
 }

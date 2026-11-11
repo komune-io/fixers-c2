@@ -11,17 +11,11 @@ class SsmService(
     private val ssmCmdSigner: SsmCmdSigner
 ) {
 
-    fun signs(build: () -> List<SsmCmd>): List<SsmCmdSigned> {
-        return build().map { ssmCmd -> sign(ssmCmd) }
-    }
+    fun signs(build: () -> List<SsmCmd>): List<SsmCmdSigned> = build().map { ssmCmd -> sign(ssmCmd) }
 
-    fun signss(build: () -> List<SsmCmd>): List<SsmCmdSigned> {
-        return build().map { ssmCmd -> sign(ssmCmd) }
-    }
+    fun signss(build: () -> List<SsmCmd>): List<SsmCmdSigned> = build().map { ssmCmd -> sign(ssmCmd) }
 
-    fun sign(command: SsmCmd): SsmCmdSigned {
-        return ssmCmdSigner.sign(command)
-    }
+    fun sign(command: SsmCmd): SsmCmdSigned = ssmCmdSigner.sign(command)
 
     /**
      * Signs each [SsmCmd] individually (per-item resilience) and sends all successfully-signed

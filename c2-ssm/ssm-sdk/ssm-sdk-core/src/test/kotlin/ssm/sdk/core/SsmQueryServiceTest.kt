@@ -55,6 +55,8 @@ class SsmQueryServiceTest {
 
     private val agentJson = """{"name":"alice","pub":"QUJD"}"""
 
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
     private fun buildRequester(handler: MockRequestHandler): SsmRequester {
         val client = HttpClient(MockEngine(handler)) {
             install(ContentNegotiation) { jackson() }
@@ -71,7 +73,8 @@ class SsmQueryServiceTest {
         )
     }
 
-    private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private fun jsonHeaders() =
+        headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
 
     private fun respondingWith(body: (fcn: String?, args: String?) -> String): SsmQueryService {
         val requester = buildRequester { request ->
@@ -114,7 +117,7 @@ class SsmQueryServiceTest {
     fun `list wraps an unparseable response into InvokeException with a response excerpt`() {
         val service = respondingWith { _, _ -> "{not-a-json-array" }
 
-        assertThatThrownBy { runBlocking { service.listAdmins(chaincodeUri) } }
+        assertThatThrownBy { runBlocking { val _ = service.listAdmins(chaincodeUri) } }
             .isInstanceOf(InvokeException::class.java)
             .hasMessageContaining("Error parsing response: {not-a-json-array")
     }

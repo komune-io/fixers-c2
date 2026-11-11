@@ -18,41 +18,40 @@ class SsmCucumberBag(
     val config: SsmSdkConfig
 ) {
 
-    companion object {
-        val cucumbers: MutableMap<String, SsmCucumberBag> = mutableMapOf()
-
-        fun init(scenario: Scenario): SsmCucumberBag {
-            if (!cucumbers.containsKey(scenario.id)) {
-                cucumbers[scenario.id] = SsmCucumberBag(SsmSdkConfig(SsmBddConfig.Chaincode.url)).apply {
-                    uuid = UUID.randomUUID().toString()
-                }
-            }
-            return cucumbers.getValue(scenario.id)
-        }
-    }
-
-    lateinit var uuid: String
+    val uuid: String = UUID.randomUUID().toString()
 
     val clientQuery = SsmServiceFactory
         .builder(config, SsmBatchProperties())
         .buildQueryService()
 
-    fun clientTx(signer: Signer) = SsmServiceFactory
-        .builder(config, SsmBatchProperties())
-        .buildTxService(SsmCmdSignerSha256RSASigner(signer))
-
     val chaincodeUri: ChaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 
-    //	SsmSdkTxSteps
-    lateinit var adminSigner: SignerAdmin
-    var userSigners: MutableMap<AgentName, SignerUser> = mutableMapOf()
-    var ssms: MutableMap<SsmName, Ssm> = mutableMapOf()
+    //  SsmSdkTxSteps
+    private var currentAdminSigner: SignerAdmin? = null
+    var adminSigner: SignerAdmin
+        get() = checkNotNull(currentAdminSigner) { "No admin signer has been loaded" }
+        set(value) {
+            currentAdminSigner = value
+        }
+    val userSigners: MutableMap<AgentName, SignerUser> = mutableMapOf()
+    val ssms: MutableMap<SsmName, Ssm> = mutableMapOf()
 
     // SsmChaincodeBddSteps
     var adminsName: List<AgentName> = emptyList()
     var usersName: List<AgentName> = emptyList()
     var ssmsName: List<SsmName> = emptyList()
     var sessions: List<String> = emptyList()
+
+    fun clientTx(signer: Signer) = SsmServiceFactory
+        .builder(config, SsmBatchProperties())
+        .buildTxService(SsmCmdSignerSha256RSASigner(signer))
+
+    companion object {
+        val cucumbers: MutableMap<String, SsmCucumberBag> = mutableMapOf()
+
+        fun init(scenario: Scenario): SsmCucumberBag =
+            cucumbers.getOrPut(scenario.id) { SsmCucumberBag(SsmSdkConfig(SsmBddConfig.Chaincode.url)) }
+    }
 }
 
 fun String.contextualize(bag: SsmCucumberBag) = "$this-${bag.uuid}"

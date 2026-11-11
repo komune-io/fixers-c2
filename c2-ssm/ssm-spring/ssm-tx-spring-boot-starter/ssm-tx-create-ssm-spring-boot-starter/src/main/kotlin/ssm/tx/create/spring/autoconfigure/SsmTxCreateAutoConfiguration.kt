@@ -16,7 +16,5 @@ class SsmTxCreateAutoConfiguration {
     @ConditionalOnBean(SsmTxService::class)
     fun ssmTxCreateFunction(
         ssmTxService: SsmTxService,
-    ): SsmTxCreateFunction {
-        return SsmTxCreateFunctionImpl(ssmTxService)
-    }
+    ): SsmTxCreateFunction = SsmTxCreateFunctionImpl(ssmTxService)
 }

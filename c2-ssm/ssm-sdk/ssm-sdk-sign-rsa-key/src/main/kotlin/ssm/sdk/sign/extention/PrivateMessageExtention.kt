@@ -13,9 +13,8 @@ import ssm.sdk.sign.crypto.RSACipher
 import ssm.sdk.sign.model.Signer
 
 @Throws(Exception::class)
-fun SsmContext.addPrivateMessage(value: String, agent: Agent): SsmContext {
-    return addPrivateMessage(value, agent.name, agent.getPubAsKey())
-}
+fun SsmContext.addPrivateMessage(value: String, agent: Agent): SsmContext =
+    addPrivateMessage(value, agent.name, agent.getPubAsKey())
 
 @Throws(Exception::class)
 fun SsmContext.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmContext {
@@ -26,7 +25,7 @@ fun SsmContext.addPrivateMessage(value: String, name: String, publicKey: PublicK
 @Throws(Exception::class)
 fun SsmSession.addPrivateMessage(value: String, name: String, publicKey: PublicKey): SsmSession {
     val newPrivate = addPrivate(value, publicKey, name)
-    return SsmSession(ssm, session, roles, public, newPrivate)
+    return SsmSession(ssm = ssm, session = session, roles = roles, public = public, private = newPrivate)
 }
 
 @Throws(Exception::class)
@@ -41,9 +40,7 @@ private fun WithPrivate.addPrivate(value: String, publicKey: PublicKey, name: St
 }
 
 @Throws(Exception::class)
-fun WithPrivate.getPrivateMessage(signer: Signer): String? {
-    return getPrivateMessage(signer.name, signer.pair.private)
-}
+fun WithPrivate.getPrivateMessage(signer: Signer): String? = getPrivateMessage(signer.name, signer.pair.private)
 
 @Throws(Exception::class)
 fun WithPrivate.getPrivateMessage(name: String, privateKey: PrivateKey): String? {

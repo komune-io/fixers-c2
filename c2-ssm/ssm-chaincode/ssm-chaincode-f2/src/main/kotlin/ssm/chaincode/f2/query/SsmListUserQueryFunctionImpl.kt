@@ -12,6 +12,8 @@ class SsmListUserQueryFunctionImpl(
 ): SsmListUserQueryFunction {
 
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmListUserQuery>): Flow<SsmListUserResult> = msgs.map { payload ->
         queryService.listUsers(payload.chaincodeUri).let { items ->
             SsmListUserResult(items.toTypedArray())

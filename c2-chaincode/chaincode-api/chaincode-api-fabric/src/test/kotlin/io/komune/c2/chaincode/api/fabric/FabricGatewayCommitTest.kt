@@ -38,7 +38,8 @@ class FabricGatewayCommitTest {
 
     private fun proposedTxBytes(txId: String = "tx-1", channelId: String = "ch"): ByteArray {
         val channelHeader = ChannelHeader.newBuilder()
-            .setTxId(txId).setChannelId(channelId)
+            .setTxId(txId)
+            .setChannelId(channelId)
             .setTimestamp(Timestamp.newBuilder().setSeconds(1L).build())
             .build()
         val signatureHeader = SignatureHeader.newBuilder().setNonce(ByteString.copyFromUtf8("n")).build()
@@ -134,7 +135,7 @@ class FabricGatewayCommitTest {
         override fun newFilteredBlockEventsRequest(b: ByteArray) = error("unused")
         override fun newSignedBlockAndPrivateDataEventsRequest(b: ByteArray, s: ByteArray) = error("unused")
         override fun newBlockAndPrivateDataEventsRequest(b: ByteArray) = error("unused")
-        override fun close() {}
+        override fun close() = Unit
     }
 
     private fun builder(contract: Contract, gateway: Gateway? = null) = object : FabricGatewayBuilder() {
@@ -147,7 +148,12 @@ class FabricGatewayCommitTest {
         val status = stubStatus(successful = true, block = 7L)
         val client = clientFor(status)
 
-        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+            commandIds = listOf("m1"),
+        )
 
         val committed = outcomes.single() as TxOutcome.Committed
         assertThat(committed.msgId).isEqualTo("m1")
@@ -161,16 +167,14 @@ class FabricGatewayCommitTest {
         val built = stubProposal(proposedTxBytes(), status)      // returned by contract.build(); bytes fed to rewrite
         val recreated = stubProposal(proposedTxBytes(), status)  // returned by gateway.newProposal(rewrittenBytes)
         var rewrittenBytes: ByteArray? = null
-        val client = FabricGatewayClient(
-            builder(stubContract(built), stubGateway(recreated) { rewrittenBytes = it }),
-            parallelism = 1,
-        )
-
-        val outcomes = client.invoke(
-            "ch", "cc",
-            listOf(InvokeArgs("fn", "a", timestamp = 1_623_715_200_000L)),
-            listOf("m1"),
-        )
+        val outcomes = stubGateway(recreated) { rewrittenBytes = it }.use { gateway ->
+            FabricGatewayClient(builder(stubContract(built), gateway), parallelism = 1).invoke(
+                channelId = "ch",
+                chaincodeId = "cc",
+                invokeArgsList = listOf(InvokeArgs("fn", "a", timestamp = 1_623_715_200_000L)),
+                commandIds = listOf("m1"),
+            )
+        }
 
         assertThat(outcomes.single()).isInstanceOf(TxOutcome.Committed::class.java)
         // The bytes handed to Gateway.newProposal must carry the rewritten (business) timestamp — proving the
@@ -187,7 +191,12 @@ class FabricGatewayCommitTest {
         val status = stubStatus(successful = false, block = 3L, code = TxValidationCode.MVCC_READ_CONFLICT)
         val client = clientFor(status)
 
-        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+            commandIds = listOf("m1"),
+        )
 
         assertThat(outcomes.single()).isNotInstanceOf(TxOutcome.Committed::class.java)
     }
@@ -204,7 +213,12 @@ class FabricGatewayCommitTest {
         }
         val client = FabricGatewayClient(builder(stubContract(proposal)), parallelism = 1)
 
-        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+            commandIds = listOf("m1"),
+        )
 
         assertThat(outcomes.single()).isInstanceOf(TxOutcome.Rejected::class.java)
     }
@@ -218,7 +232,7 @@ class FabricGatewayCommitTest {
             override fun getDigest() = ByteArray(0)
             override fun submit(options: UnaryOperator<CallOptions>?) = ByteArray(0)
             override fun submitAsync(options: UnaryOperator<CallOptions>?): SubmittedTransaction =
-                throw IllegalStateException("submit boom")
+                error("submit boom")
         }
         val proposal = object : Proposal {
             override fun getTransactionId() = "tx-1"
@@ -229,7 +243,12 @@ class FabricGatewayCommitTest {
         }
         val client = FabricGatewayClient(builder(stubContract(proposal)), parallelism = 1)
 
-        val outcomes = client.invoke("ch", "cc", listOf(InvokeArgs("fn", "a")), listOf("m1"))
+        val outcomes = client.invoke(
+            channelId = "ch",
+            chaincodeId = "cc",
+            invokeArgsList = listOf(InvokeArgs("fn", "a")),
+            commandIds = listOf("m1"),
+        )
 
         assertThat(outcomes.single()).isInstanceOf(TxOutcome.Indeterminate::class.java)
     }

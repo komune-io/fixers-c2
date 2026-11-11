@@ -7,16 +7,11 @@ import org.springframework.boot.test.context.runner.ReactiveWebApplicationContex
 import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 
 open class SpringBootAutoconfigureSteps : En {
-    companion object {
-        const val GLUE = "ssm.bdd.spring"
-        var applicationParameters: Map<String, String> = emptyMap()
-        var contextBuilder: ReactiveWebApplicationContextRunner? = null
-    }
-
     init {
         Given("The application parameters") { table: DataTable ->
             applicationParameters = table.asMap(String::class.java, String::class.java)
-                .entries.associate { (key, value) ->
+                .entries
+                .associate { (key, value) ->
                     requireNotNull(key) to requireNotNull(value) { "Missing value for application parameter '$key'" }
                 }
         }
@@ -39,5 +34,11 @@ open class SpringBootAutoconfigureSteps : En {
                 assertThat(context).doesNotHaveBean(functionName)
             }
         }
+    }
+
+    companion object {
+        const val GLUE = "ssm.bdd.spring"
+        var applicationParameters: Map<String, String> = emptyMap()
+        var contextBuilder: ReactiveWebApplicationContextRunner? = null
     }
 }

@@ -23,13 +23,15 @@ class SsmTxAutoConfiguration {
     @ConditionalOnProperty(prefix = "ssm.chaincode", name = ["url"])
     @ConditionalOnMissingBean(SsmChaincodeProperties::class)
     fun chaincodeSsmConfig(ssmTxCreateProperties: SsmTxProperties): SsmChaincodeProperties =
-        ssmTxCreateProperties.chaincode!!
+        checkNotNull(ssmTxCreateProperties.chaincode) { "ssm.chaincode.url is set but ssm.chaincode did not bind" }
 
     @Bean
     @ConditionalOnMissingBean(SsmBatchProperties::class)
     fun ssmBatchProperties(ssmTxCreateProperties: SsmTxProperties): SsmBatchProperties =
         ssmTxCreateProperties.batch
 
+    // The signer only takes a vararg, and which signers are configured is known at runtime only.
+    @Suppress("SpreadOperator")
     @Bean
     @ConditionalOnMissingBean(SsmCmdSignerSha256RSASigner::class)
     fun ssmCmdSigner(ssmTxCreateProperties: SsmTxProperties): SsmCmdSigner {

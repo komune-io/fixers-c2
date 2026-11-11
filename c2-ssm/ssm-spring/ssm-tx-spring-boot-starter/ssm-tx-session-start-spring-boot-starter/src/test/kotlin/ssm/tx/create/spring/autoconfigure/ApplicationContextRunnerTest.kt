@@ -13,13 +13,13 @@ import ssm.sdk.core.SsmTxService
 import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 import ssm.tx.session.start.spring.autoconfigure.SsmSessionStartAutoConfiguration
 
-
 class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context runner must must start`() {
         ApplicationContextRunnerBuilder()
-            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmTxProperties::class.java)
                 assertThat(context).hasBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)
@@ -29,12 +29,13 @@ class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = SsmChaincodeConfigTest.localDockerComposeParams
-        )
-        assertThat(context.getBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)).isNotNull
-        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        ).use { context ->
+            assertThat(context.getBean(SsmSessionStartAutoConfiguration::ssmTxSessionStartFunction.name)).isNotNull
+            assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        }
     }
 
     @Test
@@ -52,9 +53,9 @@ class ApplicationContextRunnerTest {
     }
 
     @Configuration
-    open class CustomStartConfig {
+    class CustomStartConfig {
         @Bean
-        open fun customStartFunction(ssmTxService: SsmTxService): SsmTxSessionStartFunctionImpl =
+        fun customStartFunction(ssmTxService: SsmTxService): SsmTxSessionStartFunctionImpl =
             SsmTxSessionStartFunctionImpl(ssmTxService)
     }
 

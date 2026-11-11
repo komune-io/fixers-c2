@@ -13,14 +13,16 @@ class SsmUserGrantFunctionImpl(
     private val ssmTxService: SsmTxService,
 ): SsmTxUserGrantFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmUserGrantCommand>): Flow<SsmUserGrantedResult> = msgs.map { payload ->
         UserRegisterCommand(
             agent = payload.agent,
             chaincodeUri = payload.chaincodeUri.burst(),
             signerName = payload.signerName
         )
-    }.let {
-        ssmTxService.sendRegisterUser(it).map { result ->
+    }.let { commands ->
+        ssmTxService.sendRegisterUser(commands).map { result ->
             SsmUserGrantedResult(
                 transactionId = result.transactionId.orEmpty(),
             )

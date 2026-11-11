@@ -17,7 +17,7 @@ class SsmExtensionTest {
     private val action = S2TransitionValue("Activate")
 
     private fun transition(from: S2StateValue? = stateFrom, to: S2StateValue = stateTo) =
-        S2Transition(from, to, role, action, null)
+        S2Transition(from = from, to = to, role = role, action = action, result = null)
 
     @Test
     fun `toSsmTransition converts transition with non-null from`() {
@@ -44,7 +44,7 @@ class SsmExtensionTest {
     fun `toSsmTransition with null from and no override throws with clear message`() {
         val t = transition(from = null)
         val exception = assertThrows<IllegalArgumentException> {
-            t.toSsmTransition(withResultAsAction = false)
+            val _ = t.toSsmTransition(withResultAsAction = false)
         }
         assertThat(exception.message).contains("cannot be null")
     }
@@ -52,14 +52,14 @@ class SsmExtensionTest {
     @Test
     fun `toSsmTransition uses result name as action when withResultAsAction is true`() {
         val result = S2TransitionValue("ResultAction")
-        val t = S2Transition(stateFrom, stateTo, role, action, result)
+        val t = S2Transition(from = stateFrom, to = stateTo, role = role, action = action, result = result)
         val ssm = t.toSsmTransition(withResultAsAction = true)
         assertThat(ssm.action).isEqualTo("ResultAction")
     }
 
     @Test
     fun `toSsmTransition uses action name when withResultAsAction is true but result is null`() {
-        val t = S2Transition(stateFrom, stateTo, role, action, null)
+        val t = S2Transition(from = stateFrom, to = stateTo, role = role, action = action, result = null)
         val ssm = t.toSsmTransition(withResultAsAction = true)
         assertThat(ssm.action).isEqualTo("Activate")
     }

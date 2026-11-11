@@ -11,6 +11,7 @@ import ssm.data.dsl.features.query.DataSsmSessionLogGetQueryFunction
 import ssm.data.dsl.features.query.DataSsmSessionLogListQueryFunction
 
 /**
+ * The query functions of the SSM data API.
  * - fun dataChaincodeListQueryFunction(): [DataChaincodeListQueryFunction]
  * - fun dataSsmListQueryFunction(): [DataSsmListQueryFunction]
  * - fun dataSsmGetQueryFunction(): [DataSsmGetQueryFunction]
@@ -29,8 +30,14 @@ interface SsmApiQueryFunctions {
     fun dataChaincodeListQueryFunction(): DataChaincodeListQueryFunction
     fun dataSsmListQueryFunction(): DataSsmListQueryFunction
     fun dataSsmGetQueryFunction(): DataSsmGetQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionListQueryFunction(): DataSsmSessionListQueryFunction
     fun dataSsmSessionGetQueryFunction(): DataSsmSessionGetQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionLogListQueryFunction(): DataSsmSessionLogListQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun dataSsmSessionLogGetQueryFunction(): DataSsmSessionLogGetQueryFunction
 }

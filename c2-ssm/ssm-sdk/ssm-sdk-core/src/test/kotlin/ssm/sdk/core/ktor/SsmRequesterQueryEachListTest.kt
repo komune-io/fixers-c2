@@ -21,6 +21,8 @@ class SsmRequesterQueryEachListTest {
 
     private data class FakeLog(val txId: String, val iteration: Int)
 
+    // The returned requester keeps the engine and client for the whole test: no scope to close them in.
+    @Suppress("MissingUseCall")
     private fun buildRequester(handler: MockRequestHandler): SsmRequester {
         val engine = MockEngine(handler)
         val client = HttpClient(engine) {
@@ -46,16 +48,18 @@ class SsmRequesterQueryEachListTest {
         )
     }
 
-    private fun jsonHeaders() = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+    private fun jsonHeaders() =
+        headersOf(name = HttpHeaders.ContentType, value = ContentType.Application.Json.toString())
 
     @Test
     suspend fun `queryEachList keeps one inner list per query and preserves order and sizes`() {
         val requester = buildRequester { request ->
             val argValue = request.url.parameters["args"]
             val body = when (argValue) {
-                "session-A" -> """[{"txId":"tx1","iteration":0},{"txId":"tx2","iteration":1},{"txId":"tx3","iteration":2}]"""
+                "session-A" ->
+                    """[{"txId":"tx1","iteration":0},{"txId":"tx2","iteration":1},{"txId":"tx3","iteration":2}]"""
                 "session-B" -> """[{"txId":"tx9","iteration":7}]"""
-                else -> error("unexpected args=$argValue")
+                else -> error("unexpected args=${argValue ?: "none"}")
             }
             respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
         }
@@ -79,7 +83,7 @@ class SsmRequesterQueryEachListTest {
             val body = when (argValue) {
                 "session-empty" -> "[]"
                 "session-full" -> """[{"txId":"tx1","iteration":0}]"""
-                else -> error("unexpected args=$argValue")
+                else -> error("unexpected args=${argValue ?: "none"}")
             }
             respond(content = body, status = HttpStatusCode.OK, headers = jsonHeaders())
         }

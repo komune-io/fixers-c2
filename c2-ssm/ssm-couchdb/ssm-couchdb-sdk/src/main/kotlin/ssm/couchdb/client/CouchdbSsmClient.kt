@@ -27,7 +27,6 @@ import ssm.couchdb.dsl.model.DatabaseName
 import ssm.couchdb.dsl.model.DocType
 import ssm.sdk.json.JSONConverter
 
-
 /**
  * The Cloudant SDK is blocking, so every call is dispatched off the calling thread.
  * [dispatcher] defaults to [Dispatchers.IO] and is injectable so tests can supply a
@@ -39,62 +38,9 @@ class CouchdbSsmClient(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    companion object {
-        const val COUNTING_VIEW = "indexType"
-        const val FABRIC_COUNTING_DOC = "indexTypeDoc"
-        const val SSM_CHANGES_FILTER = "ssm_changes_filter"
-        const val SSM_CHANGES_FILTER_FNC = """
-            function (doc, req) { 
-              if (doc.docType && doc.docType == 'ssm' && doc.name && doc.name == req.query.ssm) {
-                return true; 
-              } else if (doc.docType && doc.docType == 'state' && doc.ssm && doc.ssm == req.query.ssm) {
-                if(req.query.session) {
-                  return  doc.session == req.query.session
-                } else {
-                  return true;
-                } 
-              } else {
-                return false;
-              }
-            }"""
-
-        const val ID_FIELD = "_id"
-
-        fun builder(): SsmCouchDbClientBuilder {
-            return SsmCouchDbClientBuilder()
-        }
-
-        internal fun <T : Any> docTypeSelector(
-            docType: DocType<T>,
-            filters: Map<String, String>,
-        ): Map<String, Any> = mapOf("docType" to mapOf("\$eq" to docType.name)).plus(filters)
-
-        /**
-         * Builds the `_find` options. When [limit] is null every matching document is requested
-         * (`Long.MAX_VALUE`), which is the historical behaviour; a non-null [limit]/[skip] is pushed
-         * down so CouchDB applies the page itself instead of the caller slicing in memory.
-         */
-        internal fun buildFindOptions(
-            dbName: String,
-            selector: Map<String, Any>,
-            limit: Long? = null,
-            skip: Long? = null,
-            fields: List<String>? = null,
-        ): PostFindOptions = PostFindOptions.Builder()
-            .db(dbName)
-            .selector(selector)
-            .limit(limit ?: Long.MAX_VALUE)
-            .apply {
-                skip?.let { skip(it) }
-                fields?.let { fields(it) }
-            }
-            .build()
-    }
-
     /**
-     * @param limit maximum number of documents to return. `null` keeps the previous behaviour of
-     * fetching every matching document; pass a value to have CouchDB apply the page server-side.
-     * @param skip number of documents to skip before the page starts.
+     * Documents of [docType] in [dbName] matching [filters]. A null [limit] keeps fetching every
+     * matching document; a value has CouchDB apply the page server-side, after skipping [skip] documents.
      */
     suspend fun <T : Any> fetchAllByDocType(
         dbName: String,
@@ -103,7 +49,12 @@ class CouchdbSsmClient(
         limit: Long? = null,
         skip: Long? = null,
     ): List<T> = withContext(dispatcher) {
-        val findOptions = buildFindOptions(dbName, docTypeSelector(docType, filters), limit, skip)
+        val findOptions = buildFindOptions(
+            dbName = dbName,
+            selector = docTypeSelector(docType, filters),
+            limit = limit,
+            skip = skip,
+        )
 
         val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
@@ -127,7 +78,11 @@ class CouchdbSsmClient(
             fields = listOf(ID_FIELD),
         )
 
-        cloudant.postFind(findOptions).execute().result.docs.size
+        cloudant.postFind(findOptions)
+            .execute()
+            .result
+            .docs
+            .size
     }
 
     suspend fun fetchAll(
@@ -135,7 +90,7 @@ class CouchdbSsmClient(
         limit: Long? = null,
         skip: Long? = null,
     ): List<Document> = withContext(dispatcher) {
-        val findOptions = buildFindOptions(dbName, emptyMap(), limit, skip)
+        val findOptions = buildFindOptions(dbName = dbName, selector = emptyMap(), limit = limit, skip = skip)
 
         val result: Response<FindResult> = cloudant.postFind(findOptions).execute()
 
@@ -177,19 +132,23 @@ class CouchdbSsmClient(
         lastEventId: ChangeEventId? = null,
         limit: Long? = null
     ): ChangesResult {
-        installSsmChangesFilter(dbName)
+        // The rule reads the discarded `val _` as a Boolean property; an unnamed value has no name to prefix.
+        @Suppress("BooleanPropertyNaming")
+        val _ = installSsmChangesFilter(dbName)
         val query = PostChangesOptions.Builder()
             .db(dbName)
             .lastEventId(lastEventId)
             .includeDocs(true)
             .filter("filters/$SSM_CHANGES_FILTER")
 
-        limit?.let {
+        if (limit != null) {
             query.limit(limit)
         }
 
         return withContext(dispatcher) {
-            cloudant.postChanges(query.build(), ssmName, sessionName).execute().result
+            cloudant.postChanges(postChangesOptions = query.build(), ssm = ssmName, session = sessionName)
+                .execute()
+                .result
         }
     }
 
@@ -213,8 +172,10 @@ class CouchdbSsmClient(
                             mapOf(
                                 SSM_CHANGES_FILTER to SSM_CHANGES_FILTER_FNC
                             )
-                        ).build()
-                    ).build()
+                        )
+                            .build()
+                    )
+                    .build()
 
                 cloudant.putDesignDocument(stateSsmNameFilter).reactiveRequest().doAfterSuccess {
                     continuation.resume(true)
@@ -231,6 +192,61 @@ class CouchdbSsmClient(
             .groupLevel(1)
             .key(arrayOf(docType.name))
             .build()
-        (cloudant.postView(query).execute().result.rows.firstOrNull()?.value as Number?)?.toInt() ?: 0
+        val row = cloudant.postView(query)
+            .execute()
+            .result
+            .rows
+            .firstOrNull()
+        (row?.value as? Number)?.toInt() ?: 0
+    }
+
+    companion object {
+        const val COUNTING_VIEW = "indexType"
+        const val FABRIC_COUNTING_DOC = "indexTypeDoc"
+        const val SSM_CHANGES_FILTER = "ssm_changes_filter"
+        const val SSM_CHANGES_FILTER_FNC = """
+            function (doc, req) { 
+              if (doc.docType && doc.docType == 'ssm' && doc.name && doc.name == req.query.ssm) {
+                return true; 
+              } else if (doc.docType && doc.docType == 'state' && doc.ssm && doc.ssm == req.query.ssm) {
+                if(req.query.session) {
+                  return  doc.session == req.query.session
+                } else {
+                  return true;
+                } 
+              } else {
+                return false;
+              }
+            }"""
+
+        const val ID_FIELD = "_id"
+
+        fun builder(): SsmCouchDbClientBuilder = SsmCouchDbClientBuilder()
+
+        internal fun <T : Any> docTypeSelector(
+            docType: DocType<T>,
+            filters: Map<String, String>,
+        ): Map<String, Any> = mapOf("docType" to mapOf("\$eq" to docType.name)).plus(filters)
+
+        /**
+         * Builds the `_find` options. When [limit] is null every matching document is requested
+         * (`Long.MAX_VALUE`), which is the historical behaviour; a non-null [limit]/[skip] is pushed
+         * down so CouchDB applies the page itself instead of the caller slicing in memory.
+         */
+        internal fun buildFindOptions(
+            dbName: String,
+            selector: Map<String, Any>,
+            limit: Long? = null,
+            skip: Long? = null,
+            fields: List<String>? = null,
+        ): PostFindOptions = PostFindOptions.Builder()
+            .db(dbName)
+            .selector(selector)
+            .limit(limit ?: Long.MAX_VALUE)
+            .apply {
+                if (skip != null) skip(skip)
+                if (fields != null) fields(fields)
+            }
+            .build()
     }
 }

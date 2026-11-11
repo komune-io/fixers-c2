@@ -11,7 +11,6 @@ import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.EndorseException
 import org.hyperledger.fabric.protos.gateway.ErrorDetail
 import org.junit.jupiter.api.Test
-import java.util.Optional
 
 /**
  * Tests for FabricGatewayClient.extractErrorMessage — verifying safe-cast
@@ -155,8 +154,9 @@ class ExtractErrorMessageTest {
             val e = EndorseException("test", cause)
             // Must not throw
             val result = runCatching { client.extractErrorMessage(e) }
+            val failure = result.exceptionOrNull() ?: "no error"
             assertThat(result.isSuccess)
-                .withFailMessage { "extractErrorMessage threw for status ${status.code}: ${result.exceptionOrNull()}" }
+                .withFailMessage { "extractErrorMessage threw for status ${status.code}: $failure" }
                 .isTrue()
         }
     }

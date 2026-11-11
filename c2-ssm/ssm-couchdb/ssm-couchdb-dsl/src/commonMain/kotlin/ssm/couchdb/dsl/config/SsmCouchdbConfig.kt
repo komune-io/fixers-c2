@@ -8,25 +8,25 @@ package ssm.couchdb.dsl.config
  */
 data class SsmCouchdbConfig(
     /**
-     * URL of the machine hosting the database
+     * URL of the machine hosting the database.
      * @example "http://peer.sandbox.Komune.io:9000"
      */
     val url: String,
 
     /**
-     * Username to log into the service handling the database
+     * Username to log into the service handling the database.
      * @example "admin"
      */
     val username: String,
 
     /**
-     * Password to log into the service handling the database
+     * Password to log into the service handling the database.
      * @example "admin"
      */
     val password: String,
 
     /**
-     * Name of the service handling the database
+     * Name of the service handling the database.
      * @example "ssm-couchdb"
      */
     val serviceName: String,

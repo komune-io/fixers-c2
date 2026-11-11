@@ -36,14 +36,14 @@ internal class JsonUtilsTest {
     fun `deserialize Long from epoch millis`() {
         val json = """{"timestamp": 1738410430231}"""
         val data = JsonUtils.toObject(json, WithTimestamp::class.java)
-        assertThat(data.timestamp).isEqualTo(1738410430231L)
+        assertThat(data.timestamp).isEqualTo(1_738_410_430_231L)
     }
 
     @Test
     fun `deserialize Long from numeric string`() {
         val json = """{"timestamp": "1738410430231"}"""
         val data = JsonUtils.toObject(json, WithTimestamp::class.java)
-        assertThat(data.timestamp).isEqualTo(1738410430231L)
+        assertThat(data.timestamp).isEqualTo(1_738_410_430_231L)
     }
 
     @Test

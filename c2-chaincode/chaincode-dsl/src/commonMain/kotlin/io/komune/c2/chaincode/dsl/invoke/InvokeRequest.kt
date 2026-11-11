@@ -23,7 +23,6 @@ fun List<InvokeRequest>.toInvokeArgs(): List<InvokeArgs> = map {
     it.toInvokeArgs()
 }
 
-fun InvokeRequest.toInvokeArgs(): InvokeArgs {
-    return InvokeArgs(InvokeFunction(fcn), args.toList(), timestamp = timestamp)
-}
+fun InvokeRequest.toInvokeArgs(): InvokeArgs =
+    InvokeArgs(function = InvokeFunction(fcn), values = args.toList(), timestamp = timestamp)
 

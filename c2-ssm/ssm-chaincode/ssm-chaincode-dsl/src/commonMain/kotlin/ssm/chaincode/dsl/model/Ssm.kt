@@ -21,7 +21,7 @@ interface SsmDTO {
     val name: SsmName
 
     /**
-     * The definition of the State Machine
+     * The definition of the State Machine.
      * @example [[
      * 	{
      * 		"from": 0,

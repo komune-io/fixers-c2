@@ -18,7 +18,5 @@ class SsmTxInitAutoConfiguration {
     fun ssmTxInitFunction(
         ssmTxService: SsmTxService,
         ssmQueryService: SsmQueryService,
-    ): SsmTxInitFunction {
-        return SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
-    }
+    ): SsmTxInitFunction = SsmTxInitFunctionImpl(ssmTxService, ssmQueryService)
 }

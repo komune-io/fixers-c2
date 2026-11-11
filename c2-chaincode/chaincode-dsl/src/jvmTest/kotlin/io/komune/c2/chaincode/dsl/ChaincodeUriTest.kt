@@ -29,15 +29,15 @@ class ChaincodeUriTest {
 
     @Test
     fun `rejects a uri with the wrong number of parts`() {
-        assertThatThrownBy { ChaincodeUri("chaincode:sandbox") }
+        assertThatThrownBy { val _ = ChaincodeUri("chaincode:sandbox") }
             .isInstanceOf(IllegalArgumentException::class.java)
-        assertThatThrownBy { ChaincodeUri("chaincode:sandbox:ssm:extra") }
+        assertThatThrownBy { val _ = ChaincodeUri("chaincode:sandbox:ssm:extra") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
     fun `rejects a uri with the wrong prefix`() {
-        assertThatThrownBy { ChaincodeUri("ssm:sandbox:ssm") }
+        assertThatThrownBy { val _ = ChaincodeUri("ssm:sandbox:ssm") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
 }

@@ -7,7 +7,6 @@ interface HasSigncerts {
     val signcerts: String
 
     @Throws(MalformedURLException::class)
-    fun getSigncertsAsUrl(cryptoBase: String): URL {
-        return FileUtils.getUrl(cryptoBase, signcerts)
-    }
+    fun getSigncertsAsUrl(cryptoBase: String): URL =
+        FileUtils.getUrl(path = cryptoBase, resource = signcerts)
 }

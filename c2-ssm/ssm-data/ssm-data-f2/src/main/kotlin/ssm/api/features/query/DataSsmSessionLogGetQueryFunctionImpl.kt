@@ -19,6 +19,8 @@ class DataSsmSessionLogGetQueryFunctionImpl(
     private val ssmGetTransactionQueryFunction: SsmGetTransactionQueryFunction
 ) : DataSsmSessionLogGetQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<DataSsmSessionLogGetQueryDTO>): Flow<DataSsmSessionLogGetQueryResultDTO> =
         msgs.map { payload ->
             val logs = payload.sessionName.getSessionLogs(
@@ -35,8 +37,7 @@ class DataSsmSessionLogGetQueryFunctionImpl(
                         details = sessionState.state,
                         transaction = transaction
                     )
-                }.let {
-                    DataSsmSessionLogGetQueryResult(it)
                 }
+                .run(::DataSsmSessionLogGetQueryResult)
         }
 }

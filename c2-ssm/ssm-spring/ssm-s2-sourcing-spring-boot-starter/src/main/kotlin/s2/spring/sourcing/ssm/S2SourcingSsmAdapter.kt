@@ -24,7 +24,7 @@ import ssm.chaincode.f2.features.command.SsmTxSessionStartFunction
 import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
 
-abstract class S2SourcingSsmAdapter<ENTITY, STATE, EVENT, ID, EXECUTOR>(
+abstract class S2SourcingSsmAdapter<ENTITY, STATE, EVENT, ID : Any, EXECUTOR>(
     executor: EXECUTOR,
     view: View<EVENT, ENTITY>,
     snapRepository: SnapRepository<ENTITY, ID>? = null
@@ -36,23 +36,38 @@ EVENT: WithS2Id<ID>,
 EVENT: Evt,
 EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmTxInitFunction: SsmTxInitFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmSessionStartFunction: SsmTxSessionStartFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var dataSsmSessionGetQueryFunction: DataSsmSessionGetQueryFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var dataSsmSessionListQueryFunction: DataSsmSessionListQueryFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction
+
+    open var isPermissive = false
+    open var isVersioning = false
 
     override fun eventStore(): EventRepository<EVENT, ID> = runBlocking {
         val automate = automate()
@@ -60,22 +75,22 @@ EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
         val chaincodeUri = chaincodeUri()
         EventPersisterSsm(
             s2Automate = automate,
-            eventType = entityType(),
             batchParams = batchParams,
-            ssmSessionStartFunction = ssmSessionStartFunction,
-            ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
-            dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction,
-            ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
-            dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction,
-            chaincodeUri = chaincodeUri,
-            agentSigner = signer,
-            json = json(),
-            versioning = versioning,
+            functions = SsmSourcingFunctions(
+                ssmSessionStartFunction = ssmSessionStartFunction,
+                ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
+                dataSsmSessionGetQueryFunction = dataSsmSessionGetQueryFunction,
+                ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
+                dataSsmSessionListQueryFunction = dataSsmSessionListQueryFunction,
+            ),
+            target = SsmSourcingTarget(chaincodeUri = chaincodeUri, agentSigner = signer),
+            format = SsmEventFormat(eventType = entityType(), json = json()),
+            isVersioning = isVersioning,
         ).also {
-            ssmTxInitFunction.invoke(
+            val _ = ssmTxInitFunction.invoke(
                 SsmInitCommand(
                     signerName = signer.name,
-                    ssm = automate.toSsm(permissive),
+                    ssm = automate.toSsm(permissive = isPermissive),
                     agent = signer,
                     chaincodeUri = chaincodeUri
                 )
@@ -87,6 +102,4 @@ EXECUTOR : S2AutomateDeciderSpring<ENTITY, STATE, EVENT, ID> {
 
     abstract fun chaincodeUri(): ChaincodeUri
     abstract fun signerAgent(): Agent
-    open var permissive = false
-    open var versioning = false
 }

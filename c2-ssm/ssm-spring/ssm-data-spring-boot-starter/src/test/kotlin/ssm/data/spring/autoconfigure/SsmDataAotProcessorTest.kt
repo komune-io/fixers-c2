@@ -49,9 +49,9 @@ class SsmDataAotProcessorTest {
             assertThat(typeHint!!.constructors().toList()).isNotEmpty
         }
         val patterns = hints.resources().resourcePatternHints()
-            .flatMap { it.includes.stream() }
-            .map { it.pattern }
             .toList()
+            .flatMap { it.includes }
+            .map { it.pattern }
         assertThat(patterns).contains("cloudant-parent.properties")
     }
 

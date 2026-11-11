@@ -14,13 +14,13 @@ class FileUtilsTest {
 
     @Test
     fun `getUrl should combine path and resource with trailing slash`() {
-        val url = FileUtils.getUrl("file:/tmp/config/", "fabric.json")
+        val url = FileUtils.getUrl(path = "file:/tmp/config/", resource = "fabric.json")
         assertThat(url.toString()).isEqualTo("file:/tmp/config/fabric.json")
     }
 
     @Test
     fun `getUrl should add missing trailing slash between path and resource`() {
-        val url = FileUtils.getUrl("file:/tmp/config", "fabric.json")
+        val url = FileUtils.getUrl(path = "file:/tmp/config", resource = "fabric.json")
         assertThat(url.toString()).isEqualTo("file:/tmp/config/fabric.json")
     }
 
@@ -62,7 +62,7 @@ class FileUtilsTest {
     @Test
     fun `asFileReader should fail on empty directory`() {
         val emptyDir = File(tempDir, "empty").apply { mkdirs() }
-        assertThatThrownBy { emptyDir.toURI().toURL().asFileReader() }
+        assertThatThrownBy { val _ = emptyDir.toURI().toURL().asFileReader() }
             .isInstanceOf(URISyntaxException::class.java)
     }
 }

@@ -7,6 +7,8 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.Logging
@@ -16,6 +18,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -30,30 +33,24 @@ import ssm.sdk.core.auth.BearerTokenAuthCredentials
 import ssm.sdk.core.repository.SsmChaincodeRepository
 import ssm.sdk.dsl.CommandOutcome
 import ssm.sdk.json.JsonUtils
+import tools.jackson.core.JacksonException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
 class ChaincodeApiGatewayClient(
     private val baseUrl: String,
-    private val timeout: Long,
+    timeout: Long,
     private val authCredentials: AuthCredentials?,
     private val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
     client: HttpClient? = null,
 ) : SsmChaincodeRepository {
     private val logger = LoggerFactory.getLogger(javaClass)
-    companion object {
-        const val PATH = "/"
-        const val INVOKE_PATH = "/invoke"
-        const val DEFAULT_CLOUDEVENTS_SOURCE = "/io.komune.c2/sdk"
-        val CMD_PROPS = InvokeRequest::cmd.name
-        val CHANNEL_ID_PROPS = InvokeRequest::channelid.name
-        val CHAINCODE_ID_PROPS = InvokeRequest::chaincodeid.name
-        val FCN_PROPS = InvokeRequest::fcn.name
-        val ARGS_PROPS = InvokeRequest::args.name
-        val CLIENT_ERROR_RANGE = 400..499
-        val SERVER_ERROR_RANGE = 500..599
-    }
 
+    // The client lives as long as this repository and is shared by every call: no scope to close it in.
+    @Suppress("MissingUseCall")
     val client = client ?: HttpClient(CIO) {
         if(logger.isDebugEnabled) {
             install(Logging)
@@ -76,11 +73,11 @@ class ChaincodeApiGatewayClient(
     ): String {
         return client.get(baseUrl + PATH) {
             addAuth()
-            parameter(CMD_PROPS, cmd.name)
-            parameter(CHANNEL_ID_PROPS, channelId)
-            parameter(CHAINCODE_ID_PROPS, chaincodeId)
-            parameter(FCN_PROPS, fcn.value)
-            parameter(ARGS_PROPS, args.first())
+            parameter(key = CMD_PROPS, value = cmd.name)
+            parameter(key = CHANNEL_ID_PROPS, value = channelId)
+            parameter(key = CHAINCODE_ID_PROPS, value = chaincodeId)
+            parameter(key = FCN_PROPS, value = fcn.value)
+            parameter(key = ARGS_PROPS, value = args.first())
         }.bodyAsText()
     }
 
@@ -88,7 +85,7 @@ class ChaincodeApiGatewayClient(
         return client.get(baseUrl) {
             addAuth()
 
-            channelId?.let { parameter("channelId", channelId) }
+            if (channelId != null) parameter(key = "channelId", value = channelId)
             url {
                 path("blocks", blockId.toString())
             }
@@ -98,7 +95,7 @@ class ChaincodeApiGatewayClient(
     suspend fun getTransaction(txId: String, channelId: ChannelId?): String {
         return client.get(baseUrl) {
             addAuth()
-            channelId?.let { parameter("channelId", channelId) }
+            if (channelId != null) parameter(key = "channelId", value = channelId)
             url {
                 path("transactions", txId)
             }
@@ -113,15 +110,16 @@ class ChaincodeApiGatewayClient(
             "msgIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
         }
         val body = invokeArgs.zip(msgIds).map { (req, msgId) -> buildEnvelope(msgId, req) }
-        return runCatching {
+        return try {
             val response = client.post("$baseUrl$INVOKE_PATH") {
                 addAuth()
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
             mapHttpResponse(response, msgIds)
-        }.getOrElse { e ->
-            if (e is kotlinx.coroutines.CancellationException) throw e
+        } catch (e: IOException) {
+            mapNetworkError(e, msgIds)
+        } catch (e: JacksonException) {
             mapNetworkError(e, msgIds)
         }
     }
@@ -136,7 +134,7 @@ class ChaincodeApiGatewayClient(
         )
 
     private suspend fun mapHttpResponse(
-        response: io.ktor.client.statement.HttpResponse,
+        response: HttpResponse,
         msgIds: List<String>,
     ): List<CommandOutcome> {
         val statusValue = response.status.value
@@ -176,12 +174,12 @@ class ChaincodeApiGatewayClient(
             }
     }
 
-    private fun mapNetworkError(e: Throwable, msgIds: List<String>): List<CommandOutcome> {
+    private fun mapNetworkError(e: Exception, msgIds: List<String>): List<CommandOutcome> {
         val code = when (e) {
-            is io.ktor.client.plugins.HttpRequestTimeoutException,
-            is io.ktor.client.network.sockets.ConnectTimeoutException,
-            is java.net.SocketTimeoutException -> "TIMEOUT"
-            is java.net.ConnectException -> "CONNECT_REFUSED"
+            is HttpRequestTimeoutException,
+            is ConnectTimeoutException,
+            is SocketTimeoutException -> "TIMEOUT"
+            is ConnectException -> "CONNECT_REFUSED"
             else -> "TRANSPORT_ERROR"
         }
         logger.warn("invoke network error ({}) for msgIds={}: {}", code, msgIds, e.message)
@@ -208,10 +206,22 @@ class ChaincodeApiGatewayClient(
     }
 
     private fun HttpRequestBuilder.addAuth() {
-        when (authCredentials) {
-            is BearerTokenAuthCredentials -> header("Authorization", "Bearer ${authCredentials.getBearerToken()}")
-            else -> return
+        if (authCredentials is BearerTokenAuthCredentials) {
+            header(key = "Authorization", value = "Bearer ${authCredentials.getBearerToken()}")
         }
+    }
+
+    companion object {
+        const val PATH = "/"
+        const val INVOKE_PATH = "/invoke"
+        const val DEFAULT_CLOUDEVENTS_SOURCE = "/io.komune.c2/sdk"
+        val CMD_PROPS = InvokeRequest::cmd.name
+        val CHANNEL_ID_PROPS = InvokeRequest::channelid.name
+        val CHAINCODE_ID_PROPS = InvokeRequest::chaincodeid.name
+        val FCN_PROPS = InvokeRequest::fcn.name
+        val ARGS_PROPS = InvokeRequest::args.name
+        val CLIENT_ERROR_RANGE = 400..499
+        val SERVER_ERROR_RANGE = 500..599
     }
 }
 

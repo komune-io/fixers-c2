@@ -11,25 +11,25 @@ typealias SsmRole = String
 @JsName("SsmTransitionDTO")
 interface SsmTransitionDTO {
     /**
-     * Origin of the transition
+     * Origin of the transition.
      * @example 1
      */
     val from: Int
 
     /**
-     * Destination of the transition
+     * Destination of the transition.
      * @example 2
      */
     val to: Int
 
     /**
-     * Role of the [agent][Agent] allowed to trigger the transition
+     * Role of the [agent][Agent] allowed to trigger the transition.
      * @example "Seller"
      */
     val role: SsmRole
 
     /**
-     * Trigger of the transition
+     * Trigger of the transition.
      * @example "Sell"
      */
     val action: SsmAction

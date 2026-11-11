@@ -32,10 +32,10 @@ internal class SsmTxInitFunctionImplTest {
     )
 
     private fun agentFound(times: Int = 1) =
-        key("user", agent.name) to List(times) { SsmTxTestFixtures.json(agent) }
+        key(fcn = "user", value = agent.name) to List(times) { SsmTxTestFixtures.json(agent) }
 
     private fun ssmFound(times: Int = 1) =
-        key("ssm", ssm.name) to List(times) { SsmTxTestFixtures.json(ssm) }
+        key(fcn = "ssm", value = ssm.name) to List(times) { SsmTxTestFixtures.json(ssm) }
 
     @Test
     suspend fun `registers the agent and creates the ssm when neither exists`() {
@@ -75,7 +75,7 @@ internal class SsmTxInitFunctionImplTest {
         // The agent is absent on the first check, the register invoke fails, and the re-check finds it.
         val repository = StubSsmChaincodeRepository(
             responses = mapOf(
-                key("user", agent.name) to listOf(
+                key(fcn = "user", value = agent.name) to listOf(
                     StubSsmChaincodeRepository.NOT_FOUND,
                     SsmTxTestFixtures.json(agent),
                 ),
@@ -93,7 +93,12 @@ internal class SsmTxInitFunctionImplTest {
     suspend fun `wraps a creation failure in SsmException when the agent is still missing`() {
         val repository = StubSsmChaincodeRepository(onInvoke = { _, _ -> error("gateway unavailable") })
 
-        val thrown = runCatching { function(repository).invoke(flowOf(command)).toList() }.exceptionOrNull()
+        val thrown = try {
+            val _ = function(repository).invoke(flowOf(command)).toList()
+            null
+        } catch (e: SsmException) {
+            e
+        }
 
         assertThat(thrown).isInstanceOf(SsmException::class.java)
         assertThat(repository.invoked.map { it.fcn }).containsExactly("register")
@@ -106,7 +111,12 @@ internal class SsmTxInitFunctionImplTest {
             onInvoke = { _, _ -> error("gateway unavailable") },
         )
 
-        val thrown = runCatching { function(repository).invoke(flowOf(command)).toList() }.exceptionOrNull()
+        val thrown = try {
+            val _ = function(repository).invoke(flowOf(command)).toList()
+            null
+        } catch (e: SsmException) {
+            e
+        }
 
         assertThat(thrown).isInstanceOf(SsmException::class.java)
         assertThat(repository.invoked.map { it.fcn }).containsExactly("create")

@@ -22,11 +22,6 @@ import tools.jackson.databind.JsonNode
 class ChaincodeRestEndpoint(
     private val chaincodeService: ChaincodeService
 ) {
-    companion object {
-        const val CHANNEL_ID_URL_PARAM = "channelid"
-        const val CHAINCODE_ID_URL_PARAM = "chaincodeid"
-        const val CLOUDEVENTS_BATCH_JSON = "application/cloudevents-batch+json"
-    }
     private val logger = LoggerFactory.getLogger(javaClass)
 
     @GetMapping
@@ -38,7 +33,15 @@ class ChaincodeRestEndpoint(
         args: Array<String>
     ): JsonNode {
         logger.debug("Querying chaincode {}", cmd)
-        return chaincodeService.query(InvokeRequest(channel, chaincode, cmd, fcn, args))
+        return chaincodeService.query(
+            InvokeRequest(
+                channelid = channel,
+                chaincodeid = chaincode,
+                cmd = cmd,
+                fcn = fcn,
+                args = args,
+            )
+        )
     }
 
     @PostMapping(
@@ -50,5 +53,11 @@ class ChaincodeRestEndpoint(
     ): List<InvokeEnvelope<OutcomeData>> {
         logger.debug("Invoking chaincode {} items", args.size)
         return chaincodeService.execute(args)
+    }
+
+    companion object {
+        const val CHANNEL_ID_URL_PARAM = "channelid"
+        const val CHAINCODE_ID_URL_PARAM = "chaincodeid"
+        const val CLOUDEVENTS_BATCH_JSON = "application/cloudevents-batch+json"
     }
 }

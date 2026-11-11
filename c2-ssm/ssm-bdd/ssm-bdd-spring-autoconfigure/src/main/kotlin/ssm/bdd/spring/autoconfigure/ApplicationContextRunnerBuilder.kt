@@ -14,10 +14,8 @@ class ApplicationContextRunnerBuilder {
     private fun ReactiveWebApplicationContextRunner.withConfig(
         config: Map<String, String>
     ): ReactiveWebApplicationContextRunner {
-        return withPropertyValues(
-            *config.map { pair ->
-                "${pair.key}=${pair.value}"
-            }.toTypedArray()
-        )
+        return config.entries.fold(this) { runner, (key, value) ->
+            runner.withPropertyValues("$key=$value")
+        }
     }
 }

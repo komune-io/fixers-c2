@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.model.Ssm
 import ssm.tx.dsl.features.SsmCommandDTO
 
 /**
- * Initializes an SSM
+ * Initializes an SSM.
  * @d2 function
  * @parent [ssm.tx.dsl.SsmTxD2Command]
  * @title Initialize SSM
@@ -25,16 +25,16 @@ typealias SsmTxInitFunction = F2Function<SsmInitCommand, SsmInitdResult>
 class SsmInitCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     /**
-     * The name of the signer
+     * The name of the signer.
      */
     val signerName: AgentName,
     /**
-     * Description of the SSM to create
+     * Description of the SSM to create.
      */
     val ssm: Ssm,
 
     /**
-     * Initial user of the SSM
+     * Initial user of the SSM.
      */
     val agent: Agent,
 ) : SsmCommandDTO

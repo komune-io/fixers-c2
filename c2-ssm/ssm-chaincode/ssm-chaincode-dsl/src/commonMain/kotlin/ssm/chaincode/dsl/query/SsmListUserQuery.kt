@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.AgentName
 
 /**
- * Retrieves all users
+ * Retrieves all users.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title List Users

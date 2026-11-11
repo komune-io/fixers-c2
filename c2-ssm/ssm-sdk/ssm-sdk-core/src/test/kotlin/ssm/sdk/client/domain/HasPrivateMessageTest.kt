@@ -17,8 +17,13 @@ internal class HasPrivateMessageTest {
     @Throws(Exception::class)
     fun shouldEncryptMessage() {
         val sessionName = "deal20181201-" + UUID.randomUUID().toString()
-        var context = SsmContext(sessionName, "100 dollars 1978 Camaro", 0, HashMap())
-        val agent = Agent.loadFromFile(SsmClientItTest.USER1_NAME, SsmClientItTest.USER1_FILENAME)
+        var context = SsmContext(
+            session = sessionName,
+            public = "100 dollars 1978 Camaro",
+            iteration = 0,
+            private = HashMap(),
+        )
+        val agent = Agent.loadFromFile(name = SsmClientItTest.USER1_NAME, filename = SsmClientItTest.USER1_FILENAME)
         context = context.addPrivateMessage("Value to encrypt", agent)
         val value = context.private!![agent.name]
         Assertions.assertThat(value).isNotEmpty.isNotEqualTo("Value to encrypt")
@@ -28,8 +33,13 @@ internal class HasPrivateMessageTest {
     @Throws(Exception::class)
     fun shouldDecryptMessage() {
         val sessionName = "deal20181201-" + UUID.randomUUID().toString()
-        var context = SsmContext(sessionName, "100 dollars 1978 Camaro", 0, HashMap())
-        val agent = Agent.loadFromFile(SsmClientItTest.USER1_NAME, SsmClientItTest.USER1_FILENAME)
+        var context = SsmContext(
+            session = sessionName,
+            public = "100 dollars 1978 Camaro",
+            iteration = 0,
+            private = HashMap(),
+        )
+        val agent = Agent.loadFromFile(name = SsmClientItTest.USER1_NAME, filename = SsmClientItTest.USER1_FILENAME)
         context = context.addPrivateMessage("Value to encrypt", agent)
         val privKey = loadPrivateKey(SsmClientItTest.USER1_FILENAME)
         val value = context.getPrivateMessage(SsmClientItTest.USER1_NAME, privKey)
@@ -40,10 +50,18 @@ internal class HasPrivateMessageTest {
     @Throws(Exception::class)
     fun shouldDecryptMessageWithSigner() {
         val sessionName = "deal20181201-" + UUID.randomUUID().toString()
-        var context = SsmContext(sessionName, "100 dollars 1978 Camaro", 0, HashMap())
-        val agent = Agent.loadFromFile(SsmClientItTest.USER1_NAME, SsmClientItTest.USER1_FILENAME)
+        var context = SsmContext(
+            session = sessionName,
+            public = "100 dollars 1978 Camaro",
+            iteration = 0,
+            private = HashMap(),
+        )
+        val agent = Agent.loadFromFile(name = SsmClientItTest.USER1_NAME, filename = SsmClientItTest.USER1_FILENAME)
         context = context.addPrivateMessage("Value to encrypt", agent)
-        val signerUser1 = SignerUser.loadFromFile(SsmClientItTest.USER1_NAME, SsmClientItTest.USER1_FILENAME)
+        val signerUser1 = SignerUser.loadFromFile(
+            name = SsmClientItTest.USER1_NAME,
+            filename = SsmClientItTest.USER1_FILENAME,
+        )
         val value = context.getPrivateMessage(signerUser1)
         Assertions.assertThat(value).isNotEmpty.isEqualTo("Value to encrypt")
     }

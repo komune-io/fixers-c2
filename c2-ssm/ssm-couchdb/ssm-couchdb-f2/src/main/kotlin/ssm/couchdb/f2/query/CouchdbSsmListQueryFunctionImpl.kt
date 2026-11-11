@@ -13,14 +13,18 @@ class CouchdbSsmListQueryFunctionImpl(
     private val couchdbClient: CouchdbSsmClient,
 ) : CouchdbSsmListQueryFunction {
 
-    override suspend fun invoke(msgs: Flow<CouchdbSsmListQuery>): Flow<CouchdbSsmListQueryResult> = msgs.map { payload ->
-        val dbName = chainCodeDbName(payload.channelId, payload.chaincodeId)
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
+    override suspend fun invoke(
+        msgs: Flow<CouchdbSsmListQuery>
+    ): Flow<CouchdbSsmListQueryResult> = msgs.map { payload ->
+        val dbName = chainCodeDbName(channelId = payload.channelId, chaincodeId = payload.chaincodeId)
         val pagination = payload.pagination
         val items = couchdbClient.fetchAllByDocType(
             dbName = dbName,
             docType = DocType.Ssm,
-            limit = pagination?.limit?.toLong(),
-            skip = pagination?.offset?.toLong(),
+            limit = pagination?.run { limit.toLong() },
+            skip = pagination?.run { offset.toLong() },
         )
         CouchdbSsmListQueryResult(
             items = items,

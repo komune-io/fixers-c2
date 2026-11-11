@@ -11,7 +11,9 @@ class SsmGetQueryFunctionImpl(
     private val queryService: SsmQueryService
 ) : SsmGetQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmGetQuery>): Flow<SsmGetResult> = msgs.map { payload ->
-        queryService.getSsm(payload.chaincodeUri, payload.name).let(::SsmGetResult)
+        SsmGetResult(queryService.getSsm(payload.chaincodeUri, payload.name))
     }
 }

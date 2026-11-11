@@ -17,7 +17,7 @@ typealias DatabaseName = String
 @JsName("DatabaseDTO")
 interface DatabaseDTO {
     /**
-     * Name of the database
+     * Name of the database.
      * @example "komunease_ssm"
      */
     val name: DatabaseName
@@ -26,6 +26,8 @@ interface DatabaseDTO {
 @Serializable
 @JsExport
 @JsName("Database")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class Database(
     override val name: DatabaseName,
 ) : DatabaseDTO

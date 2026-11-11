@@ -10,37 +10,37 @@ typealias TransactionId = String
 @JsName("TransactionDTO")
 interface TransactionDTO {
     /**
-     * Identifier of the transaction
+     * Identifier of the transaction.
      * @example "c7de3ab6-56e0-4e7d-8fa4-905823ed982e"
      */
     val transactionId: TransactionId
 
     /**
-     * [Block] holding the transaction within the blockchain
+     * [Block] holding the transaction within the blockchain.
      * @example [Block.blockId]
      */
     val blockId: BlockId
 
     /**
-     * Execution date of the transaction as epoch milliseconds
+     * Execution date of the transaction as epoch milliseconds.
      * @example 1738410430231
      */
     val timestamp: Long
 
     /**
-     * Indicates if the transaction has been validated or not
+     * Indicates if the transaction has been validated or not.
      * @example true
      */
     val isValid: Boolean
 
     /**
-     * Channel in which the transaction has been performed
+     * Channel in which the transaction has been performed.
      * @example "channel-komune"
      */
     val channelId: String
 
     /**
-     * Requester of the transaction
+     * Requester of the transaction.
      */
     val creator: IdentitiesInfoDTO
 
@@ -60,7 +60,7 @@ interface TransactionDTO {
 @Serializable
 @JsName("Transaction")
 @JsExport
-class Transaction(
+data class Transaction(
     override val transactionId: TransactionId,
     override val blockId: BlockId,
     override val timestamp: Long,

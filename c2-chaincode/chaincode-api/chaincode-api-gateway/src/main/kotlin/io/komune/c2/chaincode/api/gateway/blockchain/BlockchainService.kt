@@ -37,24 +37,20 @@ class BlockchainService(
         )
     }
 
-    override fun queryAllBlocks(channelId: ChannelId): String {
-        return fabricGatewayBlockClient.queryAllBlocksIds(channelId).let(JsonUtils::toJson)
-    }
+    override fun queryAllBlocks(channelId: ChannelId): String =
+        JsonUtils.toJson(fabricGatewayBlockClient.queryAllBlocksIds(channelId))
 
-    override fun queryBlockByNumber(channelId: ChannelId, invokeArgs: InvokeArgs): String {
-        return fabricGatewayBlockClient
-            .queryBlockByNumber(channelId, invokeArgs.values.first().toLong()).let(JsonUtils::toJson)
-    }
+    override fun queryBlockByNumber(channelId: ChannelId, invokeArgs: InvokeArgs): String =
+        JsonUtils.toJson(fabricGatewayBlockClient.queryBlockByNumber(channelId, invokeArgs.values.first().toLong()))
 
     override fun queryAllTransactions(channelId: ChannelId): String {
-        return fabricGatewayBlockClient.queryAllBlocksIds(channelId)
+        val transactions = fabricGatewayBlockClient.queryAllBlocksIds(channelId)
             .flatMap { blockId ->
                 fabricGatewayBlockClient.queryBlockByNumber(channelId, blockId).transactions
             }
-            .let(JsonUtils::toJson)
+        return JsonUtils.toJson(transactions)
     }
 
-    override fun queryTransactionById(channelId: ChannelId, invokeArgs: InvokeArgs): String {
-        return fabricGatewayBlockClient.queryTransactionById(channelId, invokeArgs.values.first()).let(JsonUtils::toJson)
-    }
+    override fun queryTransactionById(channelId: ChannelId, invokeArgs: InvokeArgs): String =
+        JsonUtils.toJson(fabricGatewayBlockClient.queryTransactionById(channelId, invokeArgs.values.first()))
 }

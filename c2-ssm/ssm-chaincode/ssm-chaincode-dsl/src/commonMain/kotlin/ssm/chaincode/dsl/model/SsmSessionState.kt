@@ -16,18 +16,18 @@ interface SsmSessionStateDTO : SsmSessionDTO, WithPrivate {
     override val public: Any?
     override val private: Map<String, String>?
     /**
-     * Transition that lead to the current state
+     * Transition that lead to the current state.
      */
     val origin: SsmTransitionDTO?
 
     /**
-     * Current state identifier
+     * Current state identifier.
      * @example 2
      */
     val current: Int
 
     /**
-     * Number of iterations the session has undergone before attaining the current state
+     * Number of iterations the session has undergone before attaining the current state.
      * @example 3
      */
     val iteration: Int

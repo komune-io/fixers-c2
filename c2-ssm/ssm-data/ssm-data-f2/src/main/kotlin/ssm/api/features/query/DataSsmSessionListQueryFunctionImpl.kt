@@ -21,6 +21,8 @@ class DataSsmSessionListQueryFunctionImpl(
     private val couchdbSsmSessionStateListQueryFunction: CouchdbSsmSessionStateListQueryFunction,
 ) : DataSsmSessionListQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<DataSsmSessionListQueryDTO>): Flow<DataSsmSessionListQueryResultDTO> =
         msgs.map { payload ->
             CouchdbSsmSessionStateListQuery(
@@ -38,8 +40,7 @@ class DataSsmSessionListQueryFunctionImpl(
                         sessionState = sessionState as SsmSessionState,
                         ssmUri = payload.ssmUri.burst()
                     ).invokeWith(dataSsmSessionConvertFunctionImpl)
-                }.let {
-                    DataSsmSessionListQueryResult(it)
                 }
+                .run(::DataSsmSessionListQueryResult)
         }
 }

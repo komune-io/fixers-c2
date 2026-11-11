@@ -32,7 +32,12 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
     override suspend fun getAdmin(chaincodeUri: ChaincodeUri, username: AgentName): Agent? {
         val query = AdminQuery()
-        return ssmRequester.query(chaincodeUri, username, query, Agent::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = username,
+            query = query,
+            clazz = Agent::class.java,
+        )
     }
 
     override suspend fun listUsers(chaincodeUri: ChaincodeUri): List<AgentName> {
@@ -42,7 +47,12 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
     override suspend fun getAgent(chaincodeUri: ChaincodeUri, agentName: AgentName): Agent? {
         val query = AgentQuery()
-        return ssmRequester.query(chaincodeUri, agentName, query, Agent::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = agentName,
+            query = query,
+            clazz = Agent::class.java,
+        )
     }
 
     override suspend fun listSsm(chaincodeUri: ChaincodeUri): List<SsmName> {
@@ -52,17 +62,32 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
     override suspend fun getSsm(chaincodeUri: ChaincodeUri, name: SsmName): Ssm? {
         val query = SsmQuery()
-        return ssmRequester.query(chaincodeUri, name, query, Ssm::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = name,
+            query = query,
+            clazz = Ssm::class.java,
+        )
     }
 
     override suspend fun getSession(chaincodeUri: ChaincodeUri, sessionName: SessionName): SsmSessionState? {
         val query = SessionQuery()
-        return ssmRequester.query(chaincodeUri, sessionName, query, SsmSessionState::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = sessionName,
+            query = query,
+            clazz = SsmSessionState::class.java,
+        )
     }
 
     override suspend fun log(chaincodeUri: ChaincodeUri, sessionName: SessionName): List<SsmSessionStateLog> {
         val query = LogQuery()
-        return ssmRequester.queryLogs(chaincodeUri, sessionName, query, object : TypeReference<List<SsmSessionStateLog>>() {})
+        return ssmRequester.queryLogs(
+            chaincodeUri = chaincodeUri,
+            value = sessionName,
+            query = query,
+            clazz = object : TypeReference<List<SsmSessionStateLog>>() {},
+        )
     }
 
 
@@ -78,7 +103,12 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
     override suspend fun getTransaction(chaincodeUri: ChaincodeUri, txId: TransactionId): Transaction? {
         val query = TransactionQuery()
-        return ssmRequester.query(chaincodeUri, txId, query, Transaction::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = txId,
+            query = query,
+            clazz = Transaction::class.java,
+        )
     }
 
     override suspend fun listBlocks(chaincodeUri: ChaincodeUri): List<Int>  {
@@ -88,7 +118,12 @@ class SsmQueryService(private val ssmRequester: SsmRequester): SsmQueryServiceI 
 
     override suspend fun getBlock(chaincodeUri: ChaincodeUri, blockId: BlockId): Block? {
         val query = BlockQuery()
-        return ssmRequester.query(chaincodeUri, blockId.toString(), query, Block::class.java)
+        return ssmRequester.query(
+            chaincodeUri = chaincodeUri,
+            value = blockId.toString(),
+            query = query,
+            clazz = Block::class.java,
+        )
     }
 
     // The `.filterNotNull()` difference below is deliberate and preserved:

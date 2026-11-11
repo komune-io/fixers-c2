@@ -53,7 +53,7 @@ internal class DataSsmSessionListQueryFunctionImplTest {
 
     private suspend fun createSsmWithSession(uuid: String): String {
         val (adminName, adminPath) = SsmBddConfig.Key.admin
-        val admin = SignerAdmin.loadFromFile(adminName, adminPath)
+        val admin = SignerAdmin.loadFromFile(name = adminName, filename = adminPath)
         val factory = SsmServiceFactory.builder(
             SsmSdkConfig(SsmBddConfig.Chaincode.url),
             SsmBatchProperties()
@@ -67,10 +67,10 @@ internal class DataSsmSessionListQueryFunctionImplTest {
                 SsmTransition(from = 0, to = 1, role = "Tester", action = "Test")
             )
         )
-        txService.sendCreate(chaincodeUri, ssm, admin.name)
+        val _ = txService.sendCreate(chaincodeUri, ssm, admin.name)
 
         val user = SignerUser.generate("data-test-user-$uuid")
-        txService.sendRegisterUser(chaincodeUri, user.asAgent(), admin.name)
+        val _ = txService.sendRegisterUser(chaincodeUri, user.asAgent(), admin.name)
 
         val session = SsmSession(
             ssm = ssmName,
@@ -79,7 +79,7 @@ internal class DataSsmSessionListQueryFunctionImplTest {
             public = "",
             private = null
         )
-        txService.sendStart(chaincodeUri, session, admin.name)
+        val _ = txService.sendStart(chaincodeUri, session, admin.name)
         return ssmName
     }
 }

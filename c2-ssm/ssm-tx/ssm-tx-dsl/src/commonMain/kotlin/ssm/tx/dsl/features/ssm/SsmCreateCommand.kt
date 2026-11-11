@@ -9,7 +9,7 @@ import ssm.tx.dsl.features.SsmCommandDTO
 import ssm.tx.dsl.features.SsmCommandResultDTO
 
 /**
- * Creates an SSM
+ * Creates an SSM.
  * @d2 function
  * @parent [ssm.tx.dsl.SsmTxD2Command]
  * @title Create SSM
@@ -25,7 +25,7 @@ class SsmCreateCommand(
     override val chaincodeUri: ChaincodeUriDTO,
     val signerName: AgentName,
     /**
-     * Description of the SSM to create
+     * Description of the SSM to create.
      */
     val ssm: Ssm,
 ) : SsmCommandDTO

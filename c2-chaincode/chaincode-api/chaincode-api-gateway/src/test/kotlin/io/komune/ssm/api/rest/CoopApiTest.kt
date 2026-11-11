@@ -11,7 +11,8 @@ class CoopApiTest : WebBaseTest() {
             .queryParam("cmd", "query")
             .queryParam("fcn", "query")
             .queryParam("args", "a")
-            .build().toUri()
+            .build()
+            .toUri()
 
         val res = this.restTemplate.getForEntity(uri, String::class.java)
         assertThat(res.statusCode.value()).isEqualTo(200)

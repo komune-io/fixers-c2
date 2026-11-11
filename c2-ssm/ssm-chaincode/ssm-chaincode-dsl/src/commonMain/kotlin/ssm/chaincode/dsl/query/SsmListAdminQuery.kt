@@ -10,7 +10,7 @@ import ssm.chaincode.dsl.SsmQueryDTO
 import ssm.chaincode.dsl.model.AgentName
 
 /**
- * Retrieves all admins
+ * Retrieves all admins.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title List Admin

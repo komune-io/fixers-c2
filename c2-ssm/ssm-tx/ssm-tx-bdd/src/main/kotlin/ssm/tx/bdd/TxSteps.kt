@@ -17,12 +17,8 @@ import ssm.tx.dsl.features.ssm.SsmCreateCommand
 import ssm.tx.dsl.features.user.SsmUserRegisterCommand
 import java.util.UUID
 
-
 class TxSteps : SsmCommandStep(), En {
 
-    companion object {
-        const val GLUE = "ssm.tx.bdd"
-    }
     init {
         prepareSteps()
 
@@ -40,7 +36,7 @@ class TxSteps : SsmCommandStep(), En {
     }
 
     override suspend fun createSsm(ssm: Ssm) {
-        getSsmTxAdminServiceImpl().ssmTxCreateFunction().invoke(
+        val _ = getSsmTxAdminServiceImpl().ssmTxCreateFunction().invoke(
             SsmCreateCommand(
                 chaincodeUri = bag.chaincodeUri,
                 signerName = bag.adminSigner.name,
@@ -50,7 +46,7 @@ class TxSteps : SsmCommandStep(), En {
     }
 
     override suspend fun registerUser(agent: Agent) {
-        getSsmTxAdminServiceImpl().ssmTxUserRegisterFunction().invoke(
+        val _ = getSsmTxAdminServiceImpl().ssmTxUserRegisterFunction().invoke(
             SsmUserRegisterCommand(
                 chaincodeUri = bag.chaincodeUri,
                 signerName = bag.adminSigner.name,
@@ -59,12 +55,15 @@ class TxSteps : SsmCommandStep(), En {
         )
     }
 
-    override suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser {
-        return SignerUser.loadFromFile(agentName, filename)
-    }
+    override suspend fun loadSigner(agentName: AgentName, filename: String): SignerUser =
+        SignerUser.loadFromFile(agentName, filename)
 
     private fun getSsmTxAdminServiceImpl() = SsmTxAdminServiceImpl(
         ssmTxService = bag.clientTx(bag.adminSigner),
         ssmQueryService = bag.clientQuery,
     )
+
+    companion object {
+        const val GLUE = "ssm.tx.bdd"
+    }
 }

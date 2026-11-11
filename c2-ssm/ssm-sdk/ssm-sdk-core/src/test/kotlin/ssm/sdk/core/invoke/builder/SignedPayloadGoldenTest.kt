@@ -26,18 +26,13 @@ import ssm.sdk.sign.extention.loadFromFile
  */
 class SignedPayloadGoldenTest {
 
-    companion object {
-        private val CHAINCODE_URI = ChaincodeUri("chaincode:sandbox:ssm")
-        private const val AGENT_NAME = "adam"
-    }
-
     @Test
     fun `create payload is stable`() {
         val ssm = Ssm(
             name = "dealership",
             transitions = listOf(
-                SsmTransition(0, 1, "Seller", "Sell"),
-                SsmTransition(1, 2, "Buyer", "Buy")
+                SsmTransition(from = 0, to = 1, role = "Seller", action = "Sell"),
+                SsmTransition(from = 1, to = 2, role = "Buyer", action = "Buy")
             )
         )
 
@@ -52,7 +47,7 @@ class SignedPayloadGoldenTest {
 
     @Test
     fun `register payload is stable`() {
-        val agent = Agent.loadFromFile("vivi", "command/vivi")
+        val agent = Agent.loadFromFile(name = "vivi", filename = "command/vivi")
 
         val cmd = RegisterCmd(agent).commandToSign(CHAINCODE_URI, AGENT_NAME)
 
@@ -129,5 +124,10 @@ class SignedPayloadGoldenTest {
             """{"session":"deal20181201","public":"100 dollars 1978 Camaro","iteration":0,"private":{"vivi":"message"}}"""
         Assertions.assertThat(cmd.json).isEqualTo(expectedJson)
         Assertions.assertThat(cmd.valueToSign).isEqualTo("Sell$expectedJson")
+    }
+
+    companion object {
+        private val CHAINCODE_URI = ChaincodeUri("chaincode:sandbox:ssm")
+        private const val AGENT_NAME = "adam"
     }
 }

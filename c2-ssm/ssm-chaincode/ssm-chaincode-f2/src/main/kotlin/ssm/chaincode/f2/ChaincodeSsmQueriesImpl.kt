@@ -34,43 +34,33 @@ class ChaincodeSsmQueriesImpl(
         = SsmServiceFactory.builder(SsmSdkConfig(config.url), ssmBatchProperties).buildQueryService()
 ): SsmChaincodeQueries {
 
-    override fun ssmGetAdminFunction(): SsmGetAdminFunction {
-        return SsmGetAdminFunctionImpl(ssmQueryService)
-    }
+    override fun ssmGetAdminFunction(): SsmGetAdminFunction =
+        SsmGetAdminFunctionImpl(ssmQueryService)
 
-    override fun ssmGetQueryFunction(): SsmGetQueryFunction {
-        return SsmGetQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmGetQueryFunction(): SsmGetQueryFunction =
+        SsmGetQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction {
-        return SsmGetSessionLogsQueryFunctionImpl(ssmBatchProperties, ssmQueryService)
-    }
+    override fun ssmGetSessionLogsQueryFunction(): SsmGetSessionLogsQueryFunction =
+        SsmGetSessionLogsQueryFunctionImpl(ssmBatchProperties, ssmQueryService)
 
-    override fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction {
-        return SsmGetSessionQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmGetSessionQueryFunction(): SsmGetSessionQueryFunction =
+        SsmGetSessionQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction {
-        return SsmGetTransactionQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmGetTransactionQueryFunction(): SsmGetTransactionQueryFunction =
+        SsmGetTransactionQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmGetUserFunction(): SsmGetUserFunction {
-        return SsmGetUserFunctionImpl(ssmQueryService)
-    }
+    override fun ssmGetUserFunction(): SsmGetUserFunction =
+        SsmGetUserFunctionImpl(ssmQueryService)
 
-    override fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction {
-        return SsmListAdminQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmListAdminQueryFunction(): SsmListAdminQueryFunction =
+        SsmListAdminQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction {
-        return SsmListSessionQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmListSessionQueryFunction(): SsmListSessionQueryFunction =
+        SsmListSessionQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction {
-        return SsmListSsmQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmListSsmQueryFunction(): SsmListSsmQueryFunction =
+        SsmListSsmQueryFunctionImpl(ssmQueryService)
 
-    override fun ssmListUserQueryFunction(): SsmListUserQueryFunction {
-        return SsmListUserQueryFunctionImpl(ssmQueryService)
-    }
+    override fun ssmListUserQueryFunction(): SsmListUserQueryFunction =
+        SsmListUserQueryFunctionImpl(ssmQueryService)
 }

@@ -1,6 +1,7 @@
 package ssm.bdd.config
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
+import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.config.SsmBatchProperties
 import ssm.chaincode.dsl.config.SsmChaincodeProperties
 import ssm.couchdb.dsl.config.SsmCouchdbConfig
@@ -8,8 +9,7 @@ import ssm.data.dsl.config.DataSsmConfig
 
 object SsmBddConfig {
 
-    private const val SEPARATOR_SLASH = "//////////////////////////////////////////////"
-    private const val SEPARATOR_STAR = "**********************************************"
+    private val logger = LoggerFactory.getLogger(SsmBddConfig::class.java)
 
     private const val DEFAULT_LOCAL_COUCHDB_CREDENTIAL = "couchdb"
 
@@ -40,30 +40,11 @@ object SsmBddConfig {
 
     }
 
-    fun String.orIfGitlab(value: String): String {
-        return if (System.getenv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-            println(SEPARATOR_SLASH)
-            println(SEPARATOR_SLASH)
-            println(SEPARATOR_SLASH)
-            value
-        } else {
-            println(SEPARATOR_STAR)
-            println(SEPARATOR_STAR)
-            println(SEPARATOR_STAR)
-            this
-        }
-    }
+    fun String.orIfGitlab(value: String): String =
+        if (System.getenv("SPRING_PROFILES_ACTIVE") == "gitlab") value else this
 
-    fun String.orIfGitlabEnv(value: String): String {
-        return if (getEnv("SPRING_PROFILES_ACTIVE") == "gitlab") {
-            println(SEPARATOR_SLASH)
-            println(SEPARATOR_SLASH)
-            println(SEPARATOR_SLASH)
-            getEnv(value)
-        } else {
-            this
-        }
-    }
+    fun String.orIfGitlabEnv(value: String): String =
+        if (getEnv("SPRING_PROFILES_ACTIVE") == "gitlab") getEnv(value) else this
 
     object Chaincode {
         val url: String
@@ -79,9 +60,7 @@ object SsmBddConfig {
                 )
             }
         val config: SsmChaincodeProperties
-            get() {
-                return SsmChaincodeProperties(url = url)
-            }
+            get() = SsmChaincodeProperties(url = url)
     }
 
     object Data {
@@ -121,24 +100,15 @@ object SsmBddConfig {
             }
     }
 
-    private fun getEnv(value: String): String {
-        val envValue = System.getenv(value)
-        return if (envValue != null) {
-            envValue
-        } else {
-            println("Env parameter[$value] is null")
-            ""
-        }
-    }
+    private fun getEnv(value: String): String =
+        System.getenv(value) ?: "".also { logger.warn("Env parameter[{}] is null", value) }
 
     object Key {
         val admin: Pair<String, String>
-            get() {
-                return "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
-            }
+            get() = "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to
+                "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
         val user: Pair<String, String>
-            get() {
-                return "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
-            }
+            get() = "ssm-admin".orIfGitlabEnv(Commune.ssmAgent) to
+                "local/admin/ssm-admin".orIfGitlabEnv(Commune.ssmAgentKey)
     }
 }

@@ -14,7 +14,8 @@ class DataApplicationContextRunnerTest {
     @Test
     fun `spring context runner must must start`() {
         ApplicationContextRunnerBuilder()
-            .buildContext(TestConfiguration.localDockerComposeParams).run { context ->
+            .buildContext(TestConfiguration.localDockerComposeParams)
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmDataProperties::class.java)
                 assertThat(context).hasBean(SsmApiQueryFunctions::dataChaincodeListQueryFunction.name)
@@ -24,25 +25,26 @@ class DataApplicationContextRunnerTest {
                 assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionGetQueryFunction.name)
                 assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogListQueryFunction.name)
                 assertThat(context).hasBean(SsmApiQueryFunctions::dataSsmSessionLogGetQueryFunction.name)
-        }
+            }
     }
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = TestConfiguration.localDockerComposeParams
-        )
-        assertThat(context.getBean(DataSsmAutoConfiguration::dataSsmConfig.name)).isNotNull
-        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        ).use { context ->
+            assertThat(context.getBean(DataSsmAutoConfiguration::dataSsmConfig.name)).isNotNull
+            assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        }
     }
 
 
     object TestConfiguration {
         private val localDockerCompose = DataSsmConfig(
             batch = SsmBddConfig.Data.config.batch,
-//			couchdb = SsmBddConfig.Data.config.couchdb,
-//			chaincode = SsmBddConfig.Data.config.chaincode,
+//            couchdb = SsmBddConfig.Data.config.couchdb,
+//            chaincode = SsmBddConfig.Data.config.chaincode,
             couchdb = SsmBddConfig.Couchdb.config,
             chaincode = SsmBddConfig.Chaincode.config
         )

@@ -1,5 +1,6 @@
 package ssm.couchdb.client
 
+import com.ibm.cloud.cloudant.v1.model.PostFindOptions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import ssm.couchdb.dsl.model.DocType
@@ -9,13 +10,13 @@ import ssm.couchdb.dsl.model.DocType
  */
 internal class CouchdbFindOptionsTest {
 
-    private fun skipOf(options: com.ibm.cloud.cloudant.v1.model.PostFindOptions): Long? = options.skip()
-
     private val selector = CouchdbSsmClient.docTypeSelector(DocType.Ssm, emptyMap())
+
+    private fun skipOf(options: PostFindOptions): Long? = options.skip()
 
     @Test
     fun `pushes the requested page into limit and skip`() {
-        val options = CouchdbSsmClient.buildFindOptions("db", selector, limit = 20, skip = 40)
+        val options = CouchdbSsmClient.buildFindOptions(dbName = "db", selector = selector, limit = 20, skip = 40)
 
         assertThat(options.limit()).isEqualTo(20L)
         assertThat(options.skip()).isEqualTo(40L)

@@ -19,7 +19,5 @@ object Sha256RSASigner {
         return b64Encode(value)
     }
 
-    private fun b64Encode(value: ByteArray): String {
-        return Base64.getEncoder().encodeToString(value)
-    }
+    private fun b64Encode(value: ByteArray): String = Base64.getEncoder().encodeToString(value)
 }

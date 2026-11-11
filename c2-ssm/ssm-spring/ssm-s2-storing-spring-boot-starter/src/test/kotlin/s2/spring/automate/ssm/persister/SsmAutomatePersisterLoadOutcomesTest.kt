@@ -17,6 +17,7 @@ import s2.dsl.automate.ErrorCategory
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2Command
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -47,7 +48,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
 
     // --- domain fixtures ---
 
-    interface TestState : s2.dsl.automate.S2State { override val position: Int }
+    interface TestState : S2State { override val position: Int }
 
     data class SimpleEntity(
         val id: String,
@@ -107,21 +108,21 @@ class SsmAutomatePersisterLoadOutcomesTest {
             logs = logs,
         )
 
-    /**
-     * Build a persister wired to the supplied logs-query stub. Start + perform F2
-     * functions are unused by [loadWithOutcomes] / [load] — wire them to fail so
-     * the test fails loudly if the persister calls them by accident.
-     */
+    // Load never starts or performs: those stubs fail loudly if it does.
     private fun persisterWith(
         logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction,
     ): SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt> =
         SsmAutomatePersister(
-            ssmSessionStartFunction = F2Function { _ -> error("start must not be called by load") },
-            ssmSessionPerformActionFunction = F2Function { _ -> error("perform must not be called by load") },
-            ssmGetSessionLogsQueryFunction = logsQuery,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start must not be called by load") },
+                ssmSessionPerformActionFunction = F2Function { _ -> error("perform must not be called by load") },
+                ssmGetSessionLogsQueryFunction = logsQuery,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = SimpleEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = jacksonObjectMapper(),
             batch = S2BatchProperties(),
         )
@@ -133,7 +134,10 @@ class SsmAutomatePersisterLoadOutcomesTest {
         val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
             F2Function { queries ->
                 queries.toList().map { q ->
-                    sessionResult(q.sessionName, listOf(ssmLog(q.sessionName, "tx-${q.sessionName}", iteration = 0)))
+                    sessionResult(
+                        q.sessionName,
+                        listOf(ssmLog(sessionName = q.sessionName, txId = "tx-${q.sessionName}", iteration = 0)),
+                    )
                 }.asFlow()
             }
         val persister = persisterWith(logsQuery)
@@ -143,10 +147,8 @@ class SsmAutomatePersisterLoadOutcomesTest {
         assertThat(outcomes).hasSize(3)
         assertThat(outcomes.map { it.id }).containsExactly("sess-1", "sess-2", "sess-3")
         outcomes.forEach { outcome ->
-            val loaded = assertThat(outcome).isInstanceOf(LoadOutcome.Loaded::class.java)
-            loaded.extracting { (it as LoadOutcome.Loaded<*, *>).entity }
-                .extracting { (it as SimpleEntity).id }
-                .isEqualTo(outcome.id)
+            assertThat(outcome).isInstanceOf(LoadOutcome.Loaded::class.java)
+            assertThat((outcome as LoadOutcome.Loaded).entity.id).isEqualTo(outcome.id)
         }
     }
 
@@ -157,7 +159,10 @@ class SsmAutomatePersisterLoadOutcomesTest {
                 // Drop sess-2 from the result set — simulates a session not on chain.
                 queries.toList()
                     .filter { it.sessionName != "sess-2" }
-                    .map { q -> sessionResult(q.sessionName, listOf(ssmLog(q.sessionName, "tx", 0))) }
+                    .map { q ->
+                        val log = ssmLog(sessionName = q.sessionName, txId = "tx", iteration = 0)
+                        sessionResult(q.sessionName, listOf(log))
+                    }
                     .asFlow()
             }
         val persister = persisterWith(logsQuery)
@@ -170,7 +175,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
         assertThat(byId["sess-1"]).isInstanceOf(LoadOutcome.Loaded::class.java)
         assertThat(byId["sess-3"]).isInstanceOf(LoadOutcome.Loaded::class.java)
 
-        val rejected = byId["sess-2"] as LoadOutcome.Rejected<*, *>
+        val rejected = byId.getValue("sess-2") as LoadOutcome.Rejected<*, *>
         assertThat(rejected.error.type).isEqualTo("SESSION_NOT_FOUND")
         assertThat(rejected.category).isEqualTo(ErrorCategory.Rejected)
         assertThat(rejected.error.description).contains("sess-2")
@@ -225,8 +230,13 @@ class SsmAutomatePersisterLoadOutcomesTest {
             F2Function { queries ->
                 queries.toList().map { q ->
                     // sess-2 has a corrupt log payload — Jackson will fail to parse it.
-                    val public = if (q.sessionName == "sess-2") "not-valid-json" else """{"id":"${q.sessionName}","status":1}"""
-                    sessionResult(q.sessionName, listOf(ssmLog(q.sessionName, "tx", 0, public)))
+                    val public = if (q.sessionName == "sess-2") {
+                        "not-valid-json"
+                    } else {
+                        """{"id":"${q.sessionName}","status":1}"""
+                    }
+                    val log = ssmLog(sessionName = q.sessionName, txId = "tx", iteration = 0, public = public)
+                    sessionResult(q.sessionName, listOf(log))
                 }.asFlow()
             }
         val persister = persisterWith(logsQuery)
@@ -239,7 +249,7 @@ class SsmAutomatePersisterLoadOutcomesTest {
         assertThat(byId["sess-1"]).isInstanceOf(LoadOutcome.Loaded::class.java)
         assertThat(byId["sess-3"]).isInstanceOf(LoadOutcome.Loaded::class.java)
 
-        val rejected = byId["sess-2"] as LoadOutcome.Rejected<*, *>
+        val rejected = byId.getValue("sess-2") as LoadOutcome.Rejected<*, *>
         assertThat(rejected.error.type).isEqualTo("DESERIALIZATION_FAILED")
         // Permanent (Rejected) — bad on-chain payload won't fix itself, no point retrying.
         assertThat(rejected.category).isEqualTo(ErrorCategory.Rejected)
@@ -255,13 +265,19 @@ class SsmAutomatePersisterLoadOutcomesTest {
                 queries.toList()
                     .filter { it.sessionName != "sess-2" }
                     .map { q ->
-                        val logs = if (q.sessionName == "sess-4") emptyList() else listOf(ssmLog(q.sessionName, "tx", 0))
+                        val logs = if (q.sessionName == "sess-4") {
+                            emptyList()
+                        } else {
+                            listOf(ssmLog(sessionName = q.sessionName, txId = "tx", iteration = 0))
+                        }
                         sessionResult(q.sessionName, logs)
-                    }.asFlow()
+                    }
+                    .asFlow()
             }
         val persister = persisterWith(logsQuery)
 
-        val outcomes = persister.loadWithOutcomes(automateContext, flowOf("sess-1", "sess-2", "sess-3", "sess-4")).toList()
+        val outcomes = persister.loadWithOutcomes(automateContext, flowOf("sess-1", "sess-2", "sess-3", "sess-4"))
+            .toList()
 
         assertThat(outcomes).hasSize(4)
         assertThat(outcomes.map { it.id }).containsExactly("sess-1", "sess-2", "sess-3", "sess-4")
@@ -300,7 +316,10 @@ class SsmAutomatePersisterLoadOutcomesTest {
             F2Function { queries ->
                 queries.toList()
                     .filter { it.sessionName != "sess-2" }
-                    .map { q -> sessionResult(q.sessionName, listOf(ssmLog(q.sessionName, "tx", 0))) }
+                    .map { q ->
+                        val log = ssmLog(sessionName = q.sessionName, txId = "tx", iteration = 0)
+                        sessionResult(q.sessionName, listOf(log))
+                    }
                     .asFlow()
             }
         val persister = persisterWith(logsQuery)
@@ -359,15 +378,24 @@ class SsmAutomatePersisterLoadOutcomesTest {
         }
         val logsQuery: ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction =
             F2Function { queries ->
-                queries.toList().map { q -> sessionResult(q.sessionName, listOf(ssmLog(q.sessionName, "tx", 0))) }.asFlow()
+                queries.toList()
+                    .map { q ->
+                        val log = ssmLog(sessionName = q.sessionName, txId = "tx", iteration = 0)
+                        sessionResult(q.sessionName, listOf(log))
+                    }
+                    .asFlow()
             }
         val persister = SsmAutomatePersister<TestState, String, SimpleEntity, TestEvt>(
-            ssmSessionStartFunction = F2Function { _ -> error("start must not be called") },
-            ssmSessionPerformActionFunction = F2Function { _ -> error("perform must not be called") },
-            ssmGetSessionLogsQueryFunction = logsQuery,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start must not be called") },
+                ssmSessionPerformActionFunction = F2Function { _ -> error("perform must not be called") },
+                ssmGetSessionLogsQueryFunction = logsQuery,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = SimpleEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = cancellingMapper,
             batch = S2BatchProperties(),
         )

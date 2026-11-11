@@ -10,7 +10,7 @@ import kotlin.js.JsName
 @JsName("SsmQueryDTO")
 interface SsmQueryDTO : Query {
     /**
-     * Uri of the chaincode
+     * Uri of the chaincode.
      * @example "chaincode:sandbox:thessm"
      */
     val chaincodeUri: ChaincodeUri

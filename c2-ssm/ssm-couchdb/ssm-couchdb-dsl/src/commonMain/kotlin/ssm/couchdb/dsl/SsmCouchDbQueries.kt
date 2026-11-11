@@ -14,6 +14,7 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQueryFunction
 import ssm.couchdb.dsl.query.CouchdbUserListQueryFunction
 
 /**
+ * The query functions of the CouchDB SSM store.
  * - fun couchDbDatabaseGetChangesQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseGetChangesQueryFunction]
  * - fun couchdbDatabaseListQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseListQueryFunction]
  * - fun couchDbDatabaseGetQueryFunction(): [ssm.couchdb.dsl.query.CouchdbDatabaseGetQueryFunction]
@@ -27,10 +28,18 @@ import ssm.couchdb.dsl.query.CouchdbUserListQueryFunction
 @JsExport
 @JsName("SsmCouchDbQueries")
 interface SsmCouchDbQueries {
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction
 
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction
 
     fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction
@@ -40,6 +49,10 @@ interface SsmCouchDbQueries {
     fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction
     fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction
 
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction
+    // @JsExport member: the name is the JS API and the F2 bean the starter publishes.
+    @Suppress("FunctionNameMaxLength")
     fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction
 }

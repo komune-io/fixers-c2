@@ -7,6 +7,7 @@ import io.komune.c2.chaincode.dsl.invoke.InvokeArgs
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequest
 import io.komune.c2.chaincode.dsl.invoke.InvokeRequestType
 import io.komune.c2.chaincode.dsl.invoke.toInvokeArgs
+import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import ssm.chaincode.dsl.model.ChaincodeId
 import ssm.chaincode.dsl.model.ChannelId
@@ -40,33 +41,55 @@ class FabricSsmClient(
             "msgIds.size=${msgIds.size} must match invokeArgs.size=${invokeArgs.size}"
         }
         if (invokeArgs.isEmpty()) return emptyList()
-        invokeArgs.forEach { req ->
-            require(req.channelid != null) { "FabricSsmClient.invoke: InvokeRequest.channelid is required" }
-            require(req.chaincodeid != null) { "FabricSsmClient.invoke: InvokeRequest.chaincodeid is required" }
-        }
+        // Every request is validated before the first one is sent.
+        val byTarget = invokeArgs.zip(msgIds).groupBy { (req, _) -> targetOf(req) }
 
-        return invokeArgs.zip(msgIds)
-            .groupBy { (req, _) -> req.channelid!! to req.chaincodeid!! }
-            .flatMap { (key, items) ->
-                val (channelId, chaincodeId) = key
-                val args = items.map { (req, _) -> req.toInvokeArgs() }
-                val ids = items.map { (_, id) -> id }
-                logger.info("invoke {} tx(s) on [{}:{}]", items.size, channelId, chaincodeId)
-                runCatching {
-                    fabricGatewayClient.invoke(channelId, chaincodeId, args, ids).map { it.toCommandOutcome() }
-                }.getOrElse { e ->
-                    if (e is kotlinx.coroutines.CancellationException) throw e
-                    logger.warn("invoke failed on [{}:{}]: {}", channelId, chaincodeId, e.message)
-                    ids.map { id ->
-                        CommandOutcome(
-                            outcome = "Indeterminate",
-                            msgId = id,
-                            errorCode = "TRANSPORT_ERROR",
-                            errorMessage = e.message ?: e::class.simpleName.orEmpty(),
-                        )
-                    }
-                }
-            }
+        return byTarget.flatMap { (target, items) ->
+            val (channelId, chaincodeId) = target
+            logger.info("invoke {} tx(s) on [{}:{}]", items.size, channelId, chaincodeId)
+            invokeOn(
+                channelId = channelId,
+                chaincodeId = chaincodeId,
+                args = items.map { (req, _) -> req.toInvokeArgs() },
+                ids = items.map { (_, id) -> id },
+            )
+        }
+    }
+
+    private fun targetOf(req: InvokeRequest): Pair<ChannelId, ChaincodeId> {
+        val channelId = requireNotNull(req.channelid) { "FabricSsmClient.invoke: InvokeRequest.channelid is required" }
+        val chaincodeId = requireNotNull(req.chaincodeid) {
+            "FabricSsmClient.invoke: InvokeRequest.chaincodeid is required"
+        }
+        return channelId to chaincodeId
+    }
+
+    // Any transport failure leaves the txs' fate unknown: it becomes Indeterminate outcomes, never an exception.
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun invokeOn(
+        channelId: ChannelId,
+        chaincodeId: ChaincodeId,
+        args: List<InvokeArgs>,
+        ids: List<String>,
+    ): List<CommandOutcome> = try {
+        fabricGatewayClient.invoke(
+            channelId = channelId,
+            chaincodeId = chaincodeId,
+            invokeArgsList = args,
+            commandIds = ids,
+        ).map { it.toCommandOutcome() }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        logger.warn("invoke failed on [{}:{}]: {}", channelId, chaincodeId, e.message)
+        ids.map { id ->
+            CommandOutcome(
+                outcome = "Indeterminate",
+                msgId = id,
+                errorCode = "TRANSPORT_ERROR",
+                errorMessage = e.message ?: e::class.simpleName.orEmpty(),
+            )
+        }
     }
 
     private fun TxOutcome.toCommandOutcome(): CommandOutcome = when (this) {

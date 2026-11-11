@@ -8,7 +8,7 @@ import ssm.chaincode.dsl.model.uri.SsmUriDTO
 @JsName("DataQueryDTO")
 interface DataQueryDTO {
     /**
-     * Uri information to access a ssm
+     * Uri information to access a ssm.
      * @example "ssm:channel:chaincode:ssmName"
      */
     val ssmUri: SsmUriDTO

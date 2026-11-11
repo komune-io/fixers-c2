@@ -9,23 +9,21 @@ interface HasQueryName {
 }
 
 interface HasGet: HasQueryName {
-    fun queryArgs(username: String): InvokeArgs {
-        return InvokeArgs(InvokeFunction(queryName.value), listOf(username))
-    }
+    fun queryArgs(username: String): InvokeArgs = InvokeArgs(InvokeFunction(queryName.value), listOf(username))
 
 }
 
 interface HasList: HasQueryName {
-
-    companion object {
-        const val LIST_FUNCTION = "list"
-    }
 
     fun listArgs(): InvokeArgs {
         return InvokeArgs(
             function = InvokeFunction(LIST_FUNCTION),
             values = listOf(queryName.value)
         )
+    }
+
+    companion object {
+        const val LIST_FUNCTION = "list"
     }
 }
 

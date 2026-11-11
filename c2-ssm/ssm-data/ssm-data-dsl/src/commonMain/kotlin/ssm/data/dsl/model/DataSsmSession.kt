@@ -12,29 +12,29 @@ import ssm.chaincode.dsl.model.uri.SsmUri
 @JsName("DataSsmSessionDTO")
 interface DataSsmSessionDTO {
     /**
-     * uri of the ssm
+     * uri of the ssm.
      * @example "ssm:peerId?:channelId:chaincodeId"
      */
     val ssmUri: SsmUri
 
     /**
-     * Identifier of the session
+     * Identifier of the session.
      * @example [ssm.chaincode.dsl.model.SsmSession.session]
      */
     val sessionName: SessionName
 
     /**
-     * The state of an SSM session
+     * The state of an SSM session.
      */
     val state: DataSsmSessionStateDTO
 
     /**
-     * The channel this session was instantiated in
+     * The channel this session was instantiated in.
      */
     val channel: DataChannelDTO
 
     /**
-     * Transaction that initiated the state of the session
+     * Transaction that initiated the state of the session.
      */
     val transaction: TransactionDTO?
     val transactions: List<TransactionDTO>
@@ -48,6 +48,8 @@ interface DataSsmSessionDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSession")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSession(
     override val sessionName: SessionName,
     override val state: DataSsmSessionState,

@@ -6,15 +6,15 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.net.URL
 
-
 object FileUtils {
     const val FILE: String = "file:"
 
     fun getUrl(path: String, resource: String): URL {
-        val normalizedPath = if(!path.endsWith("/"))
+        val normalizedPath = if (!path.endsWith("/")) {
             "$path/"
-        else
+        } else {
             path
+        }
         val fullPath = normalizedPath + resource
         return getUrl(fullPath)
     }
@@ -32,15 +32,16 @@ object FileUtils {
     }
 }
 
+// The reader is returned open: the caller owns it and closes it.
+@Suppress("MissingUseCall")
 fun URL.asFileReader(): FileReader {
     val url = this.toString().removePrefix("file:")
     val folder = File(url)
-    return if (folder.isDirectory()) {
+    val file = if (folder.isDirectory()) {
         folder.listFiles()?.firstOrNull() ?: throw URISyntaxException(url, "No files found")
     } else {
         folder
-    }.let {
-        FileReader(it)
     }
+    return FileReader(file)
 }
 

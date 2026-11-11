@@ -9,6 +9,8 @@ import ssm.sdk.core.SsmQueryService
 
 class SsmGetAdminFunctionImpl(private val queryService: SsmQueryService) : SsmGetAdminFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmGetAdminQuery>): Flow<SsmGetAdminResult> = msgs.map { payload ->
         val sessionState = queryService.getAdmin(payload.chaincodeUri, payload.name)
         SsmGetAdminResult(sessionState)

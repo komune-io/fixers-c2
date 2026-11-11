@@ -9,7 +9,7 @@ import ssm.chaincode.dsl.model.uri.SsmUriDTO
 import ssm.data.dsl.model.DataSsm
 
 /**
- * Retrieves a given SSM
+ * Retrieves a given SSM.
  * @d2 function
  * @parent [ssm.data.dsl.DataSsmD2Query]
  * @order 10
@@ -31,6 +31,8 @@ interface DataSsmGetQueryDTO : DataQueryDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmGetQuery(
     override val ssmUri: SsmUri,
 ) : DataSsmGetQueryDTO
@@ -39,7 +41,7 @@ class DataSsmGetQuery(
 @JsName("DataSsmGetQueryResultDTO")
 interface DataSsmGetQueryResultDTO {
     /**
-     * The retrieved SSM if it exists
+     * The retrieved SSM if it exists.
      */
     val item: DataSsm?
 }
@@ -52,6 +54,8 @@ interface DataSsmGetQueryResultDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmGetQueryResult(
     override val item: DataSsm?,
 ) : DataSsmGetQueryResultDTO

@@ -25,10 +25,6 @@ import ssm.couchdb.dsl.query.CouchdbUserListQuery
 import ssm.couchdb.f2.CouchdbSsmQueriesFunctionImpl
 
 class CouchdbSsmSteps : SsmQueryStep(), En {
-    companion object {
-        const val GLUE = "ssm.couchdb.bdd"
-    }
-
     var lastChanges: CouchdbDatabaseGetChangesQueryResultDTO? = null
 
     val couchdbSsmQueriesFunctions = CouchdbSsmQueriesFunctionImpl(
@@ -40,29 +36,41 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
 
         When("I get changed for session {string} for {string}") { sessionName: SessionName, ssmName: SsmName ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
-                println(lastChanges)
+                lastChanges = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
             }
         }
         Then("Changes for session {string} for {string} is")
             { sessionName: SessionName, ssmName: SsmName, dataTable: DataTable ->
             runBlocking {
                 delay(timeMillis = 1500)
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
-                Assertions.assertThat(dataTable.asCucumberChanges().size).isEqualTo(lastChanges?.items?.size ?: 0.0)
-                val tt = lastChanges!!.items.associateBy { it.objectId }
+                val changes = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
+                lastChanges = changes
+                Assertions.assertThat(dataTable.asCucumberChanges().size).isEqualTo(changes.items.size)
+                val tt = changes.items.associateBy { it.objectId }
                 dataTable.asCucumberChanges().forEachIndexed { _, clog ->
-                    val log = tt[clog.objectId.contextualize(bag)]!!
+                    val log = tt.getValue(clog.objectId.contextualize(bag))
                     Assertions.assertThat(log.objectId).isEqualTo(clog.objectId.contextualize(bag))
-                    Assertions.assertThat(log.docType!!.name).isEqualTo(clog.docType)
+                    Assertions.assertThat(log.docType?.name).isEqualTo(clog.docType)
                 }
             }
         }
         Then("Changes for session {string} for {string} is empty") { sessionName: SessionName, ssmName: SsmName ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
-                Assertions.assertThat(lastChanges!!.items).isEmpty()
-
+                val changes = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
+                lastChanges = changes
+                Assertions.assertThat(changes.items).isEmpty()
             }
         }
     }
@@ -70,8 +78,8 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
     fun DataTable.asCucumberChanges(): List<CucumberChanges> {
         return asMaps().map { columns ->
             CucumberChanges(
-                objectId = columns[CucumberChanges::objectId.name]!!,
-                docType = columns[CucumberChanges::docType.name]!!,
+                objectId = checkNotNull(columns[CucumberChanges::objectId.name]) { "No objectId column" },
+                docType = checkNotNull(columns[CucumberChanges::docType.name]) { "No docType column" },
             )
         }
     }
@@ -100,9 +108,8 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
             .item
     }
 
-    override suspend fun logSession(ssmUri: SsmUri, sessionName: SessionName): List<SsmSessionStateLog> {
-        return bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
-    }
+    override suspend fun logSession(ssmUri: SsmUri, sessionName: SessionName): List<SsmSessionStateLog> =
+        bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
 
     override suspend fun listSessions(ssmUri: SsmUri): List<SessionName> {
         return CouchdbSsmSessionStateListQuery(chaincodeUri = bag.chaincodeUri)
@@ -124,18 +131,23 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
     override suspend fun listUsers(): List<String> {
         return CouchdbUserListQuery(bag.chaincodeUri)
             .invokeWith(couchdbSsmQueriesFunctions.couchdbUserListQueryFunction())
-            .items.map { it.name }
+            .items
+            .map { it.name }
     }
 
     override suspend fun listAdmins(): List<String> {
         return CouchdbAdminListQuery(bag.chaincodeUri)
             .invokeWith(couchdbSsmQueriesFunctions.couchdbAdminListQueryFunction())
-            .items.map { it.name }
+            .items
+            .map { it.name }
+    }
+
+    companion object {
+        const val GLUE = "ssm.couchdb.bdd"
     }
 }
 
-
-class CucumberChanges(
+data class CucumberChanges(
     val objectId: String,
     val docType: DocTypeName,
 )

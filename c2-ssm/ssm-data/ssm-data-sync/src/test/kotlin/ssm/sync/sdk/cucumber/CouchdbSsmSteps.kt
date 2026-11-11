@@ -27,10 +27,6 @@ import ssm.sync.sdk.SyncSsmCommandResult
 
 class CouchdbSsmSteps : SsmQueryStep(), En {
 
-    companion object {
-        const val GLUE = "ssm.sync.sdk"
-    }
-    
     var lastChanges: SyncSsmCommandResult? = null
 
     val couchdbSsmQueriesFunctions = CouchdbSsmQueriesFunctionImpl(
@@ -44,36 +40,44 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
 
         When("I get changed for session {string} for {string}") { sessionName: SessionName, ssmName: SsmName ->
             runBlocking {
-                val lastChanges =
-                    getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
-                println(lastChanges)
+                val _ = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
             }
         }
         Then("Changes for session {string} for {string} is") {
             sessionName: SessionName, ssmName: SsmName, dataTable: DataTable ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
+                lastChanges = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
                 Assertions.assertThat(dataTable.asCucumberChanges().size).isEqualTo(lastChanges!!.items.size)
             }
         }
         Then("Changes for session {string} for {string} is empty") { sessionName: SessionName, ssmName: SsmName ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag), sessionName.contextualize(bag))
-                Assertions.assertThat(lastChanges?.items ?: emptyList()).isEmpty()
-
+                lastChanges = getChanges(
+                    chaincodeUri = bag.chaincodeUri,
+                    ssmName = ssmName.contextualize(bag),
+                    sessionName = sessionName.contextualize(bag),
+                )
+                Assertions.assertThat(lastChanges?.items.orEmpty()).isEmpty()
             }
         }
         Then("Changes for {string} is") { ssmName: SsmName, dataTable: DataTable ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag))
+                lastChanges = getChanges(chaincodeUri = bag.chaincodeUri, ssmName = ssmName.contextualize(bag))
                 Assertions.assertThat(dataTable.asCucumberChanges().size).isEqualTo(lastChanges!!.items.size)
             }
         }
         Then("Changes for {string} is empty") { ssmName: SsmName ->
             runBlocking {
-                lastChanges = getChanges(bag.chaincodeUri, ssmName.contextualize(bag))
-                Assertions.assertThat(lastChanges?.items ?: emptyList()).isEmpty()
-
+                lastChanges = getChanges(chaincodeUri = bag.chaincodeUri, ssmName = ssmName.contextualize(bag))
+                Assertions.assertThat(lastChanges?.items.orEmpty()).isEmpty()
             }
         }
     }
@@ -111,9 +115,8 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
         ).item
     }
 
-    override suspend fun logSession(ssmUri: SsmUri, sessionName: String): List<SsmSessionStateLog> {
-        return bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
-    }
+    override suspend fun logSession(ssmUri: SsmUri, sessionName: String): List<SsmSessionStateLog> =
+        bag.clientQuery.log(ssmUri.chaincodeUri, sessionName)
 
     override suspend fun listSessions(ssmUri: SsmUri): List<SessionName> {
         return CouchdbSsmSessionStateListQuery(chaincodeUri = bag.chaincodeUri)
@@ -128,25 +131,30 @@ class CouchdbSsmSteps : SsmQueryStep(), En {
             channelId = bag.chaincodeUri.channelId,
             chaincodeId = bag.chaincodeUri.chaincodeId
         ).invokeWith(couchdbSsmQueriesFunctions.couchdbSsmListQueryFunction())
-            .items.map { it.name }
+            .items
+            .map { it.name }
     }
 
     override suspend fun listUsers(): List<String> {
-        return CouchdbUserListQuery(bag.chaincodeUri).invokeWith(
-            couchdbSsmQueriesFunctions.couchdbUserListQueryFunction()
-        ).items.map { it.name }
+        return CouchdbUserListQuery(bag.chaincodeUri)
+            .invokeWith(couchdbSsmQueriesFunctions.couchdbUserListQueryFunction())
+            .items
+            .map { it.name }
     }
 
     override suspend fun listAdmins(): List<String> {
         return CouchdbAdminListQuery(bag.chaincodeUri)
-            .invokeWith(
-                couchdbSsmQueriesFunctions.couchdbAdminListQueryFunction()
-            ).items.map { it.name }
+            .invokeWith(couchdbSsmQueriesFunctions.couchdbAdminListQueryFunction())
+            .items
+            .map { it.name }
+    }
+
+    companion object {
+        const val GLUE = "ssm.sync.sdk"
     }
 }
 
-
-class CucumberChanges(
+data class CucumberChanges(
     val objectId: String,
     val docType: DocTypeName,
 )

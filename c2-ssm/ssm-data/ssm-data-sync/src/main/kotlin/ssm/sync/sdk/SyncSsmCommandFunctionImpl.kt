@@ -26,24 +26,26 @@ class SyncSsmCommandFunctionImpl(
     private val couchdbDatabaseGetChangesQueryFunction: CouchdbDatabaseGetChangesQueryFunction
 ) : SyncSsmCommandFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SyncSsmCommand>): Flow<SyncSsmCommandResult> =
         msgs.map { payload ->
             val result = payload.queryCouchdbDatabaseGetChanges()
             result.items.applySsmSessionChanges(payload.chaincodeUri).fold()
                 .toResult()
-                .let {
+                .let { items ->
                     SyncSsmCommandResult(
                         lastEventId = result.lastEventId,
-                        items = it
+                        items = items
                     )
                 }
         }
 
-    private suspend fun List<SsmSyncChanges>?.toResult() = this?.map { changes ->
+    private suspend fun List<SsmSyncChanges>.toResult() = flatMap { changes ->
         changes.sessions.map { name ->
             toResult(changes.ssm, name)
         }
-    }?.flatten() ?: emptyList()
+    }
 
     private suspend fun toResult(uri: SsmUri, name: SessionName): SsmSessionSyncResult {
         return DataSsmSessionLogListQuery(
@@ -76,7 +78,7 @@ class SyncSsmCommandFunctionImpl(
         when (change.docType) {
             is DocType.Ssm -> fetchSsm(uri, change)
             is DocType.State -> fetchSession(uri, change)
-            else -> null
+            is DocType.Admin, is DocType.User, is DocType.Grant, is DocType.Chaincode, null -> null
         }
     }
 
@@ -89,20 +91,17 @@ class SyncSsmCommandFunctionImpl(
             .invokeWith(couchdbSsmSessionStateGetQueryFunction)
             .let { result ->
                 SsmSyncChanges(
-                    ssm = uri.toSsmUri(result.item.ssm!!),
+                    ssm = uri.toSsmUri(checkNotNull(result.item.ssm) { "Session ${change.objectId} has no ssm" }),
                     sessions = setOf(result.item.session)
                 )
             }
     }
 
     private suspend fun fetchSsm(uri: ChaincodeUri, change: DatabaseChangesDTO): SsmSyncChanges {
-        return DataSsmGetQuery(
+        val ssm = DataSsmGetQuery(
             ssmUri = uri.toSsmUri(change.objectId)
-        ).invokeWith(dataSsmGetQueryFunction).item!!.let { ssm ->
-            SsmSyncChanges(
-                ssm.uri
-            )
-        }
+        ).invokeWith(dataSsmGetQueryFunction).item
+        return SsmSyncChanges(checkNotNull(ssm) { "Ssm ${change.objectId} not found" }.uri)
     }
 
     private fun List<SsmSyncChanges>.fold() = groupBy({ it.ssm }, { it.sessions })

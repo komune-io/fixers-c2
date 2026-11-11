@@ -21,6 +21,8 @@ class DataSsmSessionGetQueryFunctionImpl(
     private val dataSsmSessionConvertFunction: DataSsmSessionConvertFunctionImpl,
 ) : DataSsmSessionGetQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<DataSsmSessionGetQueryDTO>): Flow<DataSsmSessionGetQueryResultDTO> {
         return msgs.groupBy { it.ssmUri }.map { (ssmUri, queries) ->
             queries.map { payload ->

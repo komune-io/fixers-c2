@@ -12,7 +12,7 @@ import ssm.chaincode.dsl.model.SsmSessionState
 import ssm.chaincode.dsl.model.SsmSessionStateLog
 
 /**
- * Retrieves the logs of a session since its creation
+ * Retrieves the logs of a session since its creation.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get Session Logs
@@ -31,12 +31,12 @@ typealias SsmGetSessionLogsQueryFunction = F2Function<SsmGetSessionLogsQuery, Ss
 class SsmGetSessionLogsQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-     * The name of the ssm
+     * The name of the ssm.
      * @example "ssm"
      */
     val ssmName: SsmName,
     /**
-     * Identifier of the session to retrieve
+     * Identifier of the session to retrieve.
      * @example [SsmSessionState.session]
      */
     val sessionName: SessionName,

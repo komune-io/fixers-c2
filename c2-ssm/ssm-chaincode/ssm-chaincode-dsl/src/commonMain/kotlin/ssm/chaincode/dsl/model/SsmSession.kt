@@ -8,19 +8,19 @@ import kotlinx.serialization.Serializable
 @JsName("SsmSessionDTO")
 interface SsmSessionDTO : WithPrivate {
     /**
-     * Identifier of the instantiated [SSM][Ssm]
+     * Identifier of the instantiated [SSM][Ssm].
      * @example [Ssm.name]
      */
     val ssm: String?
 
     /**
-     * Identifier of the session
+     * Identifier of the session.
      * @example "eca7c042-ec37-489b-adb8-42c73ddcfb0b"
      */
     val session: String
 
     /**
-     * Associate each role defined in the SSM to an agent
+     * Associate each role defined in the SSM to an agent.
      * @example {
      * 	"Provider": "JohnDeuf",
      * 	"Seller": "BenEfficiere",
@@ -30,13 +30,13 @@ interface SsmSessionDTO : WithPrivate {
     val roles: Map<String, String>?
 
     /**
-     * Public data attached to the session
+     * Public data attached to the session.
      * @example "The seller is a scam"
      */
     val public: Any?
 
     /**
-     * Private data attached to the session
+     * Private data attached to the session.
      * @example {
      * 	"cake": "lie"
      * }

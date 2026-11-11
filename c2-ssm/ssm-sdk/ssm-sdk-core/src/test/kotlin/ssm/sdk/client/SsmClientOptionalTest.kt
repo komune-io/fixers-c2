@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class SsmClientOptionalTest {
 
-    private var client = SsmClientTestBuilder.build().buildQueryService()
+    private val client = SsmClientTestBuilder.build().buildQueryService()
 
     private val chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm")
 

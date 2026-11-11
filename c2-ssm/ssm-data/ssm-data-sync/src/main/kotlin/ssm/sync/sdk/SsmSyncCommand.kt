@@ -23,7 +23,7 @@ interface SyncSsmCommandResultDTO {
     val items: List<SsmSessionSyncResult>
 }
 
-class SyncSsmCommand(
+data class SyncSsmCommand(
     override val lastEventId: ChangeEventId?,
     override val chaincodeUri: ChaincodeUri,
     override val ssmName: SsmName,

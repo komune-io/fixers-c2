@@ -10,13 +10,13 @@ import ssm.chaincode.dsl.model.AgentDTO
 @JsName("DataSsmUserDTO")
 interface DataSsmUserDTO {
     /**
-     * Agent able to interact with an SSM
+     * Agent able to interact with an SSM.
      */
     val agent: AgentDTO
 }
 
 /**
- * Represents an [SSM Agent][Agent] with metadata
+ * Represents an [SSM Agent][Agent] with metadata.
  * @d2 model
  * @parent [ssm.data.dsl.DataSsmD2Model]
  *
@@ -24,6 +24,8 @@ interface DataSsmUserDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmUser")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmUser(
     override val agent: Agent,
 ) : DataSsmUserDTO

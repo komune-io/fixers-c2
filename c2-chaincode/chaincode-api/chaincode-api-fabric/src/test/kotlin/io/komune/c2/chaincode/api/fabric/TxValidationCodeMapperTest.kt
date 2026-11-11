@@ -20,20 +20,35 @@ class TxValidationCodeMapperTest {
 
     @Test
     fun `MVCC_READ_CONFLICT maps to Conflict`() {
-        val outcome = TxValidationCodeMapper.toOutcome("c1", "tx1", 42L, TxValidationCode.MVCC_READ_CONFLICT)
+        val outcome = TxValidationCodeMapper.toOutcome(
+            msgId = "c1",
+            transactionId = "tx1",
+            blockNumber = 42L,
+            code = TxValidationCode.MVCC_READ_CONFLICT,
+        )
         assertThat(outcome).isInstanceOf(TxOutcome.Conflict::class.java)
         assertThat((outcome as TxOutcome.Conflict).errorCode).isEqualTo("MVCC_READ_CONFLICT")
     }
 
     @Test
     fun `ENDORSEMENT_POLICY_FAILURE maps to Rejected`() {
-        val outcome = TxValidationCodeMapper.toOutcome("c1", "tx1", 42L, TxValidationCode.ENDORSEMENT_POLICY_FAILURE)
+        val outcome = TxValidationCodeMapper.toOutcome(
+            msgId = "c1",
+            transactionId = "tx1",
+            blockNumber = 42L,
+            code = TxValidationCode.ENDORSEMENT_POLICY_FAILURE,
+        )
         assertThat(outcome).isInstanceOf(TxOutcome.Rejected::class.java)
     }
 
     @Test
     fun `INVALID_OTHER_REASON maps to Conflict with code`() {
-        val outcome = TxValidationCodeMapper.toOutcome("c1", "tx1", 42L, TxValidationCode.INVALID_OTHER_REASON)
+        val outcome = TxValidationCodeMapper.toOutcome(
+            msgId = "c1",
+            transactionId = "tx1",
+            blockNumber = 42L,
+            code = TxValidationCode.INVALID_OTHER_REASON,
+        )
         assertThat(outcome).isInstanceOf(TxOutcome.Conflict::class.java)
         assertThat((outcome as TxOutcome.Conflict).errorCode).isEqualTo("INVALID_OTHER_REASON")
     }

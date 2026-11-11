@@ -56,6 +56,8 @@ interface CouchdbSsmListQueryResultDTO: PageQueryResultDTO<SsmDTO> {
 @Serializable
 @JsExport
 @JsName("CouchdbSsmListQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmListQuery(
     override val pagination: OffsetPaginationDTO?,
     override val channelId: ChannelId,
@@ -65,6 +67,8 @@ class CouchdbSsmListQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbSsmListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmListQueryResult(
     override val pagination: OffsetPaginationDTO?,
     override val items: List<Ssm>,

@@ -31,7 +31,7 @@ internal class DataSsmSessionGetQueryFunctionImplTest {
 
         val ssmListResult = dataSsmSessionGetQueryFunction.invoke(queries).toList()
         Assertions.assertThat(ssmListResult).hasSize(1)
-        ssmListResult.map {
+        val _ = ssmListResult.map {
             Assertions.assertThat(it.item).isNull()
         }
 

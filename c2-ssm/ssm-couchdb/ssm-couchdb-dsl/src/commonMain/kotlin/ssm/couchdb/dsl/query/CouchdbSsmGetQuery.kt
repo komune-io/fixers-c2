@@ -40,7 +40,7 @@ interface CouchdbSsmGetQueryDTO : Query {
     val chaincodeId: ChaincodeId
 
     /**
-     * The name of ssm
+     * The name of ssm.
      * @example "ssmkomune"
      */
     val ssmName: SsmName
@@ -62,6 +62,8 @@ interface CouchdbSsmGetQueryResultDTO: Event {
 @Serializable
 @JsExport
 @JsName("CouchdbSsmGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmGetQuery(
     override val channelId: ChannelId,
     override val chaincodeId: ChaincodeId,
@@ -71,6 +73,8 @@ class CouchdbSsmGetQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbSsmGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbSsmGetQueryResult(
     override val uri: SsmUri,
     override val item: Ssm?

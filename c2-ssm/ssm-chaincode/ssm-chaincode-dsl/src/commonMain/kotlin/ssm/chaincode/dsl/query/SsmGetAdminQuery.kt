@@ -11,7 +11,7 @@ import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.AgentName
 
 /**
- * Retrieves an admin
+ * Retrieves an admin.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get Admin

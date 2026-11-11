@@ -55,6 +55,8 @@ interface CouchdbDatabaseGetQueryResultDTO : Event {
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseGetQuery")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbDatabaseGetQuery(
     override val channelId: ChannelId,
     override val chaincodeId: ChaincodeId,
@@ -63,6 +65,8 @@ class CouchdbDatabaseGetQuery(
 @Serializable
 @JsExport
 @JsName("CouchdbDatabaseGetQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbDatabaseGetQueryResult(
     override val item: Database?,
 ) : CouchdbDatabaseGetQueryResultDTO

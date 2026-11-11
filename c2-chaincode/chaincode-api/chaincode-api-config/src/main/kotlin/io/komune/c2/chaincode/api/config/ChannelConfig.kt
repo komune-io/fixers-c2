@@ -4,8 +4,7 @@ import io.komune.c2.chaincode.dsl.ChaincodeId
 import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.Endorser
 
-
-class ChannelConfig(
+data class ChannelConfig(
     val channelId: ChannelId,
     val chaincodeId: List<ChaincodeId>,
     val user: C2ChaincodeConfiguration.UserConfig,
@@ -44,7 +43,8 @@ fun ChannelConfig.Companion.fromConfig(
     return lines.map { line ->
         ChannelChaincodePair.fromConfig(line)
     }.groupBy(
-        { it.channelId }, { it.chainCodeId }
+        keySelector = { it.channelId },
+        valueTransform = { it.chainCodeId }
     ).mapValues { (channelId, chaincodeIds) ->
         ChannelConfig(
             channelId = channelId,

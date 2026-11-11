@@ -11,7 +11,7 @@ import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmName
 
 /**
- * Retrieves a SSM
+ * Retrieves a SSM.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get SSM
@@ -30,7 +30,7 @@ typealias SsmGetQueryFunction = F2Function<SsmGetQuery, SsmGetResult>
 class SsmGetQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-     * Identifier of the SSM to retrieve
+     * Identifier of the SSM to retrieve.
      * @example [Ssm.name]
      */
     val name: SsmName,
@@ -46,7 +46,7 @@ class SsmGetQuery(
 @JsName("SsmGetResult")
 class SsmGetResult(
     /**
-     * The ssm found
+     * The ssm found.
      */
     override val item: Ssm?,
 ) : SsmItemResultDTO<Ssm>

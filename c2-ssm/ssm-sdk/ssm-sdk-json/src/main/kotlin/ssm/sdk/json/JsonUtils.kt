@@ -28,24 +28,16 @@ object JsonUtils {
         .build()
 
     @Throws(IOException::class)
-    fun <T> toJson(obj: T): String {
-        return mapper.writeValueAsString(obj)
-    }
+    fun <T> toJson(obj: T): String = mapper.writeValueAsString(obj)
 
     @Throws(IOException::class)
-    fun <T> toObject(value: String, clazz: Class<T>): T {
-        return mapper.readValue(value, clazz)
-    }
+    fun <T> toObject(value: String, clazz: Class<T>): T = mapper.readValue(value, clazz)
 
     @Throws(IOException::class)
-    fun <T> toObject(value: Reader, clazz: Class<T>): T {
-        return mapper.readValue(value, clazz)
-    }
+    fun <T> toObject(value: Reader, clazz: Class<T>): T = mapper.readValue(value, clazz)
 
     @Throws(IOException::class)
-    fun <T> toObject(value: String, clazz: TypeReference<T>): T {
-        return mapper.readValue(value, clazz)
-    }
+    fun <T> toObject(value: String, clazz: TypeReference<T>): T = mapper.readValue(value, clazz)
 
     /**
      * Deserializes a JSON array into a List of [clazz] elements. Unlike an erased
@@ -59,9 +51,7 @@ object JsonUtils {
     }
 
     @Throws(IOException::class)
-    inline fun <reified T> toObject(value: String): T {
-        return mapper.readValue(value, object : TypeReference<T>() {})
-    }
+    inline fun <reified T> toObject(value: String): T = mapper.readValue(value, object : TypeReference<T>() {})
 }
 
 /**

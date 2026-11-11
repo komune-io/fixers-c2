@@ -11,14 +11,14 @@ package ssm.chaincode.dsl
 interface SsmChaincodeD2
 
 /**
- * Test description config
+ * Test description config.
  * @d2 page
  * @title SSM-CHAINCODE/Models
  */
 interface SsmChaincodeD2Model
 
 /**
- * Test description config
+ * Test description config.
  * @d2 page
  * @parent [SsmChaincodeD2]
  * @title SSM-CHAINCODE/Query functions

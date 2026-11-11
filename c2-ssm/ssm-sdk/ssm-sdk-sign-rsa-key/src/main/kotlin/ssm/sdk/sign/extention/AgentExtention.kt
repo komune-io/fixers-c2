@@ -17,6 +17,4 @@ fun Agent.Companion.loadFromFile(name: String, filename: String): Agent {
 }
 
 @Throws(Exception::class)
-fun Agent.getPubAsKey(): PublicKey {
-    return KeyPairReader.fromByteArray(pub)
-}
+fun Agent.getPubAsKey(): PublicKey = KeyPairReader.fromByteArray(pub)

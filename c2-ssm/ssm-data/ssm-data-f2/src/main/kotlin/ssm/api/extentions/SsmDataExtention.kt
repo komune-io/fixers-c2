@@ -4,6 +4,7 @@ import f2.dsl.fnc.invokeWith
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.Transaction
 import io.komune.c2.chaincode.dsl.TransactionId
+import kotlinx.coroutines.CancellationException
 import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.Ssm
 import ssm.chaincode.dsl.model.SsmDTO
@@ -58,6 +59,8 @@ suspend fun SessionName.getSessionLogs(
             sessionName = this,
             ssmName = ssmUri.ssmName
         ).invokeWith(ssmGetSessionLogsQueryFunction).logs
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         emptyList()
     }

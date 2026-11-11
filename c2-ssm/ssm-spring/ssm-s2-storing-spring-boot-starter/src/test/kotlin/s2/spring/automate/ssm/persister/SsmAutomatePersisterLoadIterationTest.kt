@@ -12,6 +12,7 @@ import s2.automate.core.context.AutomateContext
 import s2.automate.core.persist.LoadOutcome
 import s2.dsl.automate.S2Automate
 import s2.dsl.automate.S2RoleValue
+import s2.dsl.automate.S2State
 import s2.dsl.automate.S2StateValue
 import s2.dsl.automate.S2Transition
 import s2.dsl.automate.S2TransitionValue
@@ -36,7 +37,7 @@ import tools.jackson.module.kotlin.jacksonObjectMapper
  */
 class SsmAutomatePersisterLoadIterationTest {
 
-    interface TestState : s2.dsl.automate.S2State { override val position: Int }
+    interface TestState : S2State { override val position: Int }
 
     data class IterableEntity(val id: String, val status: Int, val iteration: Int) :
         WithS2Id<String>, WithS2State<TestState>, WithS2Iteration {
@@ -83,12 +84,16 @@ class SsmAutomatePersisterLoadIterationTest {
 
     private fun persister(logs: SsmGetSessionLogsQueryFunction) =
         SsmAutomatePersister<TestState, String, IterableEntity, TestEvt>(
-            ssmSessionStartFunction = F2Function { _ -> error("start not used") },
-            ssmSessionPerformActionFunction = F2Function { _ -> error("perform not used") },
-            ssmGetSessionLogsQueryFunction = logs,
-            chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = F2Function { _ -> error("start not used") },
+                ssmSessionPerformActionFunction = F2Function { _ -> error("perform not used") },
+                ssmGetSessionLogsQueryFunction = logs,
+            ),
+            target = SsmSigningTarget(
+                chaincodeUri = ChaincodeUri("chaincode:sandbox:ssm"),
+                agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
+            ),
             entityType = IterableEntity::class.java,
-            agentSigner = Agent(name = "test-agent", pub = ByteArray(0)),
             objectMapper = om,
             batch = S2BatchProperties(),
         )

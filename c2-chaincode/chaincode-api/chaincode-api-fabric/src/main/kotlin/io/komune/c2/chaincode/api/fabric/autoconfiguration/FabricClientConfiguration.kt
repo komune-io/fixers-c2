@@ -13,9 +13,8 @@ import org.springframework.context.annotation.Configuration
 class FabricClientConfiguration  {
 
     @Bean
-    fun fabricGatewayBuilder(fabricConfigLoader: FabricConfigLoader): FabricGatewayBuilder {
-        return FabricGatewayBuilder(fabricConfigLoader)
-    }
+    fun fabricGatewayBuilder(fabricConfigLoader: FabricConfigLoader): FabricGatewayBuilder =
+        FabricGatewayBuilder(fabricConfigLoader)
 
     @Bean
     fun fabricGatewayClient(

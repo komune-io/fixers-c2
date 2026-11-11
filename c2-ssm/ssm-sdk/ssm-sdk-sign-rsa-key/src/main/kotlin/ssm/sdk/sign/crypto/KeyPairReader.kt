@@ -36,19 +36,18 @@ object KeyPairReader {
 
     @Throws(CryptoException::class)
     fun loadKeyPair(pubStr: String, prvStr: String): KeyPair {
-        val prv = loadPrivateKey(prvStr.reader())
-        val pub = loadPublicKey(pubStr.reader())
+        val prv = prvStr.reader().use { loadPrivateKey(it) }
+        val pub = pubStr.reader().use { loadPublicKey(it) }
         return KeyPair(pub, prv)
     }
 
     @Throws(CryptoException::class)
     fun loadPrivateKey(filename: String): PrivateKey {
-        val reader = try {
-            FileUtils.getReader(filename)
+        return try {
+            FileUtils.getReader(filename).use { loadPrivateKey(it) }
         } catch (e: IOException) {
             throw CryptoException(ERROR_MESSAGE_PRV, e)
         }
-        return loadPrivateKey(reader)
     }
 
     @Throws(CryptoException::class)
@@ -82,13 +81,11 @@ object KeyPairReader {
             fixedFileName = "$filename.pub"
         }
 
-        val reader = try {
-            FileUtils.getReader(fixedFileName)
+        return try {
+            FileUtils.getReader(fixedFileName).use { loadPublicKey(it) }
         } catch (e: IOException) {
             throw CryptoException(ERROR_MESSAGE_PUB, e)
         }
-
-        return loadPublicKey(reader)
     }
 
     @Throws(CryptoException::class)
@@ -128,9 +125,8 @@ object KeyPairReader {
         }
     }
 
+    // PemReader wraps the caller's reader: closing it would close a stream the caller owns.
+    @Suppress("MissingUseCall")
     @Throws(IOException::class)
-    private fun getPemObject(reader: Reader): PemObject {
-        val rpem = PemReader(reader)
-        return rpem.readPemObject()
-    }
+    private fun getPemObject(reader: Reader): PemObject = PemReader(reader).readPemObject()
 }

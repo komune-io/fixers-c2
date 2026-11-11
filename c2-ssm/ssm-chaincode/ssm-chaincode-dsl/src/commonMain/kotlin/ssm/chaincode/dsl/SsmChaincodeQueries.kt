@@ -14,6 +14,8 @@ import ssm.chaincode.dsl.query.SsmListSsmQueryFunction
 import ssm.chaincode.dsl.query.SsmListUserQueryFunction
 
 /**
+ * Query functions of the SSM chaincode.
+ *
  * - fun ssmGetAdminFunction(): [ssm.chaincode.dsl.query.SsmGetAdminFunction]
  * - fun ssmGetQueryFunction(): [ssm.chaincode.dsl.query.SsmGetQueryFunction]
  * - fun ssmGetSessionLogsQueryFunction(): [ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction]

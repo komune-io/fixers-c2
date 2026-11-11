@@ -49,6 +49,8 @@ class CouchdbChaincodeListQuery: CouchdbChaincodeListQueryDTO
 @Serializable
 @JsExport
 @JsName("CouchdbChaincodeListQueryResult")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class CouchdbChaincodeListQueryResult(
     override val items: List<ChaincodeUri>,
 ) : CouchdbChaincodeListQueryResultDTO

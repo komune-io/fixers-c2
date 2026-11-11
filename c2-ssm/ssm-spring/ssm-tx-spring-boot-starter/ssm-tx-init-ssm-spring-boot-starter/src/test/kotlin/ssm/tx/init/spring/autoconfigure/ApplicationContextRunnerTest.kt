@@ -8,13 +8,13 @@ import ssm.bdd.spring.autoconfigure.ApplicationContextBuilder
 import ssm.bdd.spring.autoconfigure.ApplicationContextRunnerBuilder
 import ssm.tx.config.spring.autoconfigure.SsmTxProperties
 
-
 class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context runner must must start`() {
         ApplicationContextRunnerBuilder()
-            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams).run { context ->
+            .buildContext(SsmChaincodeConfigTest.localDockerComposeParams)
+            .run { context ->
                 assertThat(context).hasSingleBean(FunctionCatalog::class.java)
                 assertThat(context).hasSingleBean(SsmTxProperties::class.java)
                 assertThat(context).hasBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)
@@ -24,12 +24,13 @@ class ApplicationContextRunnerTest {
 
     @Test
     fun `spring context must must start`() {
-        val context = ApplicationContextBuilder().create(
+        val _ = ApplicationContextBuilder().create(
             types = arrayOf(ApplicationContextBuilder.SimpleConfiguration::class.java),
             config = SsmChaincodeConfigTest.localDockerComposeParams
-        )
-        assertThat(context.getBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)).isNotNull
-        assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        ).use { context ->
+            assertThat(context.getBean(SsmTxInitAutoConfiguration::ssmTxInitFunction.name)).isNotNull
+            assertThat(context.getBean(FunctionCatalog::class.java)).isNotNull
+        }
     }
 
 

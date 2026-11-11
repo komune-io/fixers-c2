@@ -28,7 +28,7 @@ internal object SsmTxTestFixtures {
 
     val chaincodeUri = ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID")
 
-    /** Generated once: RSA key generation is slow and the key material is irrelevant to the assertions. */
+    // Generated once: RSA key generation is slow and the key material is irrelevant to the assertions.
     private val signerKeyPair = SignerUser.generate(SIGNER_NAME)
 
     val signer = SsmCmdSignerSha256RSASigner(signerKeyPair)

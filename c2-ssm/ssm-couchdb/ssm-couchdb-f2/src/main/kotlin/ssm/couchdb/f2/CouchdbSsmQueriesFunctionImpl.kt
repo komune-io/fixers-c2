@@ -37,46 +37,36 @@ class CouchdbSsmQueriesFunctionImpl(
                 username = config.username,
                 password = config.password,
             )
-        ).build()
+        )
+        .build()
 
-    override fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction {
-        return CouchDbDatabaseGetChangesQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbDatabaseGetChangesQueryFunction(): CouchdbDatabaseGetChangesQueryFunction =
+        CouchDbDatabaseGetChangesQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction {
-        return CouchdbDatabaseListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbDatabaseListQueryFunction(): CouchdbDatabaseListQueryFunction =
+        CouchdbDatabaseListQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction {
-        return CouchdbDatabaseGetQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbDatabaseGetQueryFunction(): CouchdbDatabaseGetQueryFunction =
+        CouchdbDatabaseGetQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction {
-        return CouchdbChaincodeListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbChaincodeListQueryFunction(): CouchdbChaincodeListQueryFunction =
+        CouchdbChaincodeListQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction {
-        return CouchdbAdminListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbAdminListQueryFunction(): CouchdbAdminListQueryFunction =
+        CouchdbAdminListQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction {
-        return CouchdbUserListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbUserListQueryFunction(): CouchdbUserListQueryFunction =
+        CouchdbUserListQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction {
-        return CouchdbSsmGetQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbSsmGetQueryFunction(): CouchdbSsmGetQueryFunction =
+        CouchdbSsmGetQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction {
-        return CouchdbSsmListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbSsmListQueryFunction(): CouchdbSsmListQueryFunction =
+        CouchdbSsmListQueryFunctionImpl(couchdbClient)
 
-    override fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction {
-        return CouchdbSsmSessionStateListQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbSsmSessionStateListQueryFunction(): CouchdbSsmSessionStateListQueryFunction =
+        CouchdbSsmSessionStateListQueryFunctionImpl(couchdbClient)
 
-
-    override fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction {
-        return CouchdbSsmSessionStateGetQueryFunctionImpl(couchdbClient)
-    }
+    override fun couchdbSsmSessionStateGetQueryFunction(): CouchdbSsmSessionStateGetQueryFunction =
+        CouchdbSsmSessionStateGetQueryFunctionImpl(couchdbClient)
 }

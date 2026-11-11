@@ -12,12 +12,12 @@ import ssm.chaincode.dsl.model.SsmSessionStateDTO
 @JsName("DataSsmSessionStateDTO")
 interface DataSsmSessionStateDTO {
     /**
-     * The state of an SSM session
+     * The state of an SSM session.
      */
     val details: SsmSessionStateDTO
 
     /**
-     * Transaction that initiated the state of the session
+     * Transaction that initiated the state of the session.
      */
     val transaction: TransactionDTO?
 }
@@ -30,6 +30,8 @@ interface DataSsmSessionStateDTO {
 @Serializable
 @JsExport
 @JsName("DataSsmSessionState")
+// @JsExport: a data class would add copy and componentN to the JS surface.
+@Suppress("UseDataClass")
 class DataSsmSessionState(
     override val details: SsmSessionState,
     override val transaction: Transaction?,

@@ -15,6 +15,7 @@ import ssm.sdk.dsl.SsmCmdSigned
 import ssm.sdk.dsl.buildCommandArgs
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JsonUtils
+import tools.jackson.core.JacksonException
 import tools.jackson.core.type.TypeReference
 
 class SsmRequester(
@@ -108,7 +109,8 @@ class SsmRequester(
             chaincodeId = chaincodeUri.chaincodeId,
         )
         logger.info(
-            "Query the blockchain in chaincode[${chaincodeUri.uri}] with fcn[${args.function}] with args:${args.values}",
+            "Query the blockchain in chaincode[${chaincodeUri.uri}] " +
+                "with fcn[${args.function}] with args:${args.values}",
         )
         return request.handleResponse { response ->
             jsonConverter.toCompletableObjects(clazz, response)
@@ -132,7 +134,7 @@ class SsmRequester(
 
     private fun <R> String.handleResponse(transform: (String) -> R): R = try {
         transform(this)
-    } catch (e: Exception) {
+    } catch (e: JacksonException) {
         val excerpt = this.take(HANDLE_RESPONSE_EXCERPT_LIMIT).ifBlank { "<empty>" }
         throw InvokeException("Error parsing response: $excerpt", e)
     }

@@ -5,6 +5,7 @@ import io.komune.c2.chaincode.dsl.ChannelId
 import io.komune.c2.chaincode.dsl.IdentitiesInfo
 import io.komune.c2.chaincode.dsl.Transaction
 import io.komune.c2.chaincode.dsl.TransactionId
+import org.hyperledger.fabric.client.Contract
 import org.hyperledger.fabric.client.Gateway
 import org.hyperledger.fabric.protos.common.Block
 import org.hyperledger.fabric.protos.common.BlockchainInfo
@@ -17,24 +18,17 @@ import org.hyperledger.fabric.protos.peer.ProcessedTransaction
 import io.komune.c2.chaincode.dsl.Block as BlockDsl
 import io.komune.c2.chaincode.dsl.Transaction as TransactionDsl
 
-
 class FabricGatewayBlockClient(
     private val fabricGatewayBuilder: FabricGatewayBuilder,
 ) {
     fun queryAllBlocksIds(channelId: ChannelId): List<Long> {
-        val gateway = fabricGatewayBuilder.gateway(channelId)
-        val network = gateway.getNetwork(channelId)
-        val contract = network.getContract("qscc")
-        val blockIds = contract.evaluateTransaction("GetChainInfo", channelId)
+        val blockIds = qscc(channelId).evaluateTransaction("GetChainInfo", channelId)
         val height = BlockchainInfo.parseFrom(blockIds).height
-        return (0..height - 1).toList()
+        return (0..<height).toList()
     }
 
     fun queryBlockByTransactionId(channelId: ChannelId, transactionId: TransactionId): BlockDsl {
-        val gateway = fabricGatewayBuilder.gateway(channelId)
-        val network = gateway.getNetwork(channelId)
-        val contract = network.getContract("qscc")
-        val blockResponse = contract.evaluateTransaction("GetBlockByTxID", channelId, transactionId)
+        val blockResponse = qscc(channelId).evaluateTransaction(GET_BLOCK_BY_TX_ID, channelId, transactionId)
         return blockResponse.toBlock()
     }
 
@@ -44,16 +38,13 @@ class FabricGatewayBlockClient(
         transactionId: TransactionId
     ): BlockId {
         val network = gateway.getNetwork(channelId)
-        val contract = network.getContract("qscc")
-        val blockResponse = contract.evaluateTransaction("GetBlockByTxID", channelId, transactionId)
+        val contract = network.getContract(QSCC)
+        val blockResponse = contract.evaluateTransaction(GET_BLOCK_BY_TX_ID, channelId, transactionId)
         return blockResponse.toBlock().blockId
     }
 
     fun queryBlockByNumber(channelId: ChannelId, blockId: Long): BlockDsl {
-        val gateway = fabricGatewayBuilder.gateway(channelId)
-        val network = gateway.getNetwork(channelId)
-        val contract = network.getContract("qscc")
-        val blockResponse = contract.evaluateTransaction("GetBlockByNumber", channelId, blockId.toString())
+        val blockResponse = qscc(channelId).evaluateTransaction("GetBlockByNumber", channelId, blockId.toString())
         return blockResponse.toBlock()
     }
 
@@ -74,16 +65,19 @@ class FabricGatewayBlockClient(
     }
 
     fun queryTransactionById(channelId: ChannelId, transactionId: TransactionId): TransactionDsl {
-        val gateway = fabricGatewayBuilder.gateway(channelId)
-        val network = gateway.getNetwork(channelId)
-        val contract = network.getContract("qscc")
+        val contract = qscc(channelId)
         val data = contract.evaluateTransaction("GetTransactionByID", channelId, transactionId)
         val processedTransaction = ProcessedTransaction.parseFrom(data)
         val payload = Payload.parseFrom(processedTransaction.transactionEnvelope.payload)
         return payload.asTransaction {
-            queryBlockIdByTransactionId(gateway, channelId, transactionId)
+            contract.evaluateTransaction(GET_BLOCK_BY_TX_ID, channelId, transactionId).toBlock().blockId
         }
     }
+
+    // The builder caches and shares its gateways: closing one here would break every later call.
+    @Suppress("MissingUseCall")
+    private fun qscc(channelId: ChannelId): Contract =
+        fabricGatewayBuilder.gateway(channelId).getNetwork(channelId).getContract(QSCC)
 
     private fun Payload.asTransaction(getBlockId: () -> BlockId): Transaction {
 
@@ -93,7 +87,7 @@ class FabricGatewayBlockClient(
         val identifierHeader = SerializedIdentity.parseFrom(signatureHeader.creator)
 
         @Suppress("MagicNumber")
-        val millis: Long = channelHeader.timestamp.seconds * 1000 + channelHeader.timestamp.nanos / 1000000
+        val millis: Long = channelHeader.timestamp.seconds * 1000 + channelHeader.timestamp.nanos / 1_000_000
         return TransactionDsl(
             transactionId = channelHeader.txId,
             blockId = blockId,
@@ -106,5 +100,10 @@ class FabricGatewayBlockClient(
             ),
             nonce = signatureHeader.nonce.toByteArray(),
         )
+    }
+
+    companion object {
+        private const val QSCC = "qscc"
+        private const val GET_BLOCK_BY_TX_ID = "GetBlockByTxID"
     }
 }

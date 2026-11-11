@@ -11,6 +11,8 @@ class SsmListSessionQueryFunctionImpl(
     private val queryService: SsmQueryService
 ) : SsmListSessionQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmListSessionQuery>): Flow<SsmListSessionResult> = msgs.map { payload ->
         val list = queryService.listSession(payload.chaincodeUri)
         SsmListSessionResult(list.toTypedArray())

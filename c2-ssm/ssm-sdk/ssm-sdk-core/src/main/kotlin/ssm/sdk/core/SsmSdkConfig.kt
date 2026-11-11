@@ -5,7 +5,7 @@ import java.io.IOException
 import java.util.Properties
 import ssm.sdk.sign.FileUtils
 
-class SsmSdkConfig(
+data class SsmSdkConfig(
     val baseUrl: String,
     val cloudEventsSource: String = DEFAULT_CLOUDEVENTS_SOURCE,
 ) {
@@ -19,7 +19,7 @@ class SsmSdkConfig(
         fun fromConfigFile(filename: String): SsmSdkConfig {
             val file = FileUtils.getUrl(filename)
             val props = Properties()
-            props.load(FileInputStream(file.file))
+            FileInputStream(file.file).use { props.load(it) }
             val baseUrl = props.getProperty(SSM_REST_URL)
             val cloudEventsSource = props.getProperty(SSM_CLOUDEVENTS_SOURCE) ?: DEFAULT_CLOUDEVENTS_SOURCE
             return SsmSdkConfig(baseUrl, cloudEventsSource)

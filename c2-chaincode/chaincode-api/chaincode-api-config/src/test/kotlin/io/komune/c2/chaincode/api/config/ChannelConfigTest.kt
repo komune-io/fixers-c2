@@ -7,16 +7,16 @@ import org.junit.jupiter.api.Test
 
 class ChannelConfigTest {
 
-    private val user = C2ChaincodeConfiguration.UserConfig().apply {
-        name = "Admin"
-        password = ""
-        org = "bclan"
-    }
-    private val fileConfig = C2ChaincodeConfiguration.FileConfig().apply {
-        file = "config.json"
-        crypto = "/crypto"
-    }
-    private val endorsers = listOf(Endorser("peer0", "bclan"))
+    private val user = C2ChaincodeConfiguration.UserConfig(
+        name = "Admin",
+        password = "",
+        org = "bclan",
+    )
+    private val fileConfig = C2ChaincodeConfiguration.FileConfig(
+        file = "config.json",
+        crypto = "/crypto",
+    )
+    private val endorsers = listOf(Endorser(peer = "peer0", organisation = "bclan"))
 
     @Test
     fun `ChannelChaincodePair fromConfig parses channel slash chaincode`() {
@@ -26,10 +26,10 @@ class ChannelConfigTest {
 
     @Test
     fun `ChannelChaincodePair fromConfig rejects malformed values`() {
-        assertThatThrownBy { ChannelChaincodePair.fromConfig("sandbox-ssm") }
+        assertThatThrownBy { val _ = ChannelChaincodePair.fromConfig("sandbox-ssm") }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("Bad ccid argument[sandbox-ssm]")
-        assertThatThrownBy { ChannelChaincodePair.fromConfig("a/b/c") }
+        assertThatThrownBy { val _ = ChannelChaincodePair.fromConfig("a/b/c") }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
 

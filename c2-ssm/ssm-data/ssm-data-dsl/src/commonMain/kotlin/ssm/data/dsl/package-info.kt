@@ -8,7 +8,7 @@ package ssm.data.dsl
 interface DataSsmD2
 
 /**
- * Test description config
+ * Test description config.
  * @d2 page
  * @parent [DataSsmD2]
  * @title SSM-DATA/Model
@@ -17,7 +17,7 @@ interface DataSsmD2
 interface DataSsmD2Model
 
 /**
- * Test description config
+ * Test description config.
  * @d2 page
  * @parent [DataSsmD2]
  * @title SSM-DATA/Query functions

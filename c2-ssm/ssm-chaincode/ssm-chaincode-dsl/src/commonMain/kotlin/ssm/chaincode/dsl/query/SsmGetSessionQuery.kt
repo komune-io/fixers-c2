@@ -11,7 +11,7 @@ import ssm.chaincode.dsl.model.SessionName
 import ssm.chaincode.dsl.model.SsmSessionState
 
 /**
- * Retrieves the current state of a session
+ * Retrieves the current state of a session.
  * @d2 function
  * @parent [ssm.chaincode.dsl.SsmChaincodeD2Query]
  * @title Get Session
@@ -30,7 +30,7 @@ typealias SsmGetSessionQueryFunction = F2Function<SsmGetSessionQuery, SsmGetSess
 class SsmGetSessionQuery(
     override val chaincodeUri: ChaincodeUri,
     /**
-     * Identifier of the session to retrieve
+     * Identifier of the session to retrieve.
      * @example [SsmSessionState.session]
      */
     val sessionName: SessionName,
@@ -46,7 +46,7 @@ class SsmGetSessionQuery(
 @JsName("SsmGetSessionResult")
 class SsmGetSessionResult(
     /**
-     * The current state of the session if it exists
+     * The current state of the session if it exists.
      */
     override val item: SsmSessionState?,
 ) : SsmItemResultDTO<SsmSessionState>

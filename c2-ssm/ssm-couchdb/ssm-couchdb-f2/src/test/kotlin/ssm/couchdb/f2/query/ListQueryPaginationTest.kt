@@ -1,6 +1,7 @@
 package ssm.couchdb.f2.query
 
 import f2.dsl.cqrs.page.OffsetPagination
+import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -21,12 +22,6 @@ import ssm.couchdb.dsl.query.CouchdbSsmSessionStateListQuery
  */
 internal class ListQueryPaginationTest {
 
-    private companion object {
-        const val CHANNEL_ID = "sandbox"
-        const val CHAINCODE_ID = "ssm"
-        const val DB_NAME = "sandbox_ssm"
-    }
-
     private val client = mockk<CouchdbSsmClient>()
 
     private fun ssm(name: String) = Ssm(name = name, transitions = emptyList())
@@ -40,7 +35,15 @@ internal class ListQueryPaginationTest {
     @Test
     suspend fun `ssm list pushes limit and skip down and reports the unpaged total`() {
         val page = listOf(ssm("ssm-3"), ssm("ssm-4"))
-        coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) } returns page
+        coEvery {
+            client.fetchAllByDocType(
+                dbName = DB_NAME,
+                docType = DocType.Ssm,
+                filters = any(),
+                limit = 2L,
+                skip = 2L,
+            )
+        } returns page
         coEvery { client.countByDocType(DB_NAME, DocType.Ssm, any()) } returns 7
 
         val result = CouchdbSsmListQueryFunctionImpl(client)
@@ -52,13 +55,29 @@ internal class ListQueryPaginationTest {
         assertThat(result.total).isEqualTo(7)
         assertThat(result.pagination?.offset).isEqualTo(2)
         assertThat(result.pagination?.limit).isEqualTo(2)
-        coVerify(exactly = 1) { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), 2L, 2L) }
+        coVerify(exactly = 1) {
+            val _ = client.fetchAllByDocType(
+                dbName = DB_NAME,
+                docType = DocType.Ssm,
+                filters = any(),
+                limit = 2L,
+                skip = 2L,
+            )
+        }
     }
 
     @Test
     suspend fun `ssm list without pagination fetches everything and counts the items it returned`() {
         val all = listOf(ssm("ssm-1"), ssm("ssm-2"))
-        coEvery { client.fetchAllByDocType(DB_NAME, DocType.Ssm, any(), null, null) } returns all
+        coEvery {
+            client.fetchAllByDocType(
+                dbName = DB_NAME,
+                docType = DocType.Ssm,
+                filters = any(),
+                limit = null,
+                skip = null,
+            )
+        } returns all
 
         val result = CouchdbSsmListQueryFunctionImpl(client)
             .invoke(flowOf(ssmListQuery(null)))
@@ -69,7 +88,7 @@ internal class ListQueryPaginationTest {
         assertThat(result.total).isEqualTo(2)
         assertThat(result.pagination).isNull()
         // No extra count round trip when there is no page to describe.
-        coVerify(exactly = 0) { client.countByDocType(any(), DocType.Ssm, any()) }
+        coVerify(exactly = 0) { val _ = client.countByDocType(any(), DocType.Ssm, any()) }
     }
 
     @Test
@@ -87,7 +106,15 @@ internal class ListQueryPaginationTest {
                 iteration = 0,
             )
         )
-        coEvery { client.fetchAllByDocType(DB_NAME, DocType.State, filters, 1L, 5L) } returns page
+        coEvery {
+            client.fetchAllByDocType(
+                dbName = DB_NAME,
+                docType = DocType.State,
+                filters = filters,
+                limit = 1L,
+                skip = 5L,
+            )
+        } returns page
         coEvery { client.countByDocType(DB_NAME, DocType.State, filters) } returns 42
 
         val result = CouchdbSsmSessionStateListQueryFunctionImpl(client)
@@ -95,7 +122,7 @@ internal class ListQueryPaginationTest {
                 flowOf(
                     CouchdbSsmSessionStateListQuery(
                         pagination = OffsetPagination(offset = 5, limit = 1),
-                        chaincodeUri = io.komune.c2.chaincode.dsl.ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID"),
+                        chaincodeUri = ChaincodeUri("chaincode:$CHANNEL_ID:$CHAINCODE_ID"),
                         ssm = "CarDealership",
                     )
                 )
@@ -105,6 +132,12 @@ internal class ListQueryPaginationTest {
 
         assertThat(result.items).isEqualTo(page)
         assertThat(result.total).isEqualTo(42)
-        coVerify(exactly = 1) { client.countByDocType(DB_NAME, DocType.State, filters) }
+        coVerify(exactly = 1) { val _ = client.countByDocType(DB_NAME, DocType.State, filters) }
+    }
+
+    private companion object {
+        const val CHANNEL_ID = "sandbox"
+        const val CHAINCODE_ID = "ssm"
+        const val DB_NAME = "sandbox_ssm"
     }
 }

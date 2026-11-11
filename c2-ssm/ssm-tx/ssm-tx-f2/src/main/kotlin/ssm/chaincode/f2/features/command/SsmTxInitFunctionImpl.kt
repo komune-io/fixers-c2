@@ -2,6 +2,7 @@ package ssm.chaincode.f2.features.command
 
 import io.komune.c2.chaincode.dsl.ChaincodeUri
 import io.komune.c2.chaincode.dsl.burst
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ssm.chaincode.dsl.model.Agent
@@ -20,6 +21,8 @@ class SsmTxInitFunctionImpl(
     private val queryService: SsmQueryService,
 ): SsmTxInitFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmInitCommand>): Flow<SsmInitdResult> = msgs.map { payload ->
         val retInitUser = initUser(payload.chaincodeUri.burst(), payload.agent, payload.signerName)
         val retInitSsm = initSsm(payload.chaincodeUri.burst(), payload.ssm, payload.signerName)
@@ -54,6 +57,8 @@ class SsmTxInitFunctionImpl(
         } else {
             try {
                 create(objToCreate)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 if (getFnc() != null) {
                     null
@@ -68,6 +73,8 @@ class SsmTxInitFunctionImpl(
     private suspend fun createSsm(chaincodeUri: ChaincodeUri, ssm: Ssm, signerName: AgentName): CommandOutcome {
         try {
             return txService.sendCreate(chaincodeUri, ssm, signerName)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw SsmException(e)
         }
@@ -77,6 +84,8 @@ class SsmTxInitFunctionImpl(
     private suspend fun createUser(chaincodeUri: ChaincodeUri, agent: Agent, signerName: AgentName): CommandOutcome {
         try {
             return txService.sendRegisterUser(chaincodeUri, agent, signerName)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             throw SsmException(e)
         }

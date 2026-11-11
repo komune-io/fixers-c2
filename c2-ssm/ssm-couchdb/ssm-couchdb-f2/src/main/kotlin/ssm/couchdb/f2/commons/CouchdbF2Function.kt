@@ -10,9 +10,7 @@ fun chainCodeDbName(channelId: ChannelId, chaincodeId: ChaincodeId) = "${channel
 
 fun ChaincodeUriDTO.chainCodeDbName(): String {
     val uri = burst()
-    return chainCodeDbName(uri.channelId, uri.chaincodeId)
+    return chainCodeDbName(channelId = uri.channelId, chaincodeId = uri.chaincodeId)
 }
 
-fun ChaincodeUri.chainCodeDbName(): String {
-    return chainCodeDbName(channelId, chaincodeId)
-}
+fun ChaincodeUri.chainCodeDbName(): String = chainCodeDbName(channelId = channelId, chaincodeId = chaincodeId)

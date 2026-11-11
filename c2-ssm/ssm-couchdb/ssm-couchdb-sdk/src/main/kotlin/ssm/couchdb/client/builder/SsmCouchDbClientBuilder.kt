@@ -1,16 +1,18 @@
 package ssm.couchdb.client.builder
 
 import com.ibm.cloud.sdk.core.security.BasicAuthenticator
+import java.util.logging.Logger
 import ssm.couchdb.client.CouchdbSsmClient
 import ssm.sdk.json.JSONConverter
 import ssm.sdk.json.JSONConverterObjectMapper
 
 class SsmCouchDbClientBuilder {
 
+    private val logger = Logger.getLogger(SsmCouchDbClientBuilder::class.java.name)
     private var jsonConverter: JSONConverter = JSONConverterObjectMapper()
-    private lateinit var auth: SsmCouchDbAuth
-    private lateinit var url: String
-    private lateinit var name: String
+    private var auth: SsmCouchDbAuth? = null
+    private var url: String? = null
+    private var name: String? = null
 
     fun withJSONConverter(jsonConverter: JSONConverter): SsmCouchDbClientBuilder = apply {
         this.jsonConverter = jsonConverter
@@ -29,10 +31,9 @@ class SsmCouchDbClientBuilder {
     }
 
     fun build(): CouchdbSsmClient {
-        val converter = requireNotNull(this.jsonConverter)
-        val auth = requireNotNull(this.auth)
+        val auth = checkNotNull(this.auth) { "auth is not set" }
         val cloudant = buildCloudant(auth)
-        return CouchdbSsmClient(cloudant, converter)
+        return CouchdbSsmClient(cloudant, jsonConverter)
     }
 
     private fun buildCloudant(auth: SsmCouchDbAuth): CloudantFixed {
@@ -43,15 +44,15 @@ class SsmCouchDbClientBuilder {
                 .build()
         }
 
-        val client = CloudantFixed(name, cloudantAuth).apply {
-            serviceUrl = url
+        val client = CloudantFixed(checkNotNull(name) { "name is not set" }, cloudantAuth).apply {
+            serviceUrl = checkNotNull(url) { "url is not set" }
         }
 
         val serverInformation = client
             .serverInformation
             .execute()
             .result
-        println("Server Version: ${serverInformation.version}")
+        logger.info { "Server Version: ${serverInformation.version}" }
         return client
     }
 }

@@ -17,11 +17,6 @@ fun ChaincodeUriDTO.burst() = ChaincodeUri(uri)
 @JsName("ChaincodeUri")
 data class ChaincodeUri(override val uri: String): ChaincodeUriDTO {
 
-    companion object {
-        const val PARTS = 3
-        const val PREFIX = "chaincode"
-    }
-
     private val burst = uri.split(":")
     init {
         require(burst.size == PARTS)
@@ -33,8 +28,11 @@ data class ChaincodeUri(override val uri: String): ChaincodeUriDTO {
     val chaincodeId
         get() = burst[2]
 
+    companion object {
+        const val PARTS = 3
+        const val PREFIX = "chaincode"
+    }
 }
 
-fun ChaincodeUri.Companion.from(channelId: ChannelId, chaincodeId: ChaincodeId): ChaincodeUri {
-    return ChaincodeUri("chaincode:$channelId:$chaincodeId")
-}
+fun ChaincodeUri.Companion.from(channelId: ChannelId, chaincodeId: ChaincodeId): ChaincodeUri =
+    ChaincodeUri("chaincode:$channelId:$chaincodeId")

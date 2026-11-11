@@ -1,5 +1,6 @@
 package ssm.couchdb.client
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.ibm.cloud.cloudant.v1.model.ChangesResult
 import com.ibm.cloud.cloudant.v1.model.DatabaseInformation
 import com.ibm.cloud.cloudant.v1.model.DesignDocument
@@ -43,11 +44,8 @@ internal class CouchdbSsmClientTest {
 
     private val cloudant = mockk<CloudantFixed>()
     private val converter = mockk<JSONConverter>()
+    @OptIn(ExperimentalCoroutinesApi::class)
     private val client = CouchdbSsmClient(cloudant, converter, UnconfinedTestDispatcher())
-
-    private companion object {
-        const val DB_NAME = "ssm-db"
-    }
 
     private fun <T> serviceCall(result: T): ServiceCall<T> {
         val response = mockk<Response<T>> { every { getResult() } returns result }
@@ -81,7 +79,7 @@ internal class CouchdbSsmClientTest {
     suspend fun `fetchAllByDocType merges the extra filters into the selector`() {
         val options = stubFind()
 
-        client.fetchAllByDocType(DB_NAME, DocType.Ssm, mapOf("name" to "ssm-1"))
+        val _ = client.fetchAllByDocType(DB_NAME, DocType.Ssm, mapOf("name" to "ssm-1"))
 
         Assertions.assertThat(options.captured.selector()).isEqualTo(
             mapOf("docType" to mapOf("\$eq" to "ssm"), "name" to "ssm-1")
@@ -91,7 +89,7 @@ internal class CouchdbSsmClientTest {
     @Test
     suspend fun `fetchAllByDocType drops documents the converter cannot read`() {
         val agent = mockk<Agent>()
-        stubFind(document(), document())
+        val _ = stubFind(document(), document())
         every { converter.toObject(Agent::class.java, any()) } returnsMany listOf(agent, null)
 
         Assertions.assertThat(client.fetchAllByDocType(DB_NAME, DocType.Admin)).containsExactly(agent)
@@ -119,7 +117,7 @@ internal class CouchdbSsmClientTest {
 
     @Test
     suspend fun `fetchOneByDocTypeAndName returns null when nothing matches`() {
-        stubFind()
+        val _ = stubFind()
 
         Assertions.assertThat(client.fetchOneByDocTypeAndName(DB_NAME, DocType.User, "nobody")).isNull()
     }
@@ -153,7 +151,7 @@ internal class CouchdbSsmClientTest {
 
     @Test
     suspend fun `getCount returns zero when the view has no row`() {
-        stubView(rowValue = null)
+        val _ = stubView(rowValue = null)
 
         Assertions.assertThat(client.getCount(DB_NAME, DocType.Ssm)).isZero()
     }
@@ -162,7 +160,7 @@ internal class CouchdbSsmClientTest {
         val options = slot<PostViewOptions>()
         val rows = rowValue?.let { value ->
             listOf(mockk<ViewResultRow> { every { getValue() } returns value })
-        } ?: emptyList()
+        }.orEmpty()
         val viewResult = mockk<ViewResult> { every { getRows() } returns rows }
         every { cloudant.postView(capture(options)) } returns serviceCall(viewResult)
         return options
@@ -204,14 +202,20 @@ internal class CouchdbSsmClientTest {
 
     @Test
     suspend fun `getSsmChanges installs the filter and forwards ssm, session and paging`() {
-        stubMissingDesignDocument()
+        val _ = stubMissingDesignDocument()
         val changes = mockk<ChangesResult>()
         val options = slot<PostChangesOptions>()
         every {
-            cloudant.postChanges(capture(options), "ssm-1", "session-1")
+            cloudant.postChanges(postChangesOptions = capture(options), ssm = "ssm-1", session = "session-1")
         } returns serviceCall(changes)
 
-        val result = client.getSsmChanges(DB_NAME, "ssm-1", "session-1", lastEventId = "42", limit = 10)
+        val result = client.getSsmChanges(
+            dbName = DB_NAME,
+            ssmName = "ssm-1",
+            sessionName = "session-1",
+            lastEventId = "42",
+            limit = 10,
+        )
 
         Assertions.assertThat(result).isEqualTo(changes)
         Assertions.assertThat(options.captured.db()).isEqualTo(DB_NAME)
@@ -229,9 +233,10 @@ internal class CouchdbSsmClientTest {
         val options = slot<PostChangesOptions>()
         every { cloudant.postChanges(capture(options), any(), any()) } returns serviceCall(mockk<ChangesResult>())
 
-        client.getSsmChanges(DB_NAME, "ssm-1", sessionName = null)
+        val _ = client.getSsmChanges(dbName = DB_NAME, ssmName = "ssm-1", sessionName = null)
 
-        Assertions.assertThat(options.captured.limit() as Long?).isNull()
+        val limit: Long? = options.captured.limit()
+        Assertions.assertThat(limit).isNull()
     }
 
     /**
@@ -243,20 +248,22 @@ internal class CouchdbSsmClientTest {
         val executor = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "couchdb-dispatcher-test")
         }
-        try {
-            val dispatched = CouchdbSsmClient(cloudant, converter, executor.asCoroutineDispatcher())
+        val _ = executor.asCoroutineDispatcher().use { dispatcher ->
+            val dispatched = CouchdbSsmClient(cloudant, converter, dispatcher)
             lateinit var callThread: String
             every { cloudant.allDbs } answers {
                 callThread = Thread.currentThread().name
                 serviceCall(emptyList())
             }
 
-            runTest { dispatched.getDatabases() }
+            runTest { val _ = dispatched.getDatabases() }
 
             Assertions.assertThat(callThread).isEqualTo("couchdb-dispatcher-test")
             Assertions.assertThat(callThread).isNotEqualTo(Thread.currentThread().name)
-        } finally {
-            executor.shutdownNow()
         }
+    }
+
+    private companion object {
+        const val DB_NAME = "ssm-db"
     }
 }

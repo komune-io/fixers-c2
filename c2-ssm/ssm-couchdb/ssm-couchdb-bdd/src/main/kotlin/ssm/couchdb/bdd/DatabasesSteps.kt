@@ -15,15 +15,15 @@ import ssm.couchdb.f2.CouchdbSsmQueriesFunctionImpl
 
 class DatabasesSteps : En {
 
-    private lateinit var config: SsmCouchdbConfig
+    private var config: SsmCouchdbConfig = TestConfig.dbConfig
     private var databases: List<DatabaseDTO> = emptyList()
     private var ssms: List<Ssm> = emptyList()
 
     init {
         DataTableType { entry: Map<String, String> ->
             Chaincode(
-                id = entry["chaincodeId"] ?: "",
-                channelId = entry["channelId"] ?: ""
+                id = entry["chaincodeId"].orEmpty(),
+                channelId = entry["channelId"].orEmpty()
             )
         }
 
@@ -83,11 +83,14 @@ class DatabasesSteps : En {
             runBlocking {
                 ssms = CouchdbSsmQueriesFunctionImpl(config)
                     .couchdbSsmListQueryFunction()
-                    .invoke(CouchdbSsmListQuery(
-                        channelId = chaincode.channelId,
-                        chaincodeId = chaincode.id,
-                        pagination = null
-                    )).items
+                    .invoke(
+                        CouchdbSsmListQuery(
+                            channelId = chaincode.channelId,
+                            chaincodeId = chaincode.id,
+                            pagination = null
+                        )
+                    )
+                    .items
             }
         }
         Then("I do not found ssm") {

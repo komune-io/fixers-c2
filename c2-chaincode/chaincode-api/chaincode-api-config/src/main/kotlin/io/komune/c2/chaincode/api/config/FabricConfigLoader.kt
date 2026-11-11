@@ -2,7 +2,6 @@ package io.komune.c2.chaincode.api.config
 
 import io.komune.c2.chaincode.dsl.ChannelId
 
-
 class FabricConfigLoader(
     private val coopConfig: C2ChaincodeConfiguration
 ) {

@@ -29,11 +29,6 @@ fun SsmUriDTO.asChaincodeUri() = SsmUri(uri).chaincodeUri
 @JsName("SsmUri")
 data class SsmUri(override val uri: String): SsmUriDTO {
 
-    companion object {
-        const val PARTS = 4
-        const val PREFIX = "ssm"
-    }
-
     private val burst = uri.split(":")
 
     init {
@@ -46,16 +41,20 @@ data class SsmUri(override val uri: String): SsmUriDTO {
     val chaincodeId
         get() = burst[2]
     val ssmName
-        get() = burst.get(index = 3)
+        get() = burst[3]
     val ssmVersion
         get() = DEFAULT_VERSION
     val chaincodeUri
         get() = ChaincodeUri.from(channelId, chaincodeId)
+
+    companion object {
+        const val PARTS = 4
+        const val PREFIX = "ssm"
+    }
 }
 
-fun ChaincodeUriDTO.toSsmUri(ssmName: SsmName): SsmUri {
-    return ssm.chaincode.dsl.model.uri.SsmUri.from(burst().channelId, burst().chaincodeId, ssmName)
-}
+fun ChaincodeUriDTO.toSsmUri(ssmName: SsmName): SsmUri =
+    SsmUri.from(channelId = burst().channelId, chaincodeId = burst().chaincodeId, ssmName = ssmName)
 
 fun SsmUri.Companion.from(
     chaincodeUri: ChaincodeUri,

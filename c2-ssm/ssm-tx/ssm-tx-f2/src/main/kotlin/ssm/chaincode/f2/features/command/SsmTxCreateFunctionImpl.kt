@@ -12,14 +12,16 @@ class SsmTxCreateFunctionImpl(
     private val ssmTxService: SsmTxService,
 ): SsmTxCreateFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmCreateCommand>): Flow<SsmCreateResult> = msgs.map { payload ->
         ssm.sdk.core.command.SsmCreateCommand(
             ssm = payload.ssm,
             chaincodeUri = payload.chaincodeUri.burst(),
             signerName = payload.signerName
         )
-    }.let {
-        ssmTxService.sendCreate(it).map { result ->
+    }.let { commands ->
+        ssmTxService.sendCreate(commands).map { result ->
             SsmCreateResult(
                 transactionId = result.transactionId.orEmpty(),
             )

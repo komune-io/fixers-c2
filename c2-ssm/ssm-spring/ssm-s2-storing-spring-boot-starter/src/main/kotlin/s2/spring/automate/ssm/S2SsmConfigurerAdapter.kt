@@ -13,6 +13,8 @@ import s2.dsl.automate.ssm.toSsm
 import s2.spring.automate.S2ConfigurerAdapter
 import s2.spring.automate.executor.S2AutomateExecutorSpring
 import s2.spring.automate.ssm.persister.SsmAutomatePersister
+import s2.spring.automate.ssm.persister.SsmSessionFunctions
+import s2.spring.automate.ssm.persister.SsmSigningTarget
 import ssm.chaincode.dsl.model.Agent
 import ssm.chaincode.dsl.model.uri.ChaincodeUri
 import ssm.chaincode.dsl.query.SsmGetSessionLogsQueryFunction
@@ -22,48 +24,60 @@ import ssm.tx.dsl.features.ssm.SsmInitCommand
 import ssm.tx.dsl.features.ssm.SsmTxInitFunction
 import tools.jackson.databind.ObjectMapper
 
-abstract class S2SsmConfigurerAdapter<STATE, ID, ENTITY, AGGREGATE> :
+abstract class S2SsmConfigurerAdapter<STATE, ID : Any, ENTITY, AGGREGATE> :
     S2ConfigurerAdapter<STATE, ID, ENTITY, AGGREGATE>() where
 STATE : S2State,
 ENTITY : WithS2State<STATE>,
 ENTITY : WithS2Id<ID>,
 AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmTxInitFunction: SsmTxInitFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmSessionStartFunction: SsmTxSessionStartFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmSessionPerformActionFunction: SsmTxSessionPerformActionFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var ssmGetSessionLogsQueryFunction: SsmGetSessionLogsQueryFunction
 
+    // Field injection: consumers subclass this adapter and must not have to forward these beans.
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var objectMapper: ObjectMapper
+
+    open var isPermissive = false
 
     override fun aggregateRepository(): AutomatePersister<STATE, ID, ENTITY, Evt, S2Automate> = runBlocking {
         val automate = automate()
         val signer = signerAgent()
         val chaincodeUri = chaincodeUri()
         SsmAutomatePersister<STATE, ID, ENTITY, Evt>(
-            ssmSessionStartFunction = ssmSessionStartFunction,
-            ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
-            objectMapper = objectMapper,
-            ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
+            functions = SsmSessionFunctions(
+                ssmSessionStartFunction = ssmSessionStartFunction,
+                ssmSessionPerformActionFunction = ssmSessionPerformActionFunction,
+                ssmGetSessionLogsQueryFunction = ssmGetSessionLogsQueryFunction,
+            ),
+            target = SsmSigningTarget(chaincodeUri = chaincodeUri, agentSigner = signer),
             entityType = entityType(),
-            chaincodeUri = chaincodeUri,
-            agentSigner = signer,
-            permissive = permissive,
+            objectMapper = objectMapper,
             batch = batchParams,
             timestampProvider = ::businessTimestampOf
         ).also {
-            ssmTxInitFunction.invoke(
+            val _ = ssmTxInitFunction.invoke(
                 SsmInitCommand(
                     signerName = signer.name,
-                    ssm = automate.toSsm(permissive),
+                    ssm = automate.toSsm(permissive = isPermissive),
                     agent = signer,
                     chaincodeUri = chaincodeUri
                 )
@@ -81,6 +95,4 @@ AGGREGATE : S2AutomateExecutorSpring<STATE, ID, ENTITY> {
      * with a historical date instead of wall-clock. Default: null (wall-clock).
      */
     open fun businessTimestampOf(msg: Any): Long? = null
-
-    open var permissive = false
 }

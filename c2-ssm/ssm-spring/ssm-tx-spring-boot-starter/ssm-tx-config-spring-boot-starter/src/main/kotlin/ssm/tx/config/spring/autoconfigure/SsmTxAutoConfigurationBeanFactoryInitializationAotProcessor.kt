@@ -16,11 +16,11 @@ class SsmTxAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFactoryI
                 ctx: GenerationContext, _: BeanFactoryInitializationCode? ->
             val hints = ctx.runtimeHints
             registerConfigMethodHints(
-                hints,
-                SsmTxAutoConfiguration::class.java,
-                SsmTxAutoConfiguration::chaincodeSsmConfig.name,
-                SsmTxProperties::class.java,
-                SsmChaincodeProperties::class.java,
+                hints = hints,
+                configClass = SsmTxAutoConfiguration::class.java,
+                methodName = SsmTxAutoConfiguration::chaincodeSsmConfig.name,
+                propsClass = SsmTxProperties::class.java,
+                extraTypes = listOf(SsmChaincodeProperties::class.java),
             )
             SsmTxProperties.SignerAgentFileConfig::class.java.declaredConstructors.forEach {
                 hints.reflection().registerConstructor(it, ExecutableMode.INVOKE)
@@ -29,21 +29,17 @@ class SsmTxAutoConfigurationBeanFactoryInitializationAotProcessor : BeanFactoryI
     }
 }
 
-/**
- * Registers the reflection hints needed to invoke a config `@Bean` method ahead of time:
- * the method itself ([ExecutableMode.INVOKE]) plus its properties class and any extra types.
- *
- * Deliberately duplicated in each ssm-spring starter: the starters share no Spring-aware
- * module in this repo, and a dedicated module for one helper would add a dependency edge.
- */
+// Duplicated in each ssm-spring starter: they share no Spring-aware module, and one helper is no reason to add one.
 private fun registerConfigMethodHints(
     hints: RuntimeHints,
     configClass: Class<*>,
     methodName: String,
     propsClass: Class<*>,
-    vararg extraTypes: Class<*>,
+    extraTypes: List<Class<*>> = emptyList(),
 ) {
-    val method = ReflectionUtils.findMethod(configClass, methodName, propsClass)!!
+    val method = checkNotNull(ReflectionUtils.findMethod(configClass, methodName, propsClass)) {
+        "No @Bean method $methodName(${propsClass.simpleName}) on ${configClass.name}"
+    }
     hints.reflection().registerMethod(method, ExecutableMode.INVOKE)
     hints.reflection().registerType(propsClass)
     extraTypes.forEach { hints.reflection().registerType(it) }

@@ -19,7 +19,7 @@ internal class SsmTxSessionFunctionsTest {
         session = "session-$msgId",
         roles = mapOf(SsmTxTestFixtures.SIGNER_NAME to "Seller"),
         public = "{}",
-        private = mapOf(),
+        private = emptyMap(),
     )
 
     private fun startCommand(msgId: String, timestamp: Long? = null) = SsmStartCommand(
@@ -33,7 +33,7 @@ internal class SsmTxSessionFunctionsTest {
     private fun performCommand(msgId: String, timestamp: Long? = null) = SsmPerformCommand(
         msgId = msgId,
         action = "Sell",
-        context = SsmContext(session = "session-$msgId", public = "{}", iteration = 1, private = mapOf()),
+        context = SsmContext(session = "session-$msgId", public = "{}", iteration = 1, private = emptyMap()),
         chaincodeUri = SsmTxTestFixtures.chaincodeUri,
         signerName = SsmTxTestFixtures.SIGNER_NAME,
         timestamp = timestamp,

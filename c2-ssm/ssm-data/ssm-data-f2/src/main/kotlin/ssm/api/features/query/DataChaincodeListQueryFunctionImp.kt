@@ -14,10 +14,12 @@ class DataChaincodeListQueryFunctionImp(
     private val couchdbChaincodeListQueryFunction: CouchdbChaincodeListQueryFunction
 ): DataChaincodeListQueryFunction {
 
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<DataChaincodeListQuery>): Flow<DataChaincodeListQueryResult> =
         msgs.map {
-            couchdbChaincodeListQueryFunction.invoke(CouchdbChaincodeListQuery()).let {
-                DataChaincodeListQueryResult(it.items.map {it.burst()})
+            couchdbChaincodeListQueryFunction.invoke(CouchdbChaincodeListQuery()).let { result ->
+                DataChaincodeListQueryResult(result.items.map { chaincodeUri -> chaincodeUri.burst() })
             }
         }
 }

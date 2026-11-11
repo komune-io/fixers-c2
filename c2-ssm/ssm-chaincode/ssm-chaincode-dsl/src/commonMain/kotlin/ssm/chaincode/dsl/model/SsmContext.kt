@@ -8,32 +8,32 @@ import kotlinx.serialization.Serializable
 @JsName("SsmContextDTO")
 interface SsmContextDTO : WithPrivate {
     /**
-     * Described session
+     * Described session.
      * @example [SsmSession.session]
      */
     val session: String
 
     /**
-     * Public data attached to the session for this iteration
+     * Public data attached to the session for this iteration.
      * @example [SsmSession.public]
      */
     val public: String
 
     /**
-     * Described iteration
+     * Described iteration.
      * @example [SsmSessionState.iteration]
      */
     val iteration: Int
 
     /**
-     * Private data attached to the session
+     * Private data attached to the session.
      * @example [SsmSession.private]
      */
     override val private: Map<String, String>?
 }
 
 /**
- * Describes a session context for a given iteration
+ * Describes a session context for a given iteration.
  * @d2 model
  * @parent [SsmSession]
  */

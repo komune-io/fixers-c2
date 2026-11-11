@@ -11,6 +11,8 @@ typealias SsmTxSessionPerformActionFunction = F2Function<SsmPerformCommand, Comm
 class SsmTxSessionPerformActionFunctionImpl(
     private val ssmTxService: SsmTxService,
 ) : SsmTxSessionPerformActionFunction {
+    // F2Function declares invoke suspend: an override cannot drop it.
+    @Suppress("SuspendFunWithFlowReturnType")
     override suspend fun invoke(msgs: Flow<SsmPerformCommand>): Flow<CommandOutcome> =
         ssmTxService.sendPerform(msgs)
 }
