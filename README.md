@@ -10,9 +10,6 @@ Kotlin SDK for interacting with [Blockchain-SSM](https://github.com/civis-blockc
 // Spring Boot auto-configuration for chaincode operations
 implementation("io.komune.c2:ssm-chaincode-spring-boot-starter:${Versions.c2}")
 
-// Spring Boot auto-configuration for CouchDB queries
-implementation("io.komune.c2:ssm-couchdb-spring-boot-starter:${Versions.c2}")
-
 // Spring Boot auto-configuration for combined data queries
 implementation("io.komune.c2:ssm-data-spring-boot-starter:${Versions.c2}")
 ```
@@ -74,6 +71,22 @@ implementation("io.komune.c2:ssm-tx-f2:${Versions.c2}")
 ```
 
 > All F2 functions are implemented as Spring Beans for dependency injection.
+
+## Modules not published
+
+Since 0.47.0 these modules are no longer published. None of the repositories searched depends on them. The search
+covered the source of the komune-io and BoisLocal GitHub organizations and of local Komune and Kosmio clones, and the
+resolved classpaths of connect-fs, colisactiv's ssm, connect-im and the Bois Local platform. A consumer outside them is
+not ruled out. No module of this repository depends on them.
+
+| Coordinate | Since |
+|---|---|
+| `io.komune.c2:ssm-chaincode-f2-client` (and `ssm-chaincode-f2-client-jvm`, `ssm-chaincode-f2-client-js`) | 0.47.0 |
+| `io.komune.c2:ssm-couchdb-spring-boot-starter` | 0.47.0 |
+
+Releases up to 0.46 stay on Maven Central. To use one with 0.47.0 or later, open an issue, or add
+`alias(catalogue.plugins.fixers.gradle.publish)` back to its build file and publish it locally.
+`ssm-couchdb-f2`, which the starter wraps, is still published.
 
 ## Development
 
