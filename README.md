@@ -74,9 +74,10 @@ implementation("io.komune.c2:ssm-tx-f2:${Versions.c2}")
 
 ## Modules not published
 
-Since 0.47.0 these modules are no longer published. No Komune, Kosmio or Bois Local repository depends on them: code
-search over those repositories, and the resolved classpaths of connect-fs, colisactiv's ssm, connect-im and the Bois
-Local platform.
+Since 0.47.0 these modules are no longer published. None of the repositories searched depends on them. The search
+covered the source of the komune-io and BoisLocal GitHub organizations and of local Komune and Kosmio clones, and the
+resolved classpaths of connect-fs, colisactiv's ssm, connect-im and the Bois Local platform. A consumer outside them is
+not ruled out. No module of this repository depends on them.
 
 | Coordinate | Since |
 |---|---|
