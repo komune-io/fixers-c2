@@ -68,7 +68,6 @@ Functions follow F2 (Function Factory) pattern for Spring DI:
 Import starters for auto-configured beans:
 ```kotlin
 implementation("io.komune.c2:ssm-chaincode-spring-boot-starter:${version}")
-implementation("io.komune.c2:ssm-couchdb-spring-boot-starter:${version}")
 implementation("io.komune.c2:ssm-data-spring-boot-starter:${version}")
 ```
 
