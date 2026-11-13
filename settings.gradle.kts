@@ -3,12 +3,25 @@ pluginManagement {
     val fixersVersion = settingsDir.resolve("gradle/libs.versions.toml").readLines()
         .firstNotNullOf { Regex("^fixers\\s*=\\s*\"([^\"]+)\"").find(it)?.groupValues?.get(1) }
     repositories {
+        // A release builds each fixers repository against the previous one's artifacts in Maven Local.
+        if (providers.environmentVariable("FIXERS_REPOSITORIES_MAVEN_LOCAL").orNull == "true") {
+            mavenLocal { content { includeGroupByRegex("io\\.komune(\\..*)?") } }
+        }
         gradlePluginPortal()
         mavenCentral()
         maven { url = uri("https://central.sonatype.com/repository/maven-snapshots") }
     }
     plugins {
         id("io.komune.fixers.gradle.settings") version fixersVersion
+    }
+}
+
+// Before the settings plugin's repositories: a release resolves the io.komune artifacts it just built from Maven Local.
+dependencyResolutionManagement {
+    repositories {
+        if (providers.environmentVariable("FIXERS_REPOSITORIES_MAVEN_LOCAL").orNull == "true") {
+            mavenLocal { content { includeGroupByRegex("io\\.komune(\\..*)?") } }
+        }
     }
 }
 
