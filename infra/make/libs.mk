@@ -4,10 +4,21 @@ SANDBOX_NETWORK = $(shell sed -n 's/^DOCKER_NETWORK=//p' infra/docker-compose/.e
 # Waits for a sandbox init container to finish, prints its logs, and fails on a non-zero exit. `logs -f` used to
 # do the waiting, but the Docker Compose of GitHub's ubuntu-26.04 runner keeps following a container that has already
 # exited, and the job hung for an hour.
+# On a failure it also prints the sandbox containers and the peer, CouchDB and orderer logs: when the peer is gone,
+# its own logs are the only place the cause is.
 define await-init
 	@code=$$(docker wait cli-init-$(1)-bclan-$(SANDBOX_NETWORK)); \
 		make dev c2-sandbox-$(1) log; \
-		test "$$code" = 0 || { echo "cli-init-$(1) exited with $$code"; exit 1; }
+		test "$$code" = 0 || { \
+			echo "cli-init-$(1) exited with $$code"; \
+			echo "/////// sandbox containers"; \
+			docker ps -a --filter network=$(SANDBOX_NETWORK) --format 'table {{.Names}}\t{{.Status}}' || true; \
+			for c in peer0-bclan-$(SANDBOX_NETWORK) couchdb-bclan-network-it orderer-$(SANDBOX_NETWORK); do \
+				echo "/////// last 200 log lines of $$c"; \
+				docker logs --tail 200 $$c 2>&1 || true; \
+			done; \
+			exit 1; \
+		}
 endef
 
 .PHONY: clean lint build test test-pre check publish promote verify-metadata verify-metadata-dry
