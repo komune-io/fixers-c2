@@ -28,6 +28,7 @@ jobs:
     needs: docker
     with:
       make-file: 'infra/make/libs.mk'
+      skip-tasks: ${{ github.actor == 'dependabot[bot]' && 'check' || '' }}
     secrets:
       FIXERS_PUBLISH_SIGNING_GPG_KEY: ${{ secrets.FIXERS_PUBLISH_SIGNING_GPG_KEY }}
       FIXERS_PUBLISH_SIGNING_GPG_KEY_PASSWORD: ${{ secrets.FIXERS_PUBLISH_SIGNING_GPG_KEY_PASSWORD }}
