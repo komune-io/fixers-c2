@@ -18,19 +18,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.resttestclient.TestRestTemplate
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Primary
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.web.util.UriComponentsBuilder
 
 /**
@@ -46,7 +42,6 @@ import org.springframework.web.util.UriComponentsBuilder
     classes = [ChaincodeApiGatewayApplication::class, ChaincodeServiceExecuteEmbeddedTest.TestConfig::class],
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
-@AutoConfigureTestRestTemplate
 class ChaincodeServiceExecuteEmbeddedTest {
 
     @TestConfiguration
@@ -79,8 +74,8 @@ class ChaincodeServiceExecuteEmbeddedTest {
     @LocalServerPort
     var port: Int = 0
 
-    @Autowired
-    lateinit var restTemplate: TestRestTemplate
+    // Built by hand: the app is reactive, and Boot's RestTestClient auto-configuration needs a servlet context.
+    private val restTestClient: RestTestClient by lazy { RestTestClient.bindToServer().build() }
 
     @Autowired
     lateinit var testConfig: TestConfig
@@ -111,12 +106,17 @@ class ChaincodeServiceExecuteEmbeddedTest {
 
     private fun post(vararg requests: InvokeEnvelope<InvokeRequest>): List<InvokeEnvelope<OutcomeData>> {
         val uri = baseUrl().path("invoke").build().toUri()
-        val headers = HttpHeaders().apply { contentType = MediaType.APPLICATION_JSON }
-        val entity = HttpEntity(requests.toList(), headers)
         val typeRef = object : ParameterizedTypeReference<List<InvokeEnvelope<OutcomeData>>>() {}
-        val response = restTemplate.exchange(uri, HttpMethod.POST, entity, typeRef)
-        assertThat(response.statusCode.value()).isEqualTo(200)
-        return response.body!!
+        return restTestClient.post()
+            .uri(uri)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(requests.toList())
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(typeRef)
+            .returnResult()
+            .responseBody!!
     }
 
     private fun assertCommonCeAttrs(item: InvokeEnvelope<OutcomeData>, expectedSubject: String) {

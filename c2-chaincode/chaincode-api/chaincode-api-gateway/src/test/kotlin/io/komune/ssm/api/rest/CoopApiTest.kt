@@ -14,8 +14,14 @@ class CoopApiTest : WebBaseTest() {
             .build()
             .toUri()
 
-        val res = this.restTemplate.getForEntity(uri, String::class.java)
-        assertThat(res.statusCode.value()).isEqualTo(200)
-        assertThat(res.body).isNotNull
+        val body = restTestClient.get()
+            .uri(uri)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectBody(String::class.java)
+            .returnResult()
+            .responseBody
+        assertThat(body).isNotNull
     }
 }
