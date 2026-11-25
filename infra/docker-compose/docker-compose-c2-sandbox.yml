@@ -21,6 +21,14 @@ services:
     environment:
       - COUCHDB_USER=${BCLAN_COUCH_USER}
       - COUCHDB_PASSWORD=${BCLAN_COUCH_PASS}
+    # CouchDB answers before it has applied the admin from COUCHDB_USER: an early request gets a 401, and the
+    # peer panics on it at startup and stays down. Healthy means an authenticated request succeeds.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u \"$$COUCHDB_USER:$$COUCHDB_PASSWORD\" http://localhost:5984/_up"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
     ports:
       - "5984:5984"
     networks:
@@ -46,8 +54,10 @@ services:
     networks:
       - net
     depends_on:
-      - orderer.bclan
-      - couchdb.bc-coop.bclan
+      orderer.bclan:
+        condition: service_started
+      couchdb.bc-coop.bclan:
+        condition: service_healthy
 
 networks:
   net:
