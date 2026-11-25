@@ -22,4 +22,8 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootBuildImage>("boot
     imagePlatform.set((project.findProperty("targetPlatform") as String?) ?: "linux/amd64")
     // Added to fixers' entries (the health checker among them), never in their place.
     environment.put("BPE_APPEND_JAVA_TOOL_OPTIONS", " -XX:MaxDirectMemorySize=64m")
+    // The Spring Cloud Bindings the pinned builder adds predate Spring Boot 4.2: they load
+    // org.springframework.boot.env.EnvironmentPostProcessor, which 4.2 removed, and the app dies at startup.
+    // The gateway reads no service bindings.
+    environment.put("BP_SPRING_CLOUD_BINDINGS_DISABLED", "true")
 }
