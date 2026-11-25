@@ -2,7 +2,7 @@ package ssm.data.spring.autoconfigure
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.aot.generate.ClassNameGenerator
+import org.springframework.aot.generate.NameGenerator
 import org.springframework.aot.generate.DefaultGenerationContext
 import org.springframework.aot.generate.GeneratedMethods
 import org.springframework.aot.generate.InMemoryGeneratedFiles
@@ -19,7 +19,7 @@ class SsmDataAotProcessorTest {
     @Test
     fun `aot contribution registers both config bean methods, their types, constructors and resources`() {
         val generationContext = DefaultGenerationContext(
-            ClassNameGenerator(ClassName.get("ssm.data.spring.autoconfigure", "AotTest")),
+            NameGenerator(ClassName.get("ssm.data.spring.autoconfigure", "AotTest")),
             InMemoryGeneratedFiles(),
         )
 

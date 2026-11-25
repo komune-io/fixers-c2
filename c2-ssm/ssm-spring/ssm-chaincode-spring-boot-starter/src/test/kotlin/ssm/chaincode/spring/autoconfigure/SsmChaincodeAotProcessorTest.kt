@@ -2,7 +2,7 @@ package ssm.chaincode.spring.autoconfigure
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.aot.generate.ClassNameGenerator
+import org.springframework.aot.generate.NameGenerator
 import org.springframework.aot.generate.DefaultGenerationContext
 import org.springframework.aot.generate.GeneratedMethods
 import org.springframework.aot.generate.InMemoryGeneratedFiles
@@ -18,7 +18,7 @@ class SsmChaincodeAotProcessorTest {
     @Test
     fun `aot contribution registers the ssmChaincodeProperties bean method and its types`() {
         val generationContext = DefaultGenerationContext(
-            ClassNameGenerator(ClassName.get("ssm.chaincode.spring.autoconfigure", "AotTest")),
+            NameGenerator(ClassName.get("ssm.chaincode.spring.autoconfigure", "AotTest")),
             InMemoryGeneratedFiles(),
         )
 

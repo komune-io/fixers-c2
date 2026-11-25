@@ -2,7 +2,7 @@ package ssm.couchdb.spring.autoconfigure
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.aot.generate.ClassNameGenerator
+import org.springframework.aot.generate.NameGenerator
 import org.springframework.aot.generate.DefaultGenerationContext
 import org.springframework.aot.generate.GeneratedMethods
 import org.springframework.aot.generate.InMemoryGeneratedFiles
@@ -18,7 +18,7 @@ class SsmCouchdbAotProcessorTest {
     @Test
     fun `aot contribution registers the couchdbConfig bean method, its types and constructors`() {
         val generationContext = DefaultGenerationContext(
-            ClassNameGenerator(ClassName.get("ssm.couchdb.spring.autoconfigure", "AotTest")),
+            NameGenerator(ClassName.get("ssm.couchdb.spring.autoconfigure", "AotTest")),
             InMemoryGeneratedFiles(),
         )
 
